@@ -91,10 +91,6 @@ function validate_export_object( string $meta_key = '' ): bool {
 	if ( 'online_event_link' !== $meta_key ) {
 		return false;
 	}
-	// Makes sure the do_action only runs once per post.
-	if ( 0 !== \did_action( 'gatherpress_export' ) ) {
-		return false;
-	}
 	return true;
 }
 
