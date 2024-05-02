@@ -8,7 +8,6 @@ Author: Carsten Bach
 Author URI: https://gatherpress.org
 Text Domain: gatherpress-export-import
 Domain Path: /languages
-Requires Plugins: wordpress-importer
 */
 
 
