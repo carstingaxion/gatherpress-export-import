@@ -10,13 +10,13 @@ Text Domain: gatherpress-export-import
 Domain Path: /languages
 */
 
-
 /**
  * Try to solve:
  * 
  * Export / Import of events does not recognise date & time
  * https://github.com/GatherPress/gatherpress/issues/650
  */
+
 namespace GatherPress\ExportImport;
 
 /**
@@ -54,7 +54,7 @@ function pseudopostmetas(): array {
  *
  * A problem or caveat could be, that this filter only runs,
  * if a post has real-existing data in the post_meta table.
- * Right now, this whole operation relies on the existence of the '_edit_last' post meta key.
+ * Right now, this whole operation relies on the existence of the 'online_event_link' post meta key.
  */
 \add_filter(
 	'wxr_export_skip_postmeta',
@@ -87,7 +87,8 @@ function validate_export_object( string $meta_key = '' ): bool {
 	if ( 'gp_event' !== \get_post_type() ) {
 		return false;
 	}
-	if ( '_edit_last' !== $meta_key ) {
+	// if ( '_edit_last' !== $meta_key ) {
+	if ( 'online_event_link' !== $meta_key ) {
 		return false;
 	}
 	// Makes sure the do_action only runs once per post.
