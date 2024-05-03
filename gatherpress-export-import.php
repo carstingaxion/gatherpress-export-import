@@ -129,27 +129,31 @@ function export( \WP_Post $post ): void {
  * 
  * @source https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L872
  */
-\add_filter(
-	'wp_import_post_meta',
-	__NAMESPACE__ . '\\wp_import_post_meta',
-	10,
-	3
-);
+
+
+// WordPress Importer (v2)
+// https://github.com/humanmade/Wordpress-Importer
+if ( class_exists( 'WXR_Importer' ) ) {
+	\add_filter( 'wxr_importer.pre_process.post', __NAMESPACE__ . '\\import_events' );
+	
+	// Default WordPres Importer
+	// https://github.com/WordPress/wordpress-importer/issues/42
+} else {
+	\add_filter( 'wp_import_post_data_raw', __NAMESPACE__ . '\\import_events' );
+}
 
 /**
  * 
  *
- * @param  array $postmeta
- * @param  int   $post_id
  * @param  array $post_data_raw The result of 'wp_import_post_data_raw'. @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
  *
  * @return array
  */
-function wp_import_post_meta( array $postmeta, int $post_id, array $post_data_raw ): array {
+function import_events( array $post_data_raw ): array {
 	if ( validate_import_object( $post_data_raw ) ) {
 		\do_action( 'gatherpress_import' );
 	}
-	return $postmeta;
+	return $post_data_raw;
 }
 
 

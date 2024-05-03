@@ -18,24 +18,34 @@ namespace GatherPress\ExportImport;
  * 
  * EXAMPLE: Migrate 'Event Organiser' events into GatherPress.
  */
-\add_filter(
-	'wp_import_post_data_raw',
-	function( array $post_data_raw ): array {
-		if ( 'eo_event' !== $post_data_raw['post_type'] ) {
-			return $post_data_raw;
-		}
 
-		\add_filter(
-			'gatherpress_pseudopostmetas',
-			function ( array $pseudopostmetas ): array {
-				$pseudopostmetas['eo_start_date'] = [
-					'import_callback' => __NAMESPACE__ . '\\import_KEY_callback',
-				];
-				return $pseudopostmetas;
-			}
-		);
+// WordPress Importer (v2)
+// https://github.com/humanmade/Wordpress-Importer
+if ( class_exists( 'WXR_Importer' ) ) {
+	\add_filter( 'wxr_importer.pre_process.post', __NAMESPACE__ . '\\import_eo_events', 9 );
 
-		$post_data_raw['post_type'] = 'gp_event';
+// Default WordPres Importer
+// https://github.com/WordPress/wordpress-importer/issues/42
+} else {
+	\add_filter( 'wp_import_post_data_raw', __NAMESPACE__ . '\\import_eo_events', 9 );
+}
+
+
+function import_eo_events( array $post_data_raw ): array {
+	if ( 'eo_event' !== $post_data_raw['post_type'] ) {
 		return $post_data_raw;
 	}
-);
+
+	\add_filter(
+		'gatherpress_pseudopostmetas',
+		function ( array $pseudopostmetas ): array {
+			$pseudopostmetas['eo_start_date'] = [
+				'import_callback' => __NAMESPACE__ . '\\import_KEY_callback',
+			];
+			return $pseudopostmetas;
+		}
+	);
+
+	$post_data_raw['post_type'] = 'gp_event';
+	return $post_data_raw;
+}
