@@ -4,10 +4,15 @@
 >
 > https://github.com/GatherPress/gatherpress/issues/650
 
-The code in this repo tries to fix this.
+~~The code in this repo~~ The pull request [#655 Export & Import](https://github.com/GatherPress/gatherpress/pull/655) tries to fix this.
 
-[Test it using WordPress' playground
-](https://playground.wordpress.net/?mode=seamless&blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/gatherpress-export-import-blueprint.json)
+---
 
-[Edit the blueprint
-](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/gatherpress-export-import-blueprint.json)
+This repo is now used to test importing data from other event plugins into GatherPress:
+
+- [Event Organiser](/import-events-from--event-organiser.php)
+- ...
+
+[<kbd> <br>Test it using <code>WordPress' playground</code> <br> </kbd>](https://playground.wordpress.net/?mode=seamless&blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/gatherpress-export-import-blueprint.json)
+
+[<kbd> <br> Edit <code>blueprint.json</code> <br> </kbd>](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/gatherpress-export-import-blueprint.json)

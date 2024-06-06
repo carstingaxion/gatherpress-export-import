@@ -2,14 +2,14 @@
 /*
 Plugin Name: GatherPress | Import for 'Event Organiser' Events
 Plugin URI:
-Description: Use WordPress' native import tool to import data from the 'Event Oragniser' plugin into GatherPress.
+Description: Use WordPress' native import tool to import data from the 'Event Organiser' plugin into GatherPress.
 Version: 0.1.0
 Author: Carsten Bach
 Author URI: https://gatherpress.org
 Text Domain: gatherpress-import-eo-events
 Domain Path: /languages
 */
-namespace GatherPress\ExportImport;
+namespace GatherPress\ExportImport\ImportEoEvents;
 
 
 /**
@@ -40,12 +40,43 @@ function import_eo_events( array $post_data_raw ): array {
 		'gatherpress_pseudopostmetas',
 		function ( array $pseudopostmetas ): array {
 			$pseudopostmetas['eo_start_date'] = [
-				'import_callback' => __NAMESPACE__ . '\\import_KEY_callback',
+				'import_callback' => __NAMESPACE__ . '\\import_eo_start_date_callback',
 			];
 			return $pseudopostmetas;
 		}
 	);
 
-	$post_data_raw['post_type'] = 'gp_event';
+	$post_data_raw['post_type'] = 'gatherpress_event';
 	return $post_data_raw;
 }
+
+
+/**
+ * 4. Misc.
+ * 
+ * Functions, that could live anywhere inside or outside of GatherPress.
+ *
+ * @param  int    $post_id
+ * @param  mixed $data
+ *
+ * @return void
+ */
+function import_eo_start_date_callback( int $post_id, mixed $data ) : void {
+	// Save $data into some place, which is not post_meta.
+	error_log( 
+		var_export(
+			[
+				__FUNCTION__,
+				__FILE__, // Helpful to find origin of debug statements.
+				$post_id,
+				$data,
+			],
+			true
+		)
+	);
+	// Save $data into some place, which is not post_meta.
+	// ...
+	$event = new \GatherPress\Core\Event( $post_id );
+	$event->save_datetimes( \maybe_unserialize( $data ) );
+}
+

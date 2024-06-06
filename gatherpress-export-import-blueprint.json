@@ -1,9 +1,9 @@
 {
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
-  "landingPage": "https://playground.wordpress.net/events",
+  "landingPage": "https://playground.wordpress.net/wp-admin/edit.php?post_type=gatherpress_event",
   "preferredVersions": {
     "php": "8.2",
-    "wp": "6.5"
+    "wp": "latest"
   },
   "phpExtensionBundles": [
     "kitchen-sink"
@@ -34,27 +34,29 @@
       "step": "installPlugin",
       "pluginZipFile": {
         "resource": "url",
-        "url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-demo-data/main/gatherpress-0.28.0.zip"
-      },
-      "options": {
-        "activate": true
+        "url": "https://github-proxy.com/proxy/?repo=carstingaxion/gatherpress&branch=feature/export-import"
       }
     },
     {
-      "step": "installPlugin",
-      "pluginZipFile": {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/import-events-from--event-organiser.php",
+      "data": {
         "resource": "url",
-        "url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/gatherpress-export-import-main.zip"
-      },
-      "options": {
-        "activate": true
+        "url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/import-events-from--event-organiser.php"
       }
     },
     {
-      "step": "importFile",
+      "step": "importWxr",
       "file": {
         "resource": "url",
         "url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-demo-data/main/GatherPress-demo-data-2024.xml"
+      }
+    },
+    {
+      "step": "importWxr",
+      "file": {
+        "resource": "url",
+        "url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-block-playground/main/gatherpress.block-demo.xml"
       }
     }
   ]
