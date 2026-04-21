@@ -179,7 +179,9 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * Hooks into the WordPress import process at strategic points:
 		 * - `wp_import_post_data_raw` at priority 5 for post type rewriting
 		 * - `wp_import_post_terms` at priority 5 for taxonomy rewriting in post terms
-		 * - `wp_import_terms` at priority 5 for taxonomy rewriting in term data
+		 * - `pre_insert_term` at priority 5 for intercepting taxonomy term creation
+		 *   and rewriting taxonomy slugs (since `wp_import_terms` does not exist
+		 *   in the standard WordPress Importer)
 		 * - `add_post_metadata` at priority 5 for meta stashing
 		 * - `gatherpress_pseudopostmetas` for pseudopostmeta registration
 		 * - `wp_import_post_meta` at priority 20 for post-import processing
@@ -192,7 +194,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		private function setup_hooks(): void {
 			add_filter( 'wp_import_post_data_raw', array( $this, 'rewrite_post_type_on_import' ), 5 );
 			add_filter( 'wp_import_post_terms', array( $this, 'rewrite_post_terms_taxonomy' ), 5 );
-			add_filter( 'wp_import_terms', array( $this, 'rewrite_import_terms' ), 5 );
+			add_filter( 'pre_insert_term', array( $this, 'intercept_term_creation' ), 5, 2 );
 			add_filter( 'add_post_metadata', array( $this, 'stash_meta_on_import' ), 5, 5 );
 			add_filter( 'gatherpress_pseudopostmetas', array( $this, 'register_pseudopostmetas' ) );
 			add_filter( 'wp_import_post_meta', array( $this, 'filter_post_meta_on_import' ), 20, 3 );
@@ -318,31 +320,57 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		}
 
 		/**
-		 * Rewrites taxonomy slugs in term data during the WordPress import.
+		 * Intercepts term creation during the WordPress import.
 		 *
-		 * Hooked to `wp_import_terms` at priority 5. This filter receives the
-		 * full array of terms being imported and rewrites the taxonomy slug
-		 * for each term that matches the taxonomy map.
+		 * Hooked to `pre_insert_term` at priority 5. The WordPress Importer
+		 * calls `wp_insert_term()` for each term in the WXR file. This filter
+		 * fires before the term is inserted into the database, allowing us to:
+		 *
+		 * 1. Rewrite taxonomy slugs — if the taxonomy is in our taxonomy map,
+		 *    the term is silently blocked here (by returning a WP_Error) and
+		 *    re-inserted under the correct GatherPress taxonomy.
+		 * 2. Delegate to adapters — for special cases like Event Organiser's
+		 *    `event-venue` taxonomy, the adapter's own `pre_insert_term` hook
+		 *    handles the term at an earlier priority.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param array $terms Array of term data arrays from the WXR file.
-		 * @return array Modified term data with rewritten taxonomy slugs.
+		 * @param string $term     The term name being inserted.
+		 * @param string $taxonomy The taxonomy slug for the term.
+		 * @return string|\WP_Error The term name to proceed, or WP_Error to block insertion.
 		 */
-		public function rewrite_import_terms( array $terms ): array {
+		public function intercept_term_creation( $term, string $taxonomy ) {
 			$tax_map = $this->get_taxonomy_map();
 
-			if ( empty( $tax_map ) ) {
-				return $terms;
+			if ( empty( $tax_map ) || ! isset( $tax_map[ $taxonomy ] ) ) {
+				return $term;
 			}
 
-			foreach ( $terms as &$term ) {
-				if ( isset( $term['term_taxonomy'] ) && isset( $tax_map[ $term['term_taxonomy'] ] ) ) {
-					$term['term_taxonomy'] = $tax_map[ $term['term_taxonomy'] ];
-				}
+			$target_taxonomy = $tax_map[ $taxonomy ];
+
+			// Check if the target taxonomy exists.
+			if ( ! taxonomy_exists( $target_taxonomy ) ) {
+				return $term;
 			}
 
-			return $terms;
+			// Check if the term already exists in the target taxonomy.
+			$existing = term_exists( $term, $target_taxonomy );
+			if ( ! $existing ) {
+				wp_insert_term( $term, $target_taxonomy );
+			}
+
+			// Return a WP_Error to prevent insertion into the original
+			// (non-existent) taxonomy. The importer logs this as a skip.
+			return new \WP_Error(
+				'telex_gpm_taxonomy_rewritten',
+				sprintf(
+					/* translators: 1: term name, 2: source taxonomy, 3: target taxonomy */
+					__( 'Term "%1$s" rewritten from "%2$s" to "%3$s".', 'telex-gatherpress-migration' ),
+					$term,
+					$taxonomy,
+					$target_taxonomy
+				)
+			);
 		}
 
 		/**
@@ -441,6 +469,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			}
 
 			$post_type = get_post_type( $object_id );
+
 			if ( 'gatherpress_event' !== $post_type ) {
 				return $check;
 			}
@@ -515,12 +544,14 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 */
 		public function process_stashed_meta( int $post_id ): void {
 			$post_type = get_post_type( $post_id );
+
 			if ( 'gatherpress_event' !== $post_type ) {
 				return;
 			}
 
 			$transient_key = 'telex_gpm_meta_stash_' . $post_id;
 			$stash         = get_transient( $transient_key );
+
 			if ( ! is_array( $stash ) || empty( $stash ) ) {
 				return;
 			}

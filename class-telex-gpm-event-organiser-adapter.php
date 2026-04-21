@@ -11,8 +11,9 @@
  * approach:
  *
  * - **Pass 1 (Venue creation):** When `event-venue` taxonomy terms are
- *   encountered, they are automatically converted into `gatherpress_venue`
- *   posts. Events in this pass are skipped (not imported).
+ *   encountered in per-post term assignments, they are automatically
+ *   converted into `gatherpress_venue` posts. Events in this pass are
+ *   skipped (not imported).
  * - **Pass 2 (Event import):** On the second import of the same file,
  *   venues already exist as `gatherpress_venue` posts with their shadow
  *   taxonomy terms. Events are imported and linked to venues via the
@@ -62,17 +63,44 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		use Telex_GPM_Datetime_Helper;
 
 		/**
+		 * The temporary post type used to silently skip events during pass 1.
+		 *
+		 * Registered as a non-public post type so `post_type_exists()` returns
+		 * true, preventing the WordPress Importer from logging "Invalid post type"
+		 * errors. Posts of this type are cleaned up at `import_end`.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var string
+		 */
+		const SKIP_POST_TYPE = '_telex_gpm_skip';
+
+		/**
 		 * Whether this adapter is currently in venue-creation mode (pass 1).
 		 *
 		 * When true, events are skipped and only venue taxonomy terms are
-		 * converted into gatherpress_venue posts. Set via the import pass
-		 * detection logic in `intercept_venue_terms()`.
+		 * converted into gatherpress_venue posts. Determined during the
+		 * first call to `filter_event_venue_terms()` by checking whether
+		 * matching `gatherpress_venue` posts already exist.
 		 *
 		 * @since 0.1.0
 		 *
 		 * @var bool
 		 */
 		private bool $is_venue_pass = true;
+
+		/**
+		 * Whether the venue pass detection has been performed.
+		 *
+		 * Set to true after the first `event-venue` term is encountered
+		 * in `filter_event_venue_terms()`, so the pass detection logic
+		 * only runs once per import.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var bool
+		 */
+		private bool $pass_detected = false;
 
 		/**
 		 * Whether the import hooks for this adapter have been registered.
@@ -87,17 +115,58 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		private bool $hooks_registered = false;
 
 		/**
-		 * Pending venue term slugs from the current post being imported.
+		 * The post title of the event currently being imported.
 		 *
-		 * Temporarily holds event-venue term slugs collected during
-		 * `filter_event_venue_terms()` until the post is saved and
-		 * we have a real post ID to stash them against.
+		 * Set by `capture_current_event_post_data()` from the raw post data
+		 * BEFORE the importer creates the post. This is used to track which
+		 * event's term assignments are being processed by
+		 * `filter_event_venue_terms()`.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @var string[]
+		 * @var string
 		 */
-		private array $pending_venue_slugs = array();
+		private string $current_post_title = '';
+
+		/**
+		 * The post ID of the last gatherpress_event that was saved.
+		 *
+		 * Set by `track_saved_post_id()` when `save_post_gatherpress_event`
+		 * fires. Because the WordPress Importer processes terms AFTER
+		 * `wp_insert_post()`, this ID is available when
+		 * `filter_event_venue_terms()` runs.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var int
+		 */
+		private int $last_saved_event_id = 0;
+
+		/**
+		 * Deferred venue linking map: post_id => array of venue slugs.
+		 *
+		 * Because the WordPress Importer processes terms AFTER saving the
+		 * post (and thus after `save_post` hooks have already fired), we
+		 * cannot link venues in `save_post`. Instead, we collect the
+		 * mappings here and process them all at `import_end`.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var array<int, string[]>
+		 */
+		private array $deferred_venue_links = array();
+
+		/**
+		 * Whether the current event post should be skipped during pass 1.
+		 *
+		 * Set by `maybe_flag_events_on_venue_pass()` and consumed by
+		 * `skip_flagged_events()`.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var bool
+		 */
+		private bool $skip_current_event = false;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -266,49 +335,6 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 			return null;
 		}
 
-		// /**
-		//  * Links a venue to an event after import.
-		//  *
-		//  * For Event Organiser, venue linking is handled by the two-pass
-		//  * import system. During pass 2, the `event-venue` taxonomy terms
-		//  * have already been remapped and the `link_event_to_venue_by_term()`
-		//  * method handles the association.
-		//  *
-		//  * This method serves as a fallback if called directly with a
-		//  * venue post ID, delegating to the trait's implementation.
-		//  *
-		//  * @since 0.1.0
-		//  *
-		//  * @param int $post_id      The event post ID.
-		//  * @param int $new_venue_id The new (mapped) venue post ID.
-		//  * @return void
-		//  */
-		// public function link_venue( int $post_id, int $new_venue_id ): void {
-		// 	if ( 'gatherpress_venue' !== get_post_type( $new_venue_id ) ) {
-		// 		return;
-		// 	}
-
-		// 	// Use the trait's link_venue for direct venue post linking.
-		// 	if ( class_exists( '\GatherPress\Core\Event' ) ) {
-		// 		$event = new \GatherPress\Core\Event( $post_id );
-		// 		if ( method_exists( $event, 'save_venue' ) ) {
-		// 			$event->save_venue( $new_venue_id );
-		// 			return;
-		// 		}
-		// 	}
-
-		// 	// Fallback: assign the _gatherpress_venue shadow taxonomy term directly.
-		// 	if ( taxonomy_exists( '_gatherpress_venue' ) ) {
-		// 		$venue_post = get_post( $new_venue_id );
-		// 		if ( $venue_post && ! empty( $venue_post->post_name ) ) {
-		// 			$term = get_term_by( 'slug', $venue_post->post_name, '_gatherpress_venue' );
-		// 			if ( $term && ! is_wp_error( $term ) ) {
-		// 				wp_set_object_terms( $post_id, array( $term->term_id ), '_gatherpress_venue', false );
-		// 			}
-		// 		}
-		// 	}
-		// }
-
 		/**
 		 * Gets the taxonomy mapping for Event Organiser.
 		 *
@@ -334,17 +360,72 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		}
 
 		/**
-		 * Pending post IDs/titles to skip during pass 1 (venue creation).
+		 * Registers the temporary skip post type used during pass 1.
 		 *
-		 * When in venue pass, event post GUIDs or unique identifiers are
-		 * collected so that the `wp_import_existing_post` filter can tell
-		 * the WordPress Importer to skip them silently.
+		 * This non-public post type exists solely so that `post_type_exists()`
+		 * returns true when the WordPress Importer checks it. This prevents
+		 * the "Invalid post type" error that occurs when setting a post's
+		 * type to an unregistered slug. Posts created with this type are
+		 * cleaned up at `import_end`.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @var bool
+		 * @return void
 		 */
-		private bool $skip_current_event = false;
+		private function register_skip_post_type(): void {
+			if ( post_type_exists( self::SKIP_POST_TYPE ) ) {
+				return;
+			}
+
+			register_post_type(
+				self::SKIP_POST_TYPE,
+				array(
+					'label'               => 'GPM Skip (temporary)',
+					'public'              => false,
+					'publicly_queryable'  => false,
+					'show_ui'             => false,
+					'show_in_menu'        => false,
+					'show_in_nav_menus'   => false,
+					'show_in_admin_bar'   => false,
+					'show_in_rest'        => false,
+					'exclude_from_search' => true,
+					'can_export'          => false,
+					'rewrite'             => false,
+					'query_var'           => false,
+					'supports'            => array( 'title' ),
+				)
+			);
+		}
+
+		/**
+		 * Cleans up any posts created with the temporary skip post type.
+		 *
+		 * Called at `import_end` to remove the throwaway posts that were
+		 * created by the WordPress Importer during pass 1 when events
+		 * were redirected to the skip post type.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		private function cleanup_skip_posts(): void {
+			$skip_posts = get_posts(
+				array(
+					'post_type'      => self::SKIP_POST_TYPE,
+					'post_status'    => 'any',
+					'posts_per_page' => -1,
+					'fields'         => 'ids',
+				)
+			);
+
+			if ( empty( $skip_posts ) ) {
+				return;
+			}
+
+			foreach ( $skip_posts as $skip_post_id ) {
+				wp_delete_post( $skip_post_id, true );
+			}
+		}
 
 		/**
 		 * Sets up the import hooks for the two-pass venue/event strategy.
@@ -353,21 +434,15 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 * is registered, because it implements `Telex_GPM_Hookable_Adapter`.
 		 *
 		 * It registers hooks for:
+		 * - Registering a temporary skip post type for silent event skipping
+		 * - Capturing the current post title from raw import data (priority 2)
 		 * - Intercepting `event-venue` taxonomy term creation via `pre_insert_term`
-		 *   to create gatherpress_venue posts instead (pass 1)
-		 * - Filtering `event-venue` terms from per-post term assignments and
-		 *   stashing them for venue linking
-		 * - Skipping event posts during pass 1 (via wp_import_existing_post)
-		 * - Linking events to venues via shadow taxonomy during pass 2
-		 *
-		 * The pass is determined by checking whether any `gatherpress_venue`
-		 * posts already exist that match the incoming venue term slugs.
-		 *
-		 * Note: The standard WordPress Importer does NOT have a `wp_import_terms`
-		 * filter. Instead, it calls `wp_insert_term()` for each term, which fires
-		 * the `pre_insert_term` filter. This adapter hooks into `pre_insert_term`
-		 * at priority 3 (before the main migration class at priority 5) to
-		 * intercept `event-venue` terms before they fail with "Invalid taxonomy".
+		 *   as a fallback for WXR files that include top-level `<wp:term>` entries
+		 * - Filtering `event-venue` terms from per-post term assignments, creating
+		 *   venue posts on the fly during pass 1, and stashing slugs for pass 2
+		 * - Skipping event posts during pass 1 (via post type redirect to skip type)
+		 * - Tracking the saved post ID when a gatherpress_event is created
+		 * - Deferred venue linking and skip post cleanup at `import_end`
 		 *
 		 * @since 0.1.0
 		 *
@@ -380,8 +455,18 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 
 			$this->hooks_registered = true;
 
-			// Hook into term creation to intercept event-venue terms and create
-			// gatherpress_venue posts. Priority 3 runs BEFORE the main migration
+			// Register the temporary skip post type early.
+			$this->register_skip_post_type();
+
+			// Capture the post title from raw data BEFORE any other processing.
+			// Priority 2 ensures this runs before our flag check at priority 3.
+			add_filter( 'wp_import_post_data_raw', array( $this, 'capture_current_event_post_data' ), 2 );
+
+			// Flag EO events for skipping during pass 1 (before post type rewrite).
+			add_filter( 'wp_import_post_data_raw', array( $this, 'maybe_flag_events_on_venue_pass' ), 3 );
+
+			// Hook into term creation to intercept event-venue terms from
+			// WXR <wp:term> entries. Priority 3 runs BEFORE the main migration
 			// class's intercept_term_creation() at priority 5.
 			add_filter( 'pre_insert_term', array( $this, 'intercept_venue_term_creation' ), 3, 2 );
 
@@ -390,29 +475,173 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 			// rewrite_post_terms_taxonomy() at priority 5.
 			add_filter( 'wp_import_post_terms', array( $this, 'filter_event_venue_terms' ), 4 );
 
-			// Flag EO events for skipping during pass 1 (before post type rewrite).
-			add_filter( 'wp_import_post_data_raw', array( $this, 'maybe_flag_events_on_venue_pass' ), 3 );
+			// Track the post ID when a gatherpress_event is saved.
+			// The WordPress Importer calls wp_insert_post(), which triggers
+			// save_post_gatherpress_event. This runs BEFORE wp_import_post_terms.
+			add_action( 'save_post_gatherpress_event', array( $this, 'track_saved_post_id' ), 1 );
 
-			// Tell the WordPress Importer to skip flagged events by pretending they already exist.
-			add_filter( 'wp_import_existing_post', array( $this, 'skip_flagged_events' ), 10, 2 );
+			// Process all deferred venue links and clean up skip posts
+			// after the entire import completes.
+			add_action( 'import_end', array( $this, 'process_deferred_venue_links' ) );
+		}
 
-			// After an event is saved (pass 2), stash any pending venue slugs.
-			add_action( 'save_post_gatherpress_event', array( $this, 'stash_pending_venue_slugs_on_save' ), 5 );
+		/**
+		 * Captures the current event post data from the raw import data.
+		 *
+		 * Hooked to `wp_import_post_data_raw` at priority 2 (before the
+		 * skip flag check at priority 3). Records the post title so that
+		 * subsequent hooks can associate data with the correct event,
+		 * even if the post hasn't been created yet.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param array<string, mixed> $post_data Raw post data from the importer.
+		 * @return array<string, mixed> Unmodified post data.
+		 */
+		public function capture_current_event_post_data( array $post_data ): array {
+			$post_type = $post_data['post_type'] ?? '';
 
-			// After each event is imported (pass 2), link it to venues.
-			add_action( 'save_post_gatherpress_event', array( $this, 'link_event_to_venue_by_term' ), 98 );
+			if ( 'event' === $post_type ) {
+				$this->current_post_title = $post_data['post_title'] ?? '(untitled)';
+			}
+
+			return $post_data;
+		}
+
+		/**
+		 * Tracks the post ID when a gatherpress_event is saved during import.
+		 *
+		 * Hooked to `save_post_gatherpress_event` at priority 1 (very early).
+		 * The WordPress Importer calls `wp_insert_post()` which triggers
+		 * `save_post`, and THEN processes the post's term assignments via
+		 * `wp_import_post_terms`. By recording the post ID here, the
+		 * subsequent `filter_event_venue_terms()` call can associate
+		 * venue slugs with this post.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param int $post_id The event post ID.
+		 * @return void
+		 */
+		public function track_saved_post_id( int $post_id ): void {
+			$post_type = get_post_type( $post_id );
+
+			if ( 'gatherpress_event' !== $post_type ) {
+				return;
+			}
+
+			$this->last_saved_event_id = $post_id;
+		}
+
+		/**
+		 * Determines whether this is pass 1 or pass 2 based on existing venue posts.
+		 *
+		 * Checks whether a `gatherpress_venue` post matching the given slug
+		 * already exists. If it does, we are in pass 2 (event import mode).
+		 * If not, we are in pass 1 (venue creation mode).
+		 *
+		 * Only runs once — the first `event-venue` term encountered determines
+		 * the pass for the entire import.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param string $venue_slug The sanitized venue term slug to check.
+		 * @return void
+		 */
+		private function detect_pass( string $venue_slug ): void {
+			if ( $this->pass_detected ) {
+				return;
+			}
+
+			$this->pass_detected = true;
+
+			// Check if a gatherpress_venue post with this slug already exists.
+			$existing = get_posts(
+				array(
+					'post_type'      => 'gatherpress_venue',
+					'name'           => $venue_slug,
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+				)
+			);
+
+			if ( ! empty( $existing ) ) {
+				$this->is_venue_pass = false;
+			} else {
+				$this->is_venue_pass = true;
+			}
+		}
+
+		/**
+		 * Creates a gatherpress_venue post from an event-venue term name and slug.
+		 *
+		 * If a matching venue post already exists, returns its ID without
+		 * creating a duplicate.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param string $venue_name The venue name (term name).
+		 * @param string $venue_slug The sanitized venue slug.
+		 * @return int The venue post ID, or 0 on failure.
+		 */
+		private function create_venue_post( string $venue_name, string $venue_slug ): int {
+			// Check if already created (idempotent).
+			$existing = get_posts(
+				array(
+					'post_type'      => 'gatherpress_venue',
+					'name'           => $venue_slug,
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+				)
+			);
+
+			if ( ! empty( $existing ) ) {
+				return $existing[0];
+			}
+
+			$venue_post_id = wp_insert_post(
+				array(
+					'post_title'   => $venue_name,
+					'post_name'    => $venue_slug,
+					'post_content' => '',
+					'post_type'    => 'gatherpress_venue',
+					'post_status'  => 'publish',
+				),
+				true
+			);
+
+			if ( is_wp_error( $venue_post_id ) || ! $venue_post_id ) {
+				return 0;
+			}
+
+			// Store a mapping from the original term slug to the new venue post ID.
+			// This is used as a fallback lookup in process_deferred_venue_links()
+			// if WordPress modifies the post slug during wp_insert_post().
+			update_post_meta( $venue_post_id, '_telex_gpm_source_venue_term_slug', $venue_slug );
+
+			// GatherPress hooks into save_post_gatherpress_venue to
+			// automatically create a shadow term in _gatherpress_venue.
+
+			return $venue_post_id;
 		}
 
 		/**
 		 * Filters event-venue terms from per-post term assignments.
 		 *
 		 * Hooked to `wp_import_post_terms` at priority 4 (before the main
-		 * migration class's taxonomy rewriting at priority 5). Removes
-		 * `event-venue` terms from the assignment list and stashes their
-		 * slugs for venue linking during pass 2.
+		 * migration class's taxonomy rewriting at priority 5).
 		 *
-		 * This keeps all Event Organiser-specific `event-venue` handling
-		 * encapsulated within this adapter.
+		 * **Pass 1 (venue creation):** For each `event-venue` term found,
+		 * creates a `gatherpress_venue` post if one doesn't already exist.
+		 * The term is removed from the assignment list.
+		 *
+		 * **Pass 2 (event import):** Removes `event-venue` terms from the
+		 * assignment list and records the venue slugs for deferred linking.
+		 * Uses `$this->last_saved_event_id` which was set by
+		 * `track_saved_post_id()` when `save_post_gatherpress_event` fired
+		 * (before the importer processes terms).
 		 *
 		 * @since 0.1.0
 		 *
@@ -420,71 +649,51 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 * @return array Filtered term assignments with event-venue terms removed.
 		 */
 		public function filter_event_venue_terms( array $terms ): array {
+			$event_post_id = $this->last_saved_event_id;
+
 			$venue_slugs    = array();
 			$filtered_terms = array();
 
 			foreach ( $terms as $term ) {
-				if ( isset( $term['domain'] ) && 'event-venue' === $term['domain'] ) {
-					if ( isset( $term['slug'] ) ) {
-						$venue_slugs[] = $term['slug'];
+				$domain = $term['domain'] ?? '';
+				$slug   = $term['slug'] ?? '';
+				$name   = $term['name'] ?? '';
+
+				if ( 'event-venue' === $domain ) {
+					$venue_slug = sanitize_title( $slug );
+
+					// Detect which pass we're in (only on first venue term).
+					$this->detect_pass( $venue_slug );
+
+					if ( $this->is_venue_pass ) {
+						// Pass 1: Create a gatherpress_venue post from this term.
+						$this->create_venue_post( $name, $venue_slug );
+					} else {
+						// Pass 2: Record the slug for deferred venue linking.
+						$venue_slugs[] = $venue_slug;
 					}
-					// Remove event-venue terms — they're handled by the two-pass strategy.
+
+					// In both passes, remove event-venue terms from the assignment list.
 					continue;
 				}
 
 				$filtered_terms[] = $term;
 			}
 
-			if ( ! empty( $venue_slugs ) ) {
-				$this->pending_venue_slugs = $venue_slugs;
+			// In pass 2, associate the venue slugs with the event post for deferred linking.
+			if ( ! $this->is_venue_pass && ! empty( $venue_slugs ) && $event_post_id > 0 ) {
+				$this->deferred_venue_links[ $event_post_id ] = $venue_slugs;
 			}
 
 			return $filtered_terms;
 		}
 
 		/**
-		 * Stashes pending venue slugs when a gatherpress_event post is saved.
-		 *
-		 * Hooked to `save_post_gatherpress_event` at priority 5 (early).
-		 * Takes the venue slugs collected during `filter_event_venue_terms()`
-		 * and stores them in a transient keyed by the post ID.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param int $post_id The event post ID.
-		 * @return void
-		 */
-		public function stash_pending_venue_slugs_on_save( int $post_id ): void {
-			if ( empty( $this->pending_venue_slugs ) ) {
-				return;
-			}
-
-			$transient_key = 'telex_gpm_eo_venue_terms_' . $post_id;
-			set_transient( $transient_key, $this->pending_venue_slugs, HOUR_IN_SECONDS );
-
-			// Clear pending slugs after stashing.
-			$this->pending_venue_slugs = array();
-		}
-
-		/**
-		 * Intercepts event-venue taxonomy term creation and creates venue posts.
+		 * Intercepts event-venue taxonomy term creation from top-level WXR entries.
 		 *
 		 * Hooked to `pre_insert_term` at priority 3 (before the main migration
-		 * class's `intercept_term_creation` at priority 5). This fires for every
-		 * `wp_insert_term()` call, including those from the WordPress Importer.
-		 *
-		 * During pass 1, each `event-venue` term is converted into a
-		 * `gatherpress_venue` post. The term's name becomes the post title.
-		 * GatherPress then automatically creates the `_gatherpress_venue`
-		 * shadow taxonomy term for each venue post.
-		 *
-		 * If a `gatherpress_venue` post with a matching slug already exists,
-		 * the term is skipped (idempotent). This also determines whether
-		 * the import is in pass 1 or pass 2 — if a venue already exists,
-		 * we may switch to pass 2 (event import mode).
-		 *
-		 * Returns a WP_Error to prevent the actual `event-venue` taxonomy term
-		 * from being created (since that taxonomy doesn't exist in GatherPress).
+		 * class's `intercept_term_creation` at priority 5). This is a FALLBACK
+		 * mechanism for top-level `<wp:term>` entries.
 		 *
 		 * @since 0.1.0
 		 *
@@ -499,87 +708,61 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 
 			$term_slug = sanitize_title( $term );
 
-			// Check if a gatherpress_venue post with this slug already exists.
-			$existing = get_posts(
-				array(
-					'post_type'      => 'gatherpress_venue',
-					'name'           => $term_slug,
-					'post_status'    => 'publish',
-					'posts_per_page' => 1,
-					'fields'         => 'ids',
-				)
-			);
+			// Detect which pass we're in.
+			$this->detect_pass( $term_slug );
 
-			if ( ! empty( $existing ) ) {
-				// Venue already exists — switch to pass 2.
-				$this->is_venue_pass = false;
-
-				return new \WP_Error(
-					'telex_gpm_venue_exists',
-					sprintf(
-						/* translators: %s: venue term name */
-						__( 'Venue "%s" already exists as a gatherpress_venue post. Switching to event import mode.', 'telex-gatherpress-migration' ),
-						$term
-					)
-				);
+			if ( $this->is_venue_pass ) {
+				$this->create_venue_post( $term, $term_slug );
 			}
 
-			// Pass 1: Create a gatherpress_venue post from the taxonomy term.
-			$venue_post_id = wp_insert_post(
-				array(
-					'post_title'   => $term,
-					'post_name'    => $term_slug,
-					'post_content' => '',
-					'post_type'    => 'gatherpress_venue',
-					'post_status'  => 'publish',
-				)
-			);
-
-			if ( $venue_post_id && ! is_wp_error( $venue_post_id ) ) {
-				// Store a mapping from the original term slug to the new venue post ID.
-				update_post_meta( $venue_post_id, '_telex_gpm_source_venue_term_slug', $term_slug );
-			}
-
-			// Return WP_Error to prevent inserting a term into the non-existent
-			// event-venue taxonomy. The importer will log this but continue.
 			return new \WP_Error(
-				'telex_gpm_venue_created',
+				'telex_gpm_eo_venue_handled',
 				sprintf(
 					/* translators: %s: venue term name */
-					__( 'Venue "%s" converted to gatherpress_venue post.', 'telex-gatherpress-migration' ),
+					__( 'Event Organiser venue "%s" handled by GatherPress migration.', 'telex-gatherpress-migration' ),
 					$term
 				)
 			);
 		}
 
 		/**
-		 * Flags Event Organiser events for skipping during the venue creation pass.
+		 * Redirects Event Organiser events to a temporary skip post type during pass 1.
 		 *
-		 * During pass 1, we only want to create venue posts from taxonomy
-		 * terms. Events should not be imported yet because the venue shadow
-		 * taxonomy terms may not be ready. This filter sets an internal flag
-		 * when an EO event post is encountered; the `skip_flagged_events()`
-		 * method then uses this flag to tell the WordPress Importer to skip
-		 * the post silently (no error).
+		 * During pass 1, events should not be imported because venue shadow
+		 * taxonomy terms may not be ready. This method sets the `post_type`
+		 * to a registered but non-public temporary post type, which the
+		 * WordPress Importer accepts without error (since `post_type_exists()`
+		 * returns true). The resulting throwaway posts are cleaned up at
+		 * `import_end`.
 		 *
-		 * During pass 2 (`$this->is_venue_pass === false`), events pass
-		 * through normally.
+		 * During pass 2, events pass through normally.
+		 *
+		 * Runs at priority 3 on `wp_import_post_data_raw`, BEFORE the main
+		 * migration class rewrites the post type at priority 5. The post_type
+		 * is still `event` at this point.
 		 *
 		 * @since 0.1.0
 		 *
 		 * @param array<string, mixed> $post_data Raw post data from the importer.
-		 * @return array<string, mixed> Unmodified post data.
+		 * @return array<string, mixed> Modified post data with skip post_type, or unmodified.
 		 */
 		public function maybe_flag_events_on_venue_pass( array $post_data ): array {
 			// Reset the flag for each post.
 			$this->skip_current_event = false;
 
-			if ( ! $this->is_venue_pass ) {
+			$post_type = $post_data['post_type'] ?? '';
+
+			// In pass 2, let events through.
+			if ( ! $this->is_venue_pass && $this->pass_detected ) {
 				return $post_data;
 			}
 
-			// Only flag Event Organiser events (post_type 'event').
-			if ( isset( $post_data['post_type'] ) && 'event' === $post_data['post_type'] ) {
+			// Only skip Event Organiser events (post_type 'event') during pass 1.
+			if ( 'event' === $post_type ) {
+				// Redirect to the temporary skip post type. This is a registered
+				// (non-public) post type, so the importer won't log an error.
+				// The resulting posts are cleaned up at import_end.
+				$post_data['post_type'] = self::SKIP_POST_TYPE;
 				$this->skip_current_event = true;
 			}
 
@@ -587,107 +770,96 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		}
 
 		/**
-		 * Tells the WordPress Importer to skip flagged EO events during pass 1.
+		 * Processes all deferred venue links after the entire import completes.
 		 *
-		 * Hooked to `wp_import_existing_post` at priority 10. When an event
-		 * has been flagged by `maybe_flag_events_on_venue_pass()`, this method
-		 * returns a truthy value (a fake post ID) which makes the importer
-		 * treat the post as already existing and skip it silently — without
-		 * logging an "Invalid post type" error.
+		 * Hooked to `import_end`. Iterates through `$this->deferred_venue_links`
+		 * and calls `link_venue()` for each event-venue pair. Also cleans up
+		 * any temporary skip posts created during pass 1.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param int   $post_exists The existing post ID (0 if not found).
-		 * @param array $post        The post data being checked.
-		 * @return int The existing post ID, or a fake ID to trigger a silent skip.
-		 */
-		public function skip_flagged_events( int $post_exists, array $post ): int {
-			if ( $this->skip_current_event ) {
-				// Return a non-zero value to make the importer think this post
-				// already exists. It will log a "skipped" notice instead of an error.
-				// Use PHP_INT_MAX as a fake ID that will never match a real post.
-				$this->skip_current_event = false;
-				return PHP_INT_MAX;
-			}
-
-			return $post_exists;
-		}
-
-		/**
-		 * Links an imported event to its venue via the _gatherpress_venue shadow taxonomy.
-		 *
-		 * Called on `save_post_gatherpress_event` (priority 98) during pass 2.
-		 * Looks for event-venue term slugs that were stashed during import
-		 * and resolves them to gatherpress_venue posts, then assigns the
-		 * corresponding `_gatherpress_venue` shadow taxonomy term.
-		 *
-		 * The method uses the `_telex_gpm_source_venue_term_slug` post meta
-		 * stored on venue posts during pass 1 to find the correct venue.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @param int $post_id The event post ID.
 		 * @return void
 		 */
-		public function link_event_to_venue_by_term( int $post_id ): void {
-			if ( $this->is_venue_pass ) {
+		public function process_deferred_venue_links(): void {
+			// Always clean up skip posts, regardless of pass.
+			$this->cleanup_skip_posts();
+
+			if ( empty( $this->deferred_venue_links ) ) {
 				return;
 			}
 
-			if ( 'gatherpress_event' !== get_post_type( $post_id ) ) {
-				return;
-			}
+			foreach ( $this->deferred_venue_links as $post_id => $venue_slugs ) {
+				$post_type = get_post_type( $post_id );
+				if ( 'gatherpress_event' !== $post_type ) {
+					continue;
+				}
 
-			// Check if this event has _gatherpress_venue terms already assigned.
-			$venue_terms = wp_get_object_terms( $post_id, '_gatherpress_venue' );
+				// Check if already linked.
+				if ( taxonomy_exists( '_gatherpress_venue' ) ) {
+					$existing_terms = wp_get_object_terms( $post_id, '_gatherpress_venue' );
+					if ( ! empty( $existing_terms ) && ! is_wp_error( $existing_terms ) ) {
+						continue;
+					}
+				}
 
-			if ( ! empty( $venue_terms ) && ! is_wp_error( $venue_terms ) ) {
-				// Already linked — nothing more to do.
-				return;
-			}
-
-			// Look for event-venue term slugs stashed during import.
-			$transient_key = 'telex_gpm_eo_venue_terms_' . $post_id;
-			$venue_slugs   = get_transient( $transient_key );
-
-			if ( ! is_array( $venue_slugs ) || empty( $venue_slugs ) ) {
-				return;
-			}
-
-			foreach ( $venue_slugs as $venue_slug ) {
-				// Find the gatherpress_venue post created from this term slug.
-				$venue_posts = get_posts(
-					array(
-						'post_type'      => 'gatherpress_venue',
-						'name'           => $venue_slug,
-						'post_status'    => 'publish',
-						'posts_per_page' => 1,
-						'fields'         => 'ids',
-					)
-				);
-
-				if ( empty( $venue_posts ) ) {
-					// Try by meta key as fallback.
+				foreach ( $venue_slugs as $venue_slug ) {
+					// Find the gatherpress_venue post created from this term slug.
 					$venue_posts = get_posts(
 						array(
 							'post_type'      => 'gatherpress_venue',
-							'meta_key'       => '_telex_gpm_source_venue_term_slug',
-							'meta_value'     => $venue_slug,
+							'name'           => $venue_slug,
 							'post_status'    => 'publish',
 							'posts_per_page' => 1,
 							'fields'         => 'ids',
 						)
 					);
-				}
 
-				if ( ! empty( $venue_posts ) ) {
-					$venue_post_id = $venue_posts[0];
-					$this->link_venue( $post_id, $venue_post_id );
-					break; // GatherPress events have one venue.
+					if ( empty( $venue_posts ) ) {
+						// Try by meta key as fallback.
+						$venue_posts = get_posts(
+							array(
+								'post_type'      => 'gatherpress_venue',
+								'meta_key'       => '_telex_gpm_source_venue_term_slug',
+								'meta_value'     => $venue_slug,
+								'post_status'    => 'publish',
+								'posts_per_page' => 1,
+								'fields'         => 'ids',
+							)
+						);
+					}
+
+					if ( ! empty( $venue_posts ) ) {
+						$venue_post_id  = $venue_posts[0];
+						$linked         = false;
+						$venue_post_obj = get_post( $venue_post_id );
+
+						if ( $venue_post_obj && taxonomy_exists( '_gatherpress_venue' ) ) {
+							$term_slug   = $this->get_venue_term_slug( $venue_post_obj->post_name );
+							$shadow_term = get_term_by( 'slug', $term_slug, '_gatherpress_venue' );
+
+							if ( $shadow_term && ! is_wp_error( $shadow_term ) ) {
+								$result = wp_set_object_terms( $post_id, array( $shadow_term->term_id ), '_gatherpress_venue', false );
+								$linked = ! is_wp_error( $result );
+							}
+						}
+
+						if ( ! $linked ) {
+							$this->link_venue( $post_id, $venue_post_id );
+							$linked = true;
+						}
+
+						// Clean up the temporary source venue term slug meta.
+						if ( $linked ) {
+							delete_post_meta( $venue_post_id, '_telex_gpm_source_venue_term_slug' );
+						}
+
+						break; // GatherPress events have one venue.
+					}
 				}
 			}
 
-			delete_transient( $transient_key );
+			// Clear the deferred links after processing.
+			$this->deferred_venue_links = array();
 		}
 
 		/**

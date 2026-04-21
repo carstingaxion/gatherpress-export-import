@@ -61,16 +61,30 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 		}
 
 		/**
+		 * Generates a venue term slug for the _gatherpress_venue taxonomy.
+		 *
+		 * Replicates GatherPress's own `get_venue_term_slug()` method, which
+		 * generates the shadow taxonomy term slug by prefixing the venue post
+		 * slug with an underscore.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param string $post_name Post name (slug) of the venue post.
+		 * @return string The generated term slug (e.g., '_my-venue-slug').
+		 */
+		protected function get_venue_term_slug( string $post_name ): string {
+			return sprintf( '_%s', $post_name );
+		}
+
+		/**
 		 * Links a venue to an event using the _gatherpress_venue shadow taxonomy.
 		 *
 		 * GatherPress creates `gatherpress_venue` posts which are automatically
 		 * shadowed into a hidden `_gatherpress_venue` taxonomy. Events reference
-		 * venues by assigning the corresponding shadow taxonomy term. This method
-		 * looks up the shadow term for the given venue post and assigns it to
-		 * the event post via `wp_set_object_terms()`.
-		 *
-		 * Falls back to `Event::save_venue()` if available, and ultimately
-		 * to direct taxonomy term assignment using the venue post slug.
+		 * venues by being assigned the corresponding shadow taxonomy term. This
+		 * method generates the expected term slug using the same convention as
+		 * GatherPress (underscore-prefixed post slug) and assigns it to the
+		 * event post via `wp_set_object_terms()`.
 		 *
 		 * @since 0.1.0
 		 *
@@ -79,31 +93,23 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 		 * @return void
 		 */
 		public function link_venue( int $post_id, int $new_venue_id ): void {
-			if ( 'gatherpress_venue' !== get_post_type( $new_venue_id ) ) {
+			$venue_post = get_post( $new_venue_id );
+
+			if ( ! $venue_post || 'gatherpress_venue' !== $venue_post->post_type ) {
 				return;
 			}
 
-			// // Preferred: use GatherPress Event::save_venue() if available.
-			// if ( class_exists( '\GatherPress\Core\Event' ) ) {
-			// 	$event = new \GatherPress\Core\Event( $post_id );
-			// 	if ( method_exists( $event, 'save_venue' ) ) {
-			// 		$event->save_venue( $new_venue_id );
-			// 		return;
-			// 	}
-			// }
+			if ( ! taxonomy_exists( '_gatherpress_venue' ) ) {
+				return;
+			}
 
-			// Fallback: assign the _gatherpress_venue shadow taxonomy term directly.
-			// GatherPress shadows each gatherpress_venue post into a hidden
-			// _gatherpress_venue taxonomy term using the venue's post slug.
-			if ( taxonomy_exists( '_gatherpress_venue' ) ) {
-				$venue_post = get_post( $new_venue_id );
-				if ( $venue_post && ! empty( $venue_post->post_name ) ) {
-					$term = get_term_by( 'slug', $venue_post->post_name, '_gatherpress_venue' );
-					if ( $term && ! is_wp_error( $term ) ) {
-						wp_set_object_terms( $post_id, array( $term->term_id ), '_gatherpress_venue', false );
-						return;
-					}
-				}
+			// Generate the expected term slug using the same convention as
+			// GatherPress: underscore-prefixed venue post slug.
+			$term_slug = $this->get_venue_term_slug( $venue_post->post_name );
+			$term      = get_term_by( 'slug', $term_slug, '_gatherpress_venue' );
+
+			if ( $term && ! is_wp_error( $term ) ) {
+				wp_set_object_terms( $post_id, array( $term->term_id ), '_gatherpress_venue', false );
 			}
 		}
 
