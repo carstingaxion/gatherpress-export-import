@@ -59,6 +59,7 @@ if ( ! class_exists( 'Telex_GPM_Importer' ) ) {
 		 */
 		private function __construct() {
 			add_action( 'admin_init', array( $this, 'register_importer' ) );
+			add_action( 'admin_init', array( $this, 'maybe_redirect_to_wp_importer' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
 		}
 
@@ -122,43 +123,47 @@ if ( ! class_exists( 'Telex_GPM_Importer' ) ) {
 		}
 
 		/**
+		 * Redirects to the WordPress Importer early, before headers are sent.
+		 *
+		 * Hooked to `admin_init` to intercept the step=1 request before
+		 * any output has been generated. This avoids the "headers already
+		 * sent" problem that occurs when `wp_safe_redirect()` is called
+		 * from within the importer's `dispatch()` callback, which runs
+		 * after WordPress has already started rendering the admin page.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function maybe_redirect_to_wp_importer(): void {
+			if ( ! isset( $_GET['import'] ) || 'gatherpress-migration' !== $_GET['import'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				return;
+			}
+
+			$step = isset( $_GET['step'] ) ? absint( $_GET['step'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+			if ( 1 !== $step ) {
+				return;
+			}
+
+			$url = admin_url( 'admin.php?import=wordpress' );
+			wp_safe_redirect( $url );
+			exit;
+		}
+
+		/**
 		 * Dispatches the importer screen based on the current step.
 		 *
 		 * Step 0 (default): Renders the instructions and prerequisites screen.
-		 * Step 1: Redirects to the standard WordPress Importer.
+		 * Step 1 is handled earlier via `maybe_redirect_to_wp_importer()`
+		 * on the `admin_init` hook, before any output is sent.
 		 *
 		 * @since 0.1.0
 		 *
 		 * @return void
 		 */
 		public function dispatch(): void {
-			$step = isset( $_GET['step'] ) ? absint( $_GET['step'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-			switch ( $step ) {
-				case 1:
-					$this->redirect_to_wp_importer();
-					break;
-
-				default:
-					$this->render_instructions();
-					break;
-			}
-		}
-
-		/**
-		 * Redirects to the WordPress Importer upload screen.
-		 *
-		 * Uses `wp_safe_redirect()` to send the user to the standard
-		 * WordPress Importer, then exits to prevent further output.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @return void
-		 */
-		private function redirect_to_wp_importer(): void {
-			$url = admin_url( 'admin.php?import=wordpress' );
-			wp_safe_redirect( $url );
-			exit;
+			$this->render_instructions();
 		}
 
 		/**
