@@ -183,7 +183,6 @@ GatherPress treats each event occurrence as a separate post. If your source plug
 ### 0.1.0
 
 - Initial release with import interception for six major event plugins.
-- Server-side rendered migration guide block.
 - Custom importer screen with prerequisite checks and step-by-step instructions.
 - Playground blueprints for all supported source plugins with demo data.
 

@@ -37,17 +37,3 @@ require_once __DIR__ . '/class-telex-gatherpress-migration.php';
 // Boot the plugin.
 Telex_GatherPress_Migration::get_instance();
 Telex_GPM_Importer::get_instance();
-
-/**
- * Registers the block using the metadata loaded from the `block.json` file.
- *
- * @since 0.1.0
- *
- * @return void
- */
-if ( ! function_exists( 'telex_gatherpress_migration_block_init' ) ) {
-	function telex_gatherpress_migration_block_init(): void {
-		register_block_type( __DIR__ . '/build/' );
-	}
-}
-add_action( 'init', 'telex_gatherpress_migration_block_init' );
