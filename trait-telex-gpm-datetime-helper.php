@@ -83,14 +83,14 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 				return;
 			}
 
-			// Preferred: use GatherPress Event::save_venue() if available.
-			if ( class_exists( '\GatherPress\Core\Event' ) ) {
-				$event = new \GatherPress\Core\Event( $post_id );
-				if ( method_exists( $event, 'save_venue' ) ) {
-					$event->save_venue( $new_venue_id );
-					return;
-				}
-			}
+			// // Preferred: use GatherPress Event::save_venue() if available.
+			// if ( class_exists( '\GatherPress\Core\Event' ) ) {
+			// 	$event = new \GatherPress\Core\Event( $post_id );
+			// 	if ( method_exists( $event, 'save_venue' ) ) {
+			// 		$event->save_venue( $new_venue_id );
+			// 		return;
+			// 	}
+			// }
 
 			// Fallback: assign the _gatherpress_venue shadow taxonomy term directly.
 			// GatherPress shadows each gatherpress_venue post into a hidden
