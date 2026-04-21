@@ -1,0 +1,36 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "The Events Calendar — Demo Export",
+		"description": "Demo site with The Events Calendar data ready to export for GatherPress migration testing.",
+		"author": "WordPress Telex"
+	},
+	"preferredVersions": {
+		"php": "8.0",
+		"wp": "latest"
+	},
+	"features": {
+		"networking": true
+	},
+	"plugins": [
+		"the-events-calendar"
+	],
+	"steps": [
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "TEC Demo for GatherPress Migration"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php\nrequire_once 'wordpress/wp-load.php';\n\n// Create event categories.\nif ( ! term_exists( 'Conference', 'tribe_events_cat' ) ) {\n\twp_insert_term( 'Conference', 'tribe_events_cat', array( 'slug' => 'conference' ) );\n}\nif ( ! term_exists( 'Workshop', 'tribe_events_cat' ) ) {\n\twp_insert_term( 'Workshop', 'tribe_events_cat', array( 'slug' => 'workshop' ) );\n}\nif ( ! term_exists( 'Meetup', 'tribe_events_cat' ) ) {\n\twp_insert_term( 'Meetup', 'tribe_events_cat', array( 'slug' => 'meetup' ) );\n}\n\n// Create event tags.\nwp_insert_term( 'networking', 'post_tag' );\nwp_insert_term( 'tech', 'post_tag' );\nwp_insert_term( 'community', 'post_tag' );\n\n// Create venues.\n$venue1 = wp_insert_post( array(\n\t'post_title'  => 'Downtown Convention Center',\n\t'post_type'   => 'tribe_venue',\n\t'post_status' => 'publish',\n) );\nif ( $venue1 ) {\n\tupdate_post_meta( $venue1, '_VenueAddress', '123 Main Street' );\n\tupdate_post_meta( $venue1, '_VenueCity', 'Portland' );\n\tupdate_post_meta( $venue1, '_VenueState', 'OR' );\n\tupdate_post_meta( $venue1, '_VenueZip', '97201' );\n\tupdate_post_meta( $venue1, '_VenueCountry', 'United States' );\n}\n\n$venue2 = wp_insert_post( array(\n\t'post_title'  => 'Riverside Community Hall',\n\t'post_type'   => 'tribe_venue',\n\t'post_status' => 'publish',\n) );\nif ( $venue2 ) {\n\tupdate_post_meta( $venue2, '_VenueAddress', '456 River Road' );\n\tupdate_post_meta( $venue2, '_VenueCity', 'Austin' );\n\tupdate_post_meta( $venue2, '_VenueState', 'TX' );\n\tupdate_post_meta( $venue2, '_VenueZip', '73301' );\n\tupdate_post_meta( $venue2, '_VenueCountry', 'United States' );\n}\n\n$venue3 = wp_insert_post( array(\n\t'post_title'  => 'Innovation Hub Berlin',\n\t'post_type'   => 'tribe_venue',\n\t'post_status' => 'publish',\n) );\nif ( $venue3 ) {\n\tupdate_post_meta( $venue3, '_VenueAddress', 'Alexanderplatz 1' );\n\tupdate_post_meta( $venue3, '_VenueCity', 'Berlin' );\n\tupdate_post_meta( $venue3, '_VenueCountry', 'Germany' );\n}\n\n// Create events.\n$event1 = wp_insert_post( array(\n\t'post_title'   => 'Annual WordPress Summit 2025',\n\t'post_content' => 'Join us for the biggest WordPress event of the year featuring talks, workshops, and networking opportunities.',\n\t'post_type'    => 'tribe_events',\n\t'post_status'  => 'publish',\n) );\nif ( $event1 ) {\n\tupdate_post_meta( $event1, '_EventStartDate', '2025-09-15 09:00:00' );\n\tupdate_post_meta( $event1, '_EventEndDate', '2025-09-15 17:00:00' );\n\tupdate_post_meta( $event1, '_EventTimezone', 'America/Los_Angeles' );\n\tupdate_post_meta( $event1, '_EventVenueID', $venue1 );\n\twp_set_object_terms( $event1, array( 'conference' ), 'tribe_events_cat' );\n\twp_set_object_terms( $event1, array( 'tech', 'networking' ), 'post_tag' );\n}\n\n$event2 = wp_insert_post( array(\n\t'post_title'   => 'Block Editor Deep Dive Workshop',\n\t'post_content' => 'A hands-on workshop exploring advanced Gutenberg block development techniques and full site editing.',\n\t'post_type'    => 'tribe_events',\n\t'post_status'  => 'publish',\n) );\nif ( $event2 ) {\n\tupdate_post_meta( $event2, '_EventStartDate', '2025-10-03 14:00:00' );\n\tupdate_post_meta( $event2, '_EventEndDate', '2025-10-03 18:00:00' );\n\tupdate_post_meta( $event2, '_EventTimezone', 'America/Chicago' );\n\tupdate_post_meta( $event2, '_EventVenueID', $venue2 );\n\twp_set_object_terms( $event2, array( 'workshop' ), 'tribe_events_cat' );\n\twp_set_object_terms( $event2, array( 'tech' ), 'post_tag' );\n}\n\n$event3 = wp_insert_post( array(\n\t'post_title'   => 'Community Contributor Day',\n\t'post_content' => 'A full day dedicated to contributing to WordPress core, plugins, themes, and documentation.',\n\t'post_type'    => 'tribe_events',\n\t'post_status'  => 'publish',\n) );\nif ( $event3 ) {\n\tupdate_post_meta( $event3, '_EventStartDate', '2025-11-20 10:00:00' );\n\tupdate_post_meta( $event3, '_EventEndDate', '2025-11-20 16:00:00' );\n\tupdate_post_meta( $event3, '_EventTimezone', 'Europe/Berlin' );\n\tupdate_post_meta( $event3, '_EventVenueID', $venue3 );\n\twp_set_object_terms( $event3, array( 'meetup' ), 'tribe_events_cat' );\n\twp_set_object_terms( $event3, array( 'community' ), 'post_tag' );\n}\n\n$event4 = wp_insert_post( array(\n\t'post_title'   => 'Evening Networking Mixer',\n\t'post_content' => 'Casual evening meetup for WordPress professionals and enthusiasts. Appetizers and drinks provided.',\n\t'post_type'    => 'tribe_events',\n\t'post_status'  => 'publish',\n) );\nif ( $event4 ) {\n\tupdate_post_meta( $event4, '_EventStartDate', '2025-09-15 19:00:00' );\n\tupdate_post_meta( $event4, '_EventEndDate', '2025-09-15 22:00:00' );\n\tupdate_post_meta( $event4, '_EventTimezone', 'America/Los_Angeles' );\n\tupdate_post_meta( $event4, '_EventVenueID', $venue1 );\n\twp_set_object_terms( $event4, array( 'meetup' ), 'tribe_events_cat' );\n\twp_set_object_terms( $event4, array( 'networking', 'community' ), 'post_tag' );\n}\n\nflush_rewrite_rules();\n"
+		}
+	],
+	"landingPage": "/wp-admin/export.php"
+}

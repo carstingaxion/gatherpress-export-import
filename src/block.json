@@ -1,0 +1,23 @@
+
+  {
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "telex/block-telex-gatherpress-migration",
+	"version": "0.1.0",
+	"title": "GatherPress Event Migration Guide",
+	"category": "widgets",
+	"icon": "migrate",
+	"description": "Displays a comprehensive step-by-step guide for migrating event data from third-party event plugins into GatherPress.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"multiple": false
+	},
+	"textdomain": "telex-gatherpress-migration-block-wp",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"render": "file:./render.php"
+}
+  
