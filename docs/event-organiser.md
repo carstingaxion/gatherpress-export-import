@@ -2,6 +2,8 @@
 
 This document explains how the GatherPress Event Migration plugin handles data from **Event Organiser** by Stephen Harris, and why a **two-pass import** is required.
 
+> **Architecture note:** The two-pass venue import logic is implemented as a shared trait (`Telex_GPM_Taxonomy_Venue_Handler`) and interface (`Telex_GPM_Taxonomy_Venue_Adapter`). Any adapter whose source plugin stores venues as taxonomy terms can use this same mechanism by implementing the interface and including the trait. The Event Organiser adapter was the first to use it, but the architecture is designed to be reusable. See [Two-Pass Architecture](#two-pass-architecture) at the end of this document.
+
 ---
 
 ## Why Two Passes?
@@ -171,3 +173,57 @@ The Event Organiser adapter registers the following hooks via `setup_import_hook
 | `import_end` | 10 | `process_deferred_venue_links()` | Links events to venues and cleans up skip posts |
 
 All priorities are chosen to run **before** the main migration class's hooks (which operate at priority 5 and above), ensuring adapter-specific logic takes precedence.
+
+---
+
+## Two-Pass Architecture
+
+The two-pass import logic is not specific to Event Organiser — it lives in shared components that any adapter can reuse:
+
+### `Telex_GPM_Taxonomy_Venue_Adapter` (interface)
+
+Defines the contract for adapters that store venues as taxonomy terms:
+
+| Method | Purpose |
+|---|---|
+| `get_venue_taxonomy_slug(): string` | Returns the source venue taxonomy slug (e.g., `event-venue`) |
+| `get_skippable_event_post_types(): string[]` | Returns the source event post type slugs to skip during Pass 1 |
+
+### `Telex_GPM_Taxonomy_Venue_Handler` (trait)
+
+Provides the full two-pass implementation:
+
+- Skip post type registration and cleanup
+- Pass detection (early and standard)
+- Event skipping during Pass 1
+- Venue post creation from taxonomy terms
+- Deferred venue linking at `import_end`
+- All WordPress hook registration via `setup_taxonomy_venue_hooks()`
+
+### Adding two-pass support to a new adapter
+
+To add two-pass taxonomy venue support to another adapter:
+
+```php
+class My_New_Adapter implements Telex_GPM_Source_Adapter, Telex_GPM_Hookable_Adapter, Telex_GPM_Taxonomy_Venue_Adapter {
+
+    use Telex_GPM_Datetime_Helper;
+    use Telex_GPM_Taxonomy_Venue_Handler;
+
+    public function get_venue_taxonomy_slug(): string {
+        return 'my-venue-taxonomy';
+    }
+
+    public function get_skippable_event_post_types(): array {
+        return array( 'my_event' );
+    }
+
+    public function setup_import_hooks(): void {
+        $this->setup_taxonomy_venue_hooks();
+    }
+
+    // ... rest of the Telex_GPM_Source_Adapter methods ...
+}
+```
+
+The adapter only needs to declare its venue taxonomy slug and skippable post types — all two-pass logic is handled automatically by the trait.

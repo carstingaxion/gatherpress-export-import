@@ -22,7 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/class-telex-gpm-importer.php';
 require_once __DIR__ . '/interface-telex-gpm-source-adapter.php';
 require_once __DIR__ . '/interface-telex-gpm-hookable-adapter.php';
+require_once __DIR__ . '/interface-telex-gpm-taxonomy-venue-adapter.php';
 require_once __DIR__ . '/trait-telex-gpm-datetime-helper.php';
+require_once __DIR__ . '/trait-telex-gpm-taxonomy-venue-handler.php';
 
 require_once __DIR__ . '/class-telex-gpm-tec-adapter.php';
 require_once __DIR__ . '/class-telex-gpm-events-manager-adapter.php';
