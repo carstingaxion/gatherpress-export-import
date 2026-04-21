@@ -186,7 +186,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			add_filter( 'wp_import_terms', array( $this, 'rewrite_import_terms' ), 5 );
 			add_filter( 'add_post_metadata', array( $this, 'stash_meta_on_import' ), 5, 5 );
 			add_filter( 'gatherpress_pseudopostmetas', array( $this, 'register_pseudopostmetas' ) );
-			add_action( 'wp_import_post_meta', array( $this, 'process_stashed_meta' ), 20 );
+			add_filter( 'wp_import_post_meta', array( $this, 'filter_post_meta_on_import' ), 20, 3 );
 			add_action( 'save_post_gatherpress_event', array( $this, 'process_stashed_meta' ), 99 );
 		}
 
@@ -465,15 +465,35 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		}
 
 		/**
+		 * Filters post meta during WordPress import and triggers stashed meta processing.
+		 *
+		 * Hooked to `wp_import_post_meta` at priority 20. The filter receives
+		 * the full array of post meta, the post ID, and the post data array.
+		 * This method delegates to `process_stashed_meta()` for datetime
+		 * conversion and venue linking, then returns the meta array unmodified.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param array $postmeta Array of post meta arrays to import.
+		 * @param int   $post_id  The post ID being imported.
+		 * @param array $post     The full post data array from the importer.
+		 * @return array The unmodified post meta array.
+		 */
+		public function filter_post_meta_on_import( array $postmeta, int $post_id, array $post ): array {
+			$this->process_stashed_meta( $post_id );
+			return $postmeta;
+		}
+
+		/**
 		 * Processes stashed meta after a gatherpress_event is fully imported.
 		 *
 		 * Finds the appropriate adapter via `can_handle()` and delegates
 		 * datetime conversion. Also resolves venue ID mapping and delegates
 		 * venue linking to the appropriate adapter.
 		 *
-		 * Hooked to both `wp_import_post_meta` (priority 20) and
-		 * `save_post_gatherpress_event` (priority 99) to ensure processing
-		 * occurs regardless of import method.
+		 * Called from `filter_post_meta_on_import()` during the WordPress
+		 * import process and from `save_post_gatherpress_event` (priority 99)
+		 * as a fallback to ensure processing occurs regardless of import method.
 		 *
 		 * @since 0.1.0
 		 *
