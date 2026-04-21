@@ -22,7 +22,6 @@
 		"@wordpress/scripts": "^30.15.0"
 	},
 	"scripts": {
-		"build": "wp-scripts build --webpack-copy-php",
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
@@ -37,7 +36,6 @@
 		"lint:phpstan": "vendor/bin/phpstan analyze -vv --memory-limit=2G",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
-		"plugin-zip": "wp-scripts plugin-zip",
-		"start": "wp-scripts start --blocks-manifest"
+		"plugin-zip": "wp-scripts plugin-zip"
 	}
 }

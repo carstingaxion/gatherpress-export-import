@@ -82,6 +82,18 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		private ?array $taxonomy_map = null;
 
 		/**
+		 * Tracks post IDs that have already been processed for datetime conversion.
+		 *
+		 * Prevents duplicate processing when multiple hooks fire for the
+		 * same post during a single import run.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var array<int, bool>
+		 */
+		private array $processed_posts = array();
+
+		/**
 		 * Gets the singleton instance.
 		 *
 		 * @since 0.1.0
@@ -118,7 +130,8 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * Registers the built-in source adapters.
 		 *
 		 * Instantiates and registers each adapter for the supported
-		 * third-party event plugins.
+		 * third-party event plugins. Adapters that need additional
+		 * import hooks set them up internally via their own methods.
 		 *
 		 * @since 0.1.0
 		 *
@@ -136,8 +149,10 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		/**
 		 * Registers a source adapter.
 		 *
-		 * Adds the adapter to the internal registry and invalidates
-		 * the cached type maps so they will be rebuilt on next access.
+		 * Adds the adapter to the internal registry, invalidates
+		 * the cached type maps so they will be rebuilt on next access,
+		 * and calls `setup_import_hooks()` on the adapter if it
+		 * implements the hookable adapter interface.
 		 *
 		 * @since 0.1.0
 		 *
@@ -152,6 +167,11 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			$this->venue_type_map  = null;
 			$this->stash_meta_keys = null;
 			$this->taxonomy_map    = null;
+
+			// Allow adapters to register their own import hooks.
+			if ( $adapter instanceof Telex_GPM_Hookable_Adapter ) {
+				$adapter->setup_import_hooks();
+			}
 		}
 
 		/**
@@ -170,11 +190,12 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * Hooks into the WordPress import process at strategic points:
 		 * - `wp_import_post_data_raw` at priority 5 for post type rewriting
-		 * - `wp_import_post_data_raw` at priority 4 for taxonomy rewriting in post terms
+		 * - `wp_import_post_terms` at priority 5 for taxonomy rewriting in post terms
+		 * - `pre_insert_term` at priority 5 for intercepting taxonomy term creation
 		 * - `add_post_metadata` at priority 5 for meta stashing
 		 * - `gatherpress_pseudopostmetas` for pseudopostmeta registration
-		 * - `wp_import_post_meta` at priority 20 for post-import processing
-		 * - `save_post_gatherpress_event` at priority 99 as a fallback trigger
+		 * - `wp_import_post_meta` at priority 20 for meta counting and deferred processing
+		 * - `import_end` for processing all remaining stashed meta after the entire import
 		 *
 		 * @since 0.1.0
 		 *
@@ -183,11 +204,11 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		private function setup_hooks(): void {
 			add_filter( 'wp_import_post_data_raw', array( $this, 'rewrite_post_type_on_import' ), 5 );
 			add_filter( 'wp_import_post_terms', array( $this, 'rewrite_post_terms_taxonomy' ), 5 );
-			add_filter( 'wp_import_terms', array( $this, 'rewrite_import_terms' ), 5 );
+			add_filter( 'pre_insert_term', array( $this, 'intercept_term_creation' ), 5, 2 );
 			add_filter( 'add_post_metadata', array( $this, 'stash_meta_on_import' ), 5, 5 );
 			add_filter( 'gatherpress_pseudopostmetas', array( $this, 'register_pseudopostmetas' ) );
 			add_filter( 'wp_import_post_meta', array( $this, 'filter_post_meta_on_import' ), 20, 3 );
-			add_action( 'save_post_gatherpress_event', array( $this, 'process_stashed_meta' ), 99 );
+			add_action( 'import_end', array( $this, 'process_all_remaining_stashes' ) );
 		}
 
 		/**
@@ -309,31 +330,57 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		}
 
 		/**
-		 * Rewrites taxonomy slugs in term data during the WordPress import.
+		 * Intercepts term creation during the WordPress import.
 		 *
-		 * Hooked to `wp_import_terms` at priority 5. This filter receives the
-		 * full array of terms being imported and rewrites the taxonomy slug
-		 * for each term that matches the taxonomy map.
+		 * Hooked to `pre_insert_term` at priority 5. The WordPress Importer
+		 * calls `wp_insert_term()` for each term in the WXR file. This filter
+		 * fires before the term is inserted into the database, allowing us to:
+		 *
+		 * 1. Rewrite taxonomy slugs — if the taxonomy is in our taxonomy map,
+		 *    the term is silently blocked here (by returning a WP_Error) and
+		 *    re-inserted under the correct GatherPress taxonomy.
+		 * 2. Delegate to adapters — for special cases like Event Organiser's
+		 *    `event-venue` taxonomy, the adapter's own `pre_insert_term` hook
+		 *    handles the term at an earlier priority.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param array $terms Array of term data arrays from the WXR file.
-		 * @return array Modified term data with rewritten taxonomy slugs.
+		 * @param string $term     The term name being inserted.
+		 * @param string $taxonomy The taxonomy slug for the term.
+		 * @return string|\WP_Error The term name to proceed, or WP_Error to block insertion.
 		 */
-		public function rewrite_import_terms( array $terms ): array {
+		public function intercept_term_creation( $term, string $taxonomy ) {
 			$tax_map = $this->get_taxonomy_map();
 
-			if ( empty( $tax_map ) ) {
-				return $terms;
+			if ( empty( $tax_map ) || ! isset( $tax_map[ $taxonomy ] ) ) {
+				return $term;
 			}
 
-			foreach ( $terms as &$term ) {
-				if ( isset( $term['term_taxonomy'] ) && isset( $tax_map[ $term['term_taxonomy'] ] ) ) {
-					$term['term_taxonomy'] = $tax_map[ $term['term_taxonomy'] ];
-				}
+			$target_taxonomy = $tax_map[ $taxonomy ];
+
+			// Check if the target taxonomy exists.
+			if ( ! taxonomy_exists( $target_taxonomy ) ) {
+				return $term;
 			}
 
-			return $terms;
+			// Check if the term already exists in the target taxonomy.
+			$existing = term_exists( $term, $target_taxonomy );
+			if ( ! $existing ) {
+				wp_insert_term( $term, $target_taxonomy );
+			}
+
+			// Return a WP_Error to prevent insertion into the original
+			// (non-existent) taxonomy. The importer logs this as a skip.
+			return new \WP_Error(
+				'telex_gpm_taxonomy_rewritten',
+				sprintf(
+					/* translators: 1: term name, 2: source taxonomy, 3: target taxonomy */
+					__( 'Term "%1$s" rewritten from "%2$s" to "%3$s".', 'telex-gatherpress-migration' ),
+					$term,
+					$taxonomy,
+					$target_taxonomy
+				)
+			);
 		}
 
 		/**
@@ -342,7 +389,11 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * Hooked to `wp_import_post_terms` at priority 5. The WordPress Importer
 		 * calls this filter with the array of terms assigned to each post being
 		 * imported. This method rewrites the `domain` (taxonomy) field to match
-		 * the GatherPress equivalent.
+		 * the GatherPress equivalent based on the merged taxonomy map.
+		 *
+		 * Adapter-specific taxonomy handling (such as Event Organiser's
+		 * `event-venue` two-pass strategy) is handled by the adapters
+		 * themselves via their own hooks registered at earlier priorities.
 		 *
 		 * @since 0.1.0
 		 *
@@ -428,6 +479,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			}
 
 			$post_type = get_post_type( $object_id );
+
 			if ( 'gatherpress_event' !== $post_type ) {
 				return $check;
 			}
@@ -465,12 +517,17 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		}
 
 		/**
-		 * Filters post meta during WordPress import and triggers stashed meta processing.
+		 * Filters post meta during WordPress import and records the expected meta count.
 		 *
-		 * Hooked to `wp_import_post_meta` at priority 20. The filter receives
-		 * the full array of post meta, the post ID, and the post data array.
-		 * This method delegates to `process_stashed_meta()` for datetime
-		 * conversion and venue linking, then returns the meta array unmodified.
+		 * Hooked to `wp_import_post_meta` at priority 20. The WordPress Importer
+		 * calls this filter with the full array of post meta BEFORE calling
+		 * `add_post_meta()` for each individual key. We use this to record
+		 * the post ID so `import_end` can process it.
+		 *
+		 * Note: We do NOT process the stash here because the individual
+		 * `add_post_meta()` calls (which trigger `stash_meta_on_import()`)
+		 * happen AFTER this filter returns. Processing is deferred to
+		 * `import_end` via `process_all_remaining_stashes()`.
 		 *
 		 * @since 0.1.0
 		 *
@@ -480,20 +537,59 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * @return array The unmodified post meta array.
 		 */
 		public function filter_post_meta_on_import( array $postmeta, int $post_id, array $post ): array {
-			$this->process_stashed_meta( $post_id );
+			$post_type = get_post_type( $post_id );
+
+			if ( 'gatherpress_event' !== $post_type ) {
+				return $postmeta;
+			}
+
+			// Record this post ID so import_end knows to process it.
+			// We use a transient list to track all event post IDs that need processing.
+			$pending = get_transient( 'telex_gpm_pending_event_ids' );
+			if ( ! is_array( $pending ) ) {
+				$pending = array();
+			}
+			$pending[] = $post_id;
+			set_transient( 'telex_gpm_pending_event_ids', array_unique( $pending ), HOUR_IN_SECONDS );
+
 			return $postmeta;
 		}
 
 		/**
-		 * Processes stashed meta after a gatherpress_event is fully imported.
+		 * Processes all remaining stashed meta after the entire import completes.
+		 *
+		 * Hooked to `import_end`. At this point, ALL posts have been created
+		 * and ALL meta keys have been processed via `add_post_meta()` (which
+		 * triggers our `stash_meta_on_import()` to populate the transient stashes).
+		 *
+		 * This method iterates through all pending event post IDs and runs
+		 * datetime conversion and venue linking for each.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function process_all_remaining_stashes(): void {
+			$pending = get_transient( 'telex_gpm_pending_event_ids' );
+
+			if ( ! is_array( $pending ) || empty( $pending ) ) {
+				return;
+			}
+
+			foreach ( $pending as $post_id ) {
+				$this->process_stashed_meta( (int) $post_id );
+			}
+
+			// Clean up the pending list.
+			delete_transient( 'telex_gpm_pending_event_ids' );
+		}
+
+		/**
+		 * Processes stashed meta for a single gatherpress_event post.
 		 *
 		 * Finds the appropriate adapter via `can_handle()` and delegates
 		 * datetime conversion. Also resolves venue ID mapping and delegates
 		 * venue linking to the appropriate adapter.
-		 *
-		 * Called from `filter_post_meta_on_import()` during the WordPress
-		 * import process and from `save_post_gatherpress_event` (priority 99)
-		 * as a fallback to ensure processing occurs regardless of import method.
 		 *
 		 * @since 0.1.0
 		 *
@@ -501,16 +597,26 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * @return void
 		 */
 		public function process_stashed_meta( int $post_id ): void {
+			// Prevent duplicate processing.
+			if ( isset( $this->processed_posts[ $post_id ] ) ) {
+				return;
+			}
+
 			$post_type = get_post_type( $post_id );
+
 			if ( 'gatherpress_event' !== $post_type ) {
 				return;
 			}
 
 			$transient_key = 'telex_gpm_meta_stash_' . $post_id;
 			$stash         = get_transient( $transient_key );
+
 			if ( ! is_array( $stash ) || empty( $stash ) ) {
 				return;
 			}
+
+			// Mark as processed to prevent duplicate calls.
+			$this->processed_posts[ $post_id ] = true;
 
 			// Find the adapter that can handle this data and convert datetimes.
 			foreach ( $this->adapters as $adapter ) {

@@ -1,6 +1,12 @@
-# Gatherpress | Export & Import
+# GatherPress Event Migration
 
 **Intercepts WordPress XML imports from third-party event plugins and transforms them into GatherPress data automatically.**
+
+![License: GPLv2+](https://img.shields.io/badge/license-GPLv2%2B-blue.svg)
+![Tested up to: 6.8](https://img.shields.io/badge/tested%20up%20to-6.8-brightgreen.svg)
+![Version: 0.1.0](https://img.shields.io/badge/version-0.1.0-orange.svg)
+
+---
 
 ## Overview
 
@@ -130,7 +136,7 @@ Each lands on **Tools > Export** so you can export demo data and test the migrat
 - **Venue deduplication** — Importing the same file twice may create duplicates. Always import into a clean environment or verify existing data.
 - **Shortcodes in content** — Source plugin shortcodes will appear as raw text. Review imported event content and clean up as needed.
 - **Shared post type slugs** — Events Manager and Event Organiser both use `event`. The plugin distinguishes them by meta keys. Import data from only one source at a time.
-- **Taxonomy-based venues** — Event Organiser stores venues as taxonomy terms (`event-venue`), not posts. These are imported as terms but not automatically converted to `gatherpress_venue` posts. You'll need to manually create `gatherpress_venue` posts for these venues so GatherPress can create the proper `_gatherpress_venue` shadow taxonomy terms.
+- **Taxonomy-based venues (two-pass import)** — Plugins that store venues as taxonomy terms (e.g., Event Organiser's `event-venue`) require a two-pass import: the first import creates `gatherpress_venue` posts from venue terms and skips events; the second import creates events and links them to venues. This logic is implemented as a shared trait (`Telex_GPM_Taxonomy_Venue_Handler`) and interface (`Telex_GPM_Taxonomy_Venue_Adapter`) that any adapter can reuse. Simply import the same WXR file twice. See [`docs/event-organiser.md`](docs/event-organiser.md) for a detailed explanation of the two-pass strategy and how to add support for additional taxonomy-venue plugins.
 
 ---
 
