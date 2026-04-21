@@ -118,7 +118,8 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * Registers the built-in source adapters.
 		 *
 		 * Instantiates and registers each adapter for the supported
-		 * third-party event plugins.
+		 * third-party event plugins. Adapters that need additional
+		 * import hooks set them up internally via their own methods.
 		 *
 		 * @since 0.1.0
 		 *
@@ -136,8 +137,10 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		/**
 		 * Registers a source adapter.
 		 *
-		 * Adds the adapter to the internal registry and invalidates
-		 * the cached type maps so they will be rebuilt on next access.
+		 * Adds the adapter to the internal registry, invalidates
+		 * the cached type maps so they will be rebuilt on next access,
+		 * and calls `setup_import_hooks()` on the adapter if it
+		 * implements the hookable adapter interface.
 		 *
 		 * @since 0.1.0
 		 *
@@ -152,6 +155,11 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			$this->venue_type_map  = null;
 			$this->stash_meta_keys = null;
 			$this->taxonomy_map    = null;
+
+			// Allow adapters to register their own import hooks.
+			if ( $adapter instanceof Telex_GPM_Hookable_Adapter ) {
+				$adapter->setup_import_hooks();
+			}
 		}
 
 		/**
@@ -170,7 +178,8 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * Hooks into the WordPress import process at strategic points:
 		 * - `wp_import_post_data_raw` at priority 5 for post type rewriting
-		 * - `wp_import_post_data_raw` at priority 4 for taxonomy rewriting in post terms
+		 * - `wp_import_post_terms` at priority 5 for taxonomy rewriting in post terms
+		 * - `wp_import_terms` at priority 5 for taxonomy rewriting in term data
 		 * - `add_post_metadata` at priority 5 for meta stashing
 		 * - `gatherpress_pseudopostmetas` for pseudopostmeta registration
 		 * - `wp_import_post_meta` at priority 20 for post-import processing
@@ -342,7 +351,11 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * Hooked to `wp_import_post_terms` at priority 5. The WordPress Importer
 		 * calls this filter with the array of terms assigned to each post being
 		 * imported. This method rewrites the `domain` (taxonomy) field to match
-		 * the GatherPress equivalent.
+		 * the GatherPress equivalent based on the merged taxonomy map.
+		 *
+		 * Adapter-specific taxonomy handling (such as Event Organiser's
+		 * `event-venue` two-pass strategy) is handled by the adapters
+		 * themselves via their own hooks registered at earlier priorities.
 		 *
 		 * @since 0.1.0
 		 *

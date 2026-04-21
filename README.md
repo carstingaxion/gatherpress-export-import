@@ -130,7 +130,7 @@ Each lands on **Tools > Export** so you can export demo data and test the migrat
 - **Venue deduplication** — Importing the same file twice may create duplicates. Always import into a clean environment or verify existing data.
 - **Shortcodes in content** — Source plugin shortcodes will appear as raw text. Review imported event content and clean up as needed.
 - **Shared post type slugs** — Events Manager and Event Organiser both use `event`. The plugin distinguishes them by meta keys. Import data from only one source at a time.
-- **Taxonomy-based venues** — Event Organiser stores venues as taxonomy terms (`event-venue`), not posts. These are imported as terms but not automatically converted to `gatherpress_venue` posts. You'll need to manually create `gatherpress_venue` posts for these venues so GatherPress can create the proper `_gatherpress_venue` shadow taxonomy terms.
+- **Taxonomy-based venues (two-pass import)** — Event Organiser stores venues as taxonomy terms (`event-venue`), not posts. The plugin handles this automatically with a two-pass import strategy: on the first import of the WXR file, venue terms are converted to `gatherpress_venue` posts and events are skipped. On the second import of the same file, events are imported and linked to the previously created venues via the `_gatherpress_venue` shadow taxonomy. Simply import the same WXR file twice.
 
 ---
 

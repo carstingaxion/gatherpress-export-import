@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Load architecture files.
 require_once __DIR__ . '/class-telex-gpm-importer.php';
 require_once __DIR__ . '/interface-telex-gpm-source-adapter.php';
+require_once __DIR__ . '/interface-telex-gpm-hookable-adapter.php';
 require_once __DIR__ . '/trait-telex-gpm-datetime-helper.php';
 
 require_once __DIR__ . '/class-telex-gpm-tec-adapter.php';

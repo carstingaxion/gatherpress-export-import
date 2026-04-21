@@ -272,6 +272,9 @@ if ( ! class_exists( 'Telex_GPM_Importer' ) ) {
 					<div class="telex-gpm-importer__alert telex-gpm-importer__alert--info">
 						<p><strong><?php esc_html_e( 'Single-file imports:', 'telex-gatherpress-migration' ); ?></strong> <?php esc_html_e( 'If your WXR file contains both venues and events, ensure venues appear before events in the file. Most export tools list venues first, but verify by opening the XML file — venue entries should come before event entries.', 'telex-gatherpress-migration' ); ?></p>
 					</div>
+					<div class="telex-gpm-importer__alert telex-gpm-importer__alert--info">
+						<p><strong><?php esc_html_e( 'Taxonomy-based venues (Event Organiser):', 'telex-gatherpress-migration' ); ?></strong> <?php esc_html_e( 'Event Organiser stores venues as taxonomy terms, not posts. The plugin uses a two-pass import strategy: import the same WXR file twice. The first import creates gatherpress_venue posts from the venue taxonomy terms (events are skipped). The second import creates the events and links them to the venues created in pass 1.', 'telex-gatherpress-migration' ); ?></p>
+					</div>
 				</div>
 
 				<div class="telex-gpm-importer__card">
@@ -371,8 +374,8 @@ if ( ! class_exists( 'Telex_GPM_Importer' ) ) {
 							<?php esc_html_e( 'GatherPress treats each occurrence as a separate event. Recurrence rules are not converted — each exported occurrence becomes its own GatherPress event.', 'telex-gatherpress-migration' ); ?>
 						</li>
 						<li>
-							<strong><?php esc_html_e( 'Taxonomy-based venues.', 'telex-gatherpress-migration' ); ?></strong>
-							<?php esc_html_e( 'Plugins like Event Organiser store venues as taxonomy terms, not posts. These are imported by the WordPress Importer as terms but are not automatically converted to gatherpress_venue posts. You will need to manually create gatherpress_venue posts for these venues so GatherPress can create the proper _gatherpress_venue shadow taxonomy terms.', 'telex-gatherpress-migration' ); ?>
+							<strong><?php esc_html_e( 'Taxonomy-based venues (two-pass import).', 'telex-gatherpress-migration' ); ?></strong>
+							<?php esc_html_e( 'Plugins like Event Organiser store venues as taxonomy terms, not posts. The plugin handles this automatically with a two-pass import strategy: on the first import, venue terms are converted to gatherpress_venue posts while events are skipped. On the second import of the same file, events are imported and linked to the previously created venues. Simply import the same WXR file twice.', 'telex-gatherpress-migration' ); ?>
 						</li>
 						<li>
 							<strong><?php esc_html_e( 'Duplicate prevention.', 'telex-gatherpress-migration' ); ?></strong>
