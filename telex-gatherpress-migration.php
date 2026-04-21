@@ -5,7 +5,7 @@
  * Version:           0.1.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
- * Author:            WordPress Telex
+ * Author:            Carsten Bach
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       telex-gatherpress-migration
@@ -19,16 +19,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Load architecture files.
+require_once __DIR__ . '/class-telex-gpm-importer.php';
 require_once __DIR__ . '/interface-telex-gpm-source-adapter.php';
 require_once __DIR__ . '/trait-telex-gpm-datetime-helper.php';
+
 require_once __DIR__ . '/class-telex-gpm-tec-adapter.php';
 require_once __DIR__ . '/class-telex-gpm-events-manager-adapter.php';
 require_once __DIR__ . '/class-telex-gpm-mec-adapter.php';
 require_once __DIR__ . '/class-telex-gpm-eventon-adapter.php';
 require_once __DIR__ . '/class-telex-gpm-aioec-adapter.php';
 require_once __DIR__ . '/class-telex-gpm-event-organiser-adapter.php';
+
 require_once __DIR__ . '/class-telex-gatherpress-migration.php';
-require_once __DIR__ . '/class-telex-gpm-importer.php';
+
 
 // Boot the plugin.
 Telex_GatherPress_Migration::get_instance();

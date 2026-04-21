@@ -158,5 +158,21 @@ if ( ! class_exists( 'Telex_GPM_AIOEC_Adapter' ) ) {
 		public function link_venue( int $post_id, int $new_venue_id ): void {
 			// AIOEC does not use a standard venue post type.
 		}
+
+		/**
+		 * Gets the taxonomy mapping for All-in-One Event Calendar.
+		 *
+		 * Maps AIOEC's custom taxonomies to GatherPress equivalents.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			return array(
+				'events_categories' => 'gatherpress_topic',
+				'events_tags'       => 'post_tag',
+			);
+		}
 	}
 }

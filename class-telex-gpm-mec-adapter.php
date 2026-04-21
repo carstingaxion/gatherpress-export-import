@@ -205,6 +205,24 @@ if ( ! class_exists( 'Telex_GPM_MEC_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the taxonomy mapping for Modern Events Calendar.
+		 *
+		 * Maps MEC's custom taxonomies to GatherPress equivalents.
+		 * `mec_category` maps to `gatherpress_topic`, and `mec_label`
+		 * maps to `post_tag` as a reasonable default.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			return array(
+				'mec_category' => 'gatherpress_topic',
+				'mec_label'    => 'post_tag',
+			);
+		}
+
+		/**
 		 * No-op callback for pseudopostmeta registration.
 		 *
 		 * This callback is registered with pseudopostmeta definitions but
