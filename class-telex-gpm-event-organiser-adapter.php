@@ -402,7 +402,9 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 *
 		 * Called at `import_end` to remove the throwaway posts that were
 		 * created by the WordPress Importer during pass 1 when events
-		 * were redirected to the skip post type.
+		 * were redirected to the skip post type. Also removes the
+		 * corresponding entries from the WordPress Importer's
+		 * `processed_posts` map so Pass 2 can re-import them.
 		 *
 		 * @since 0.1.0
 		 *
@@ -423,6 +425,24 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 			}
 
 			foreach ( $skip_posts as $skip_post_id ) {
+				// Remove from the WordPress Importer's processed_posts map
+				// by operating directly on $GLOBALS['wp_import']. The importer
+				// indexes by original (source) post ID, so we find which
+				// source ID mapped to this skip post ID and unset it. This
+				// ensures the importer does not consider these GUIDs as
+				// "already imported" on Pass 2, allowing the same events
+				// to be re-imported as real posts.
+				if (
+					isset( $GLOBALS['wp_import'] )
+					&& ! empty( $GLOBALS['wp_import']->processed_posts )
+					&& is_array( $GLOBALS['wp_import']->processed_posts )
+				) {
+					$source_ids = array_keys( $GLOBALS['wp_import']->processed_posts, $skip_post_id, true );
+					foreach ( $source_ids as $source_id ) {
+						unset( $GLOBALS['wp_import']->processed_posts[ $source_id ] );
+					}
+				}
+
 				wp_delete_post( $skip_post_id, true );
 			}
 		}
@@ -612,13 +632,16 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 				true
 			);
 
-			if ( is_wp_error( $venue_post_id ) || ! $venue_post_id ) {
+			if ( is_wp_error( $venue_post_id ) ) {
+				return 0;
+			}
+
+			if ( ! $venue_post_id ) {
 				return 0;
 			}
 
 			// Store a mapping from the original term slug to the new venue post ID.
-			// This is used as a fallback lookup in process_deferred_venue_links()
-			// if WordPress modifies the post slug during wp_insert_post().
+			// This is used as a fallback lookup during Pass 2 venue linking.
 			update_post_meta( $venue_post_id, '_telex_gpm_source_venue_term_slug', $venue_slug );
 
 			// GatherPress hooks into save_post_gatherpress_venue to
@@ -649,8 +672,7 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 * @return array Filtered term assignments with event-venue terms removed.
 		 */
 		public function filter_event_venue_terms( array $terms ): array {
-			$event_post_id = $this->last_saved_event_id;
-
+			$event_post_id  = $this->last_saved_event_id;
 			$venue_slugs    = array();
 			$filtered_terms = array();
 
@@ -752,21 +774,102 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 
 			$post_type = $post_data['post_type'] ?? '';
 
+			// Only act on Event Organiser events.
+			if ( 'event' !== $post_type ) {
+				return $post_data;
+			}
+
+			// If pass detection hasn't happened yet, attempt early detection
+			// by checking whether ANY gatherpress_venue posts exist that were
+			// created from event-venue terms (they carry the source slug meta).
+			// This prevents the first event from being incorrectly skipped on
+			// Pass 2 when pass detection normally happens later in
+			// filter_event_venue_terms().
+			if ( ! $this->pass_detected ) {
+				$this->detect_pass_early();
+			}
+
 			// In pass 2, let events through.
 			if ( ! $this->is_venue_pass && $this->pass_detected ) {
 				return $post_data;
 			}
 
-			// Only skip Event Organiser events (post_type 'event') during pass 1.
-			if ( 'event' === $post_type ) {
-				// Redirect to the temporary skip post type. This is a registered
-				// (non-public) post type, so the importer won't log an error.
-				// The resulting posts are cleaned up at import_end.
-				$post_data['post_type'] = self::SKIP_POST_TYPE;
-				$this->skip_current_event = true;
-			}
+			// Pass 1: Redirect to the temporary skip post type. This is a
+			// registered (non-public) post type, so the importer won't log
+			// an error. The resulting posts are cleaned up at import_end.
+			$post_data['post_type']   = self::SKIP_POST_TYPE;
+			$this->skip_current_event = true;
 
 			return $post_data;
+		}
+
+		/**
+		 * Attempts early pass detection before any event-venue terms are encountered.
+		 *
+		 * Called from `maybe_flag_events_on_venue_pass()` when the first event post
+		 * is processed and `$this->pass_detected` is still false. Checks whether any
+		 * `gatherpress_venue` posts exist that were created from Event Organiser
+		 * `event-venue` taxonomy terms (identified by the presence of the
+		 * `_telex_gpm_source_venue_term_slug` post meta or by checking for any
+		 * published `gatherpress_venue` post).
+		 *
+		 * This resolves a timing issue: the WordPress Importer processes event posts
+		 * before their taxonomy term assignments, so `filter_event_venue_terms()`
+		 * (which normally triggers pass detection) hasn't run yet when the first
+		 * event is encountered. Without early detection, the first event would
+		 * always be incorrectly skipped on Pass 2.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		private function detect_pass_early(): void {
+			// Check if any gatherpress_venue posts exist that came from
+			// event-venue taxonomy terms (they carry our source slug meta).
+			$venue_from_eo = get_posts(
+				array(
+					'post_type'      => 'gatherpress_venue',
+					'meta_key'       => '_telex_gpm_source_venue_term_slug',
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+				)
+			);
+
+			if ( ! empty( $venue_from_eo ) ) {
+				$this->pass_detected = true;
+				$this->is_venue_pass = false;
+				return;
+			}
+
+			// Fallback: also check for gatherpress_venue posts without the meta,
+			// in case the meta was already cleaned up from a previous successful
+			// Pass 2 linking. We parse the WXR terms from $GLOBALS['wp_import']
+			// if available to cross-reference venue slugs.
+			if ( isset( $GLOBALS['wp_import'] ) && ! empty( $GLOBALS['wp_import']->terms ) ) {
+				foreach ( $GLOBALS['wp_import']->terms as $term_data ) {
+					if ( isset( $term_data['term_taxonomy'] ) && 'event-venue' === $term_data['term_taxonomy'] ) {
+						$venue_slug = sanitize_title( $term_data['slug'] ?? '' );
+						if ( empty( $venue_slug ) ) {
+							continue;
+						}
+						$existing = get_posts(
+							array(
+								'post_type'      => 'gatherpress_venue',
+								'name'           => $venue_slug,
+								'post_status'    => 'publish',
+								'posts_per_page' => 1,
+								'fields'         => 'ids',
+							)
+						);
+						if ( ! empty( $existing ) ) {
+							$this->pass_detected = true;
+							$this->is_venue_pass = false;
+							return;
+						}
+					}
+				}
+			}
 		}
 
 		/**

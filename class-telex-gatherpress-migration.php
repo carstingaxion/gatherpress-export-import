@@ -82,6 +82,18 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		private ?array $taxonomy_map = null;
 
 		/**
+		 * Tracks post IDs that have already been processed for datetime conversion.
+		 *
+		 * Prevents duplicate processing when multiple hooks fire for the
+		 * same post during a single import run.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var array<int, bool>
+		 */
+		private array $processed_posts = array();
+
+		/**
 		 * Gets the singleton instance.
 		 *
 		 * @since 0.1.0
@@ -180,12 +192,10 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * - `wp_import_post_data_raw` at priority 5 for post type rewriting
 		 * - `wp_import_post_terms` at priority 5 for taxonomy rewriting in post terms
 		 * - `pre_insert_term` at priority 5 for intercepting taxonomy term creation
-		 *   and rewriting taxonomy slugs (since `wp_import_terms` does not exist
-		 *   in the standard WordPress Importer)
 		 * - `add_post_metadata` at priority 5 for meta stashing
 		 * - `gatherpress_pseudopostmetas` for pseudopostmeta registration
-		 * - `wp_import_post_meta` at priority 20 for post-import processing
-		 * - `save_post_gatherpress_event` at priority 99 as a fallback trigger
+		 * - `wp_import_post_meta` at priority 20 for meta counting and deferred processing
+		 * - `import_end` for processing all remaining stashed meta after the entire import
 		 *
 		 * @since 0.1.0
 		 *
@@ -198,7 +208,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			add_filter( 'add_post_metadata', array( $this, 'stash_meta_on_import' ), 5, 5 );
 			add_filter( 'gatherpress_pseudopostmetas', array( $this, 'register_pseudopostmetas' ) );
 			add_filter( 'wp_import_post_meta', array( $this, 'filter_post_meta_on_import' ), 20, 3 );
-			add_action( 'save_post_gatherpress_event', array( $this, 'process_stashed_meta' ), 99 );
+			add_action( 'import_end', array( $this, 'process_all_remaining_stashes' ) );
 		}
 
 		/**
@@ -507,12 +517,17 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		}
 
 		/**
-		 * Filters post meta during WordPress import and triggers stashed meta processing.
+		 * Filters post meta during WordPress import and records the expected meta count.
 		 *
-		 * Hooked to `wp_import_post_meta` at priority 20. The filter receives
-		 * the full array of post meta, the post ID, and the post data array.
-		 * This method delegates to `process_stashed_meta()` for datetime
-		 * conversion and venue linking, then returns the meta array unmodified.
+		 * Hooked to `wp_import_post_meta` at priority 20. The WordPress Importer
+		 * calls this filter with the full array of post meta BEFORE calling
+		 * `add_post_meta()` for each individual key. We use this to record
+		 * the post ID so `import_end` can process it.
+		 *
+		 * Note: We do NOT process the stash here because the individual
+		 * `add_post_meta()` calls (which trigger `stash_meta_on_import()`)
+		 * happen AFTER this filter returns. Processing is deferred to
+		 * `import_end` via `process_all_remaining_stashes()`.
 		 *
 		 * @since 0.1.0
 		 *
@@ -522,20 +537,59 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * @return array The unmodified post meta array.
 		 */
 		public function filter_post_meta_on_import( array $postmeta, int $post_id, array $post ): array {
-			$this->process_stashed_meta( $post_id );
+			$post_type = get_post_type( $post_id );
+
+			if ( 'gatherpress_event' !== $post_type ) {
+				return $postmeta;
+			}
+
+			// Record this post ID so import_end knows to process it.
+			// We use a transient list to track all event post IDs that need processing.
+			$pending = get_transient( 'telex_gpm_pending_event_ids' );
+			if ( ! is_array( $pending ) ) {
+				$pending = array();
+			}
+			$pending[] = $post_id;
+			set_transient( 'telex_gpm_pending_event_ids', array_unique( $pending ), HOUR_IN_SECONDS );
+
 			return $postmeta;
 		}
 
 		/**
-		 * Processes stashed meta after a gatherpress_event is fully imported.
+		 * Processes all remaining stashed meta after the entire import completes.
+		 *
+		 * Hooked to `import_end`. At this point, ALL posts have been created
+		 * and ALL meta keys have been processed via `add_post_meta()` (which
+		 * triggers our `stash_meta_on_import()` to populate the transient stashes).
+		 *
+		 * This method iterates through all pending event post IDs and runs
+		 * datetime conversion and venue linking for each.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function process_all_remaining_stashes(): void {
+			$pending = get_transient( 'telex_gpm_pending_event_ids' );
+
+			if ( ! is_array( $pending ) || empty( $pending ) ) {
+				return;
+			}
+
+			foreach ( $pending as $post_id ) {
+				$this->process_stashed_meta( (int) $post_id );
+			}
+
+			// Clean up the pending list.
+			delete_transient( 'telex_gpm_pending_event_ids' );
+		}
+
+		/**
+		 * Processes stashed meta for a single gatherpress_event post.
 		 *
 		 * Finds the appropriate adapter via `can_handle()` and delegates
 		 * datetime conversion. Also resolves venue ID mapping and delegates
 		 * venue linking to the appropriate adapter.
-		 *
-		 * Called from `filter_post_meta_on_import()` during the WordPress
-		 * import process and from `save_post_gatherpress_event` (priority 99)
-		 * as a fallback to ensure processing occurs regardless of import method.
 		 *
 		 * @since 0.1.0
 		 *
@@ -543,6 +597,11 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * @return void
 		 */
 		public function process_stashed_meta( int $post_id ): void {
+			// Prevent duplicate processing.
+			if ( isset( $this->processed_posts[ $post_id ] ) ) {
+				return;
+			}
+
 			$post_type = get_post_type( $post_id );
 
 			if ( 'gatherpress_event' !== $post_type ) {
@@ -555,6 +614,9 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			if ( ! is_array( $stash ) || empty( $stash ) ) {
 				return;
 			}
+
+			// Mark as processed to prevent duplicate calls.
+			$this->processed_posts[ $post_id ] = true;
 
 			// Find the adapter that can handle this data and convert datetimes.
 			foreach ( $this->adapters as $adapter ) {
