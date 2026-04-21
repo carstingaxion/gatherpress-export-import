@@ -1,0 +1,36 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "Modern Events Calendar — Demo Export",
+		"description": "Demo site with Modern Events Calendar data ready to export for GatherPress migration testing.",
+		"author": "WordPress Telex"
+	},
+	"preferredVersions": {
+		"php": "8.0",
+		"wp": "latest"
+	},
+	"features": {
+		"networking": true
+	},
+	"plugins": [
+		"modern-events-calendar-lite"
+	],
+	"steps": [
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "MEC Demo for GatherPress Migration"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php\nrequire_once 'wordpress/wp-load.php';\n\n// Create MEC categories.\nif ( ! term_exists( 'Webinar', 'mec_category' ) ) {\n\twp_insert_term( 'Webinar', 'mec_category', array( 'slug' => 'webinar' ) );\n}\nif ( ! term_exists( 'Seminar', 'mec_category' ) ) {\n\twp_insert_term( 'Seminar', 'mec_category', array( 'slug' => 'seminar' ) );\n}\nif ( ! term_exists( 'Social', 'mec_category' ) ) {\n\twp_insert_term( 'Social', 'mec_category', array( 'slug' => 'social' ) );\n}\n\n// Create MEC labels.\nif ( ! term_exists( 'Featured', 'mec_label' ) ) {\n\twp_insert_term( 'Featured', 'mec_label', array( 'slug' => 'featured' ) );\n}\nif ( ! term_exists( 'New', 'mec_label' ) ) {\n\twp_insert_term( 'New', 'mec_label', array( 'slug' => 'new' ) );\n}\n\n// Create MEC locations (taxonomy terms).\n$loc1_term = wp_insert_term( 'TechHub Coworking Space', 'mec_location', array( 'slug' => 'techhub-coworking' ) );\n$loc2_term = wp_insert_term( 'Grand Hotel Ballroom', 'mec_location', array( 'slug' => 'grand-hotel-ballroom' ) );\n$loc3_term = wp_insert_term( 'Online (Zoom)', 'mec_location', array( 'slug' => 'online-zoom' ) );\n\n// Create MEC organizers (taxonomy terms).\n$org1_term = wp_insert_term( 'WordPress Community Team', 'mec_organizer', array( 'slug' => 'wp-community-team' ) );\n$org2_term = wp_insert_term( 'Developer Academy', 'mec_organizer', array( 'slug' => 'developer-academy' ) );\n\n// Create events.\n$ev1 = wp_insert_post( array(\n\t'post_title'   => 'Introduction to Full Site Editing',\n\t'post_content' => 'Learn the fundamentals of WordPress Full Site Editing, including template editing, global styles, and block patterns.',\n\t'post_type'    => 'mec-events',\n\t'post_status'  => 'publish',\n) );\nif ( $ev1 ) {\n\tupdate_post_meta( $ev1, 'mec_start_date', '2025-08-20' );\n\tupdate_post_meta( $ev1, 'mec_end_date', '2025-08-20' );\n\tupdate_post_meta( $ev1, 'mec_start_time_hour', '2' );\n\tupdate_post_meta( $ev1, 'mec_start_time_minutes', '00' );\n\tupdate_post_meta( $ev1, 'mec_start_time_ampm', 'PM' );\n\tupdate_post_meta( $ev1, 'mec_end_time_hour', '4' );\n\tupdate_post_meta( $ev1, 'mec_end_time_minutes', '00' );\n\tupdate_post_meta( $ev1, 'mec_end_time_ampm', 'PM' );\n\twp_set_object_terms( $ev1, array( 'webinar' ), 'mec_category' );\n\twp_set_object_terms( $ev1, array( 'featured' ), 'mec_label' );\n\tif ( ! is_wp_error( $loc3_term ) ) {\n\t\twp_set_object_terms( $ev1, array( intval( is_array( $loc3_term ) ? $loc3_term['term_id'] : $loc3_term ) ), 'mec_location' );\n\t}\n\tif ( ! is_wp_error( $org1_term ) ) {\n\t\twp_set_object_terms( $ev1, array( intval( is_array( $org1_term ) ? $org1_term['term_id'] : $org1_term ) ), 'mec_organizer' );\n\t}\n}\n\n$ev2 = wp_insert_post( array(\n\t'post_title'   => 'Advanced Custom Blocks Seminar',\n\t'post_content' => 'Deep dive into creating custom blocks with React, PHP rendering, and the WordPress Interactivity API.',\n\t'post_type'    => 'mec-events',\n\t'post_status'  => 'publish',\n) );\nif ( $ev2 ) {\n\tupdate_post_meta( $ev2, 'mec_start_date', '2025-09-12' );\n\tupdate_post_meta( $ev2, 'mec_end_date', '2025-09-12' );\n\tupdate_post_meta( $ev2, 'mec_start_time_hour', '10' );\n\tupdate_post_meta( $ev2, 'mec_start_time_minutes', '00' );\n\tupdate_post_meta( $ev2, 'mec_start_time_ampm', 'AM' );\n\tupdate_post_meta( $ev2, 'mec_end_time_hour', '1' );\n\tupdate_post_meta( $ev2, 'mec_end_time_minutes', '00' );\n\tupdate_post_meta( $ev2, 'mec_end_time_ampm', 'PM' );\n\twp_set_object_terms( $ev2, array( 'seminar' ), 'mec_category' );\n\twp_set_object_terms( $ev2, array( 'new' ), 'mec_label' );\n\tif ( ! is_wp_error( $loc1_term ) ) {\n\t\twp_set_object_terms( $ev2, array( intval( is_array( $loc1_term ) ? $loc1_term['term_id'] : $loc1_term ) ), 'mec_location' );\n\t}\n\tif ( ! is_wp_error( $org2_term ) ) {\n\t\twp_set_object_terms( $ev2, array( intval( is_array( $org2_term ) ? $org2_term['term_id'] : $org2_term ) ), 'mec_organizer' );\n\t}\n}\n\n$ev3 = wp_insert_post( array(\n\t'post_title'   => 'WP Community Social Dinner',\n\t'post_content' => 'An informal dinner for WordPress enthusiasts to connect, share stories, and enjoy great food together.',\n\t'post_type'    => 'mec-events',\n\t'post_status'  => 'publish',\n) );\nif ( $ev3 ) {\n\tupdate_post_meta( $ev3, 'mec_start_date', '2025-10-08' );\n\tupdate_post_meta( $ev3, 'mec_end_date', '2025-10-08' );\n\tupdate_post_meta( $ev3, 'mec_start_time_hour', '7' );\n\tupdate_post_meta( $ev3, 'mec_start_time_minutes', '30' );\n\tupdate_post_meta( $ev3, 'mec_start_time_ampm', 'PM' );\n\tupdate_post_meta( $ev3, 'mec_end_time_hour', '10' );\n\tupdate_post_meta( $ev3, 'mec_end_time_minutes', '00' );\n\tupdate_post_meta( $ev3, 'mec_end_time_ampm', 'PM' );\n\twp_set_object_terms( $ev3, array( 'social' ), 'mec_category' );\n\tif ( ! is_wp_error( $loc2_term ) ) {\n\t\twp_set_object_terms( $ev3, array( intval( is_array( $loc2_term ) ? $loc2_term['term_id'] : $loc2_term ) ), 'mec_location' );\n\t}\n\tif ( ! is_wp_error( $org1_term ) ) {\n\t\twp_set_object_terms( $ev3, array( intval( is_array( $org1_term ) ? $org1_term['term_id'] : $org1_term ) ), 'mec_organizer' );\n\t}\n}\n\nflush_rewrite_rules();\n"
+		}
+	],
+	"landingPage": "/wp-admin/export.php"
+}

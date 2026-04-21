@@ -1,0 +1,33 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "All-in-One Event Calendar — Demo Export",
+		"description": "Demo site with All-in-One Event Calendar-style data ready to export for GatherPress migration testing.",
+		"author": "WordPress Telex"
+	},
+	"preferredVersions": {
+		"php": "8.0",
+		"wp": "latest"
+	},
+	"features": {
+		"networking": true
+	},
+	"steps": [
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "AIOEC Demo for GatherPress Migration"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php\nrequire_once 'wordpress/wp-load.php';\n\n// Register the ai1ec_event post type manually for demo purposes.\nif ( ! post_type_exists( 'ai1ec_event' ) ) {\n\tregister_post_type( 'ai1ec_event', array(\n\t\t'label'   => 'AI1EC Events',\n\t\t'public'  => true,\n\t\t'show_ui' => true,\n\t) );\n}\n\n// Register AIOEC taxonomies.\nif ( ! taxonomy_exists( 'events_categories' ) ) {\n\tregister_taxonomy( 'events_categories', 'ai1ec_event', array(\n\t\t'label'  => 'Events Categories',\n\t\t'public' => true,\n\t) );\n}\nif ( ! taxonomy_exists( 'events_tags' ) ) {\n\tregister_taxonomy( 'events_tags', 'ai1ec_event', array(\n\t\t'label'  => 'Events Tags',\n\t\t'public' => true,\n\t) );\n}\n\n// Create categories.\nwp_insert_term( 'Arts', 'events_categories', array( 'slug' => 'arts' ) );\nwp_insert_term( 'Technology', 'events_categories', array( 'slug' => 'technology' ) );\nwp_insert_term( 'Health', 'events_categories', array( 'slug' => 'health' ) );\n\n// Create tags.\nwp_insert_term( 'beginner', 'events_tags', array( 'slug' => 'beginner' ) );\nwp_insert_term( 'advanced', 'events_tags', array( 'slug' => 'advanced' ) );\nwp_insert_term( 'virtual', 'events_tags', array( 'slug' => 'virtual' ) );\n\n// Create events.\n// Note: AIOEC normally stores datetimes in a custom table (ai1ec_events),\n// not in postmeta. These demos include postmeta for export completeness.\n$ev1 = wp_insert_post( array(\n\t'post_title'   => 'Digital Art Exhibition Opening',\n\t'post_content' => 'Explore the intersection of technology and creativity at our digital art exhibition featuring works by 20 emerging artists.',\n\t'post_type'    => 'ai1ec_event',\n\t'post_status'  => 'publish',\n) );\nif ( $ev1 ) {\n\tupdate_post_meta( $ev1, '_ai1ec_start', '2025-08-15 18:00:00' );\n\tupdate_post_meta( $ev1, '_ai1ec_end', '2025-08-15 21:00:00' );\n\tupdate_post_meta( $ev1, '_ai1ec_venue', 'Modern Art Gallery, 55 Gallery Row, Seattle' );\n\tupdate_post_meta( $ev1, '_ai1ec_timezone', 'America/Los_Angeles' );\n\twp_set_object_terms( $ev1, array( 'arts' ), 'events_categories' );\n\twp_set_object_terms( $ev1, array( 'beginner' ), 'events_tags' );\n}\n\n$ev2 = wp_insert_post( array(\n\t'post_title'   => 'AI and WordPress: The Future',\n\t'post_content' => 'A virtual panel discussion on how artificial intelligence is shaping the future of WordPress development and content creation.',\n\t'post_type'    => 'ai1ec_event',\n\t'post_status'  => 'publish',\n) );\nif ( $ev2 ) {\n\tupdate_post_meta( $ev2, '_ai1ec_start', '2025-09-22 15:00:00' );\n\tupdate_post_meta( $ev2, '_ai1ec_end', '2025-09-22 17:00:00' );\n\tupdate_post_meta( $ev2, '_ai1ec_venue', 'Online (Zoom Webinar)' );\n\tupdate_post_meta( $ev2, '_ai1ec_timezone', 'UTC' );\n\twp_set_object_terms( $ev2, array( 'technology' ), 'events_categories' );\n\twp_set_object_terms( $ev2, array( 'advanced', 'virtual' ), 'events_tags' );\n}\n\n$ev3 = wp_insert_post( array(\n\t'post_title'   => 'Mindfulness and Wellness Retreat',\n\t'post_content' => 'A weekend retreat focused on mindfulness practices, yoga, nutrition workshops, and digital detox strategies.',\n\t'post_type'    => 'ai1ec_event',\n\t'post_status'  => 'publish',\n) );\nif ( $ev3 ) {\n\tupdate_post_meta( $ev3, '_ai1ec_start', '2025-10-17 09:00:00' );\n\tupdate_post_meta( $ev3, '_ai1ec_end', '2025-10-19 15:00:00' );\n\tupdate_post_meta( $ev3, '_ai1ec_venue', 'Mountain View Resort, 100 Summit Dr, Boulder' );\n\tupdate_post_meta( $ev3, '_ai1ec_timezone', 'America/Denver' );\n\twp_set_object_terms( $ev3, array( 'health' ), 'events_categories' );\n\twp_set_object_terms( $ev3, array( 'beginner' ), 'events_tags' );\n}\n\nflush_rewrite_rules();\n"
+		}
+	],
+	"landingPage": "/wp-admin/export.php"
+}

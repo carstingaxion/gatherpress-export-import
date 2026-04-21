@@ -1,0 +1,47 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "GatherPress Event Migration",
+		"description": "Test environment for migrating event data from third-party plugins into GatherPress.",
+		"author": "WordPress Telex"
+	},
+	"preferredVersions": {
+		"php": "8.0",
+		"wp": "latest"
+	},
+	"features": {
+		"networking": true
+	},
+	"plugins": [
+		"wordpress-importer",
+		"gatherpress"
+	],
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github-proxy.com/proxy/?repo=carstingaxion/gatherpress-export-import&artifact=plugin-zip"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "GatherPress Migration Test"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once 'wordpress/wp-load.php'; flush_rewrite_rules();"
+		}
+	],
+	"landingPage": "/wp-admin/admin.php?import=gatherpress-migration"
+}
