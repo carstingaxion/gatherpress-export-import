@@ -223,6 +223,31 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the taxonomy mapping for Event Organiser.
+		 *
+		 * Maps Event Organiser's custom taxonomies to GatherPress equivalents:
+		 * - `event-category` → `gatherpress_topic`
+		 * - `event-venue` → `_gatherpress_venue` (shadow taxonomy)
+		 * - `event-tag` → `post_tag`
+		 *
+		 * The `event-venue` mapping allows venue taxonomy terms from Event
+		 * Organiser to be imported as `_gatherpress_venue` shadow taxonomy
+		 * terms, bridging the gap between EO's taxonomy-based venue model
+		 * and GatherPress's post-based venue model.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			return array(
+				'event-category' => 'gatherpress_topic',
+				'event-venue'    => '_gatherpress_venue',
+				'event-tag'      => 'post_tag',
+			);
+		}
+
+		/**
 		 * No-op callback for pseudopostmeta registration.
 		 *
 		 * This callback is registered with pseudopostmeta definitions but

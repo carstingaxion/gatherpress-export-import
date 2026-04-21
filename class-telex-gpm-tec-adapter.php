@@ -168,6 +168,22 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the taxonomy mapping for The Events Calendar.
+		 *
+		 * Maps TEC's custom event category taxonomy to the GatherPress topic
+		 * taxonomy. Standard post tags are already compatible.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			return array(
+				'tribe_events_cat' => 'gatherpress_topic',
+			);
+		}
+
+		/**
 		 * No-op callback for pseudopostmeta registration.
 		 *
 		 * This callback is registered with pseudopostmeta definitions but

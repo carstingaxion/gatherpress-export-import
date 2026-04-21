@@ -166,6 +166,23 @@ if ( ! class_exists( 'Telex_GPM_EventON_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the taxonomy mapping for EventON.
+		 *
+		 * Maps EventON's event_type taxonomy to GatherPress topic.
+		 * Location and organizer taxonomies are specific to EventON
+		 * and have no direct GatherPress equivalent.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			return array(
+				'event_type' => 'gatherpress_topic',
+			);
+		}
+
+		/**
 		 * No-op callback for pseudopostmeta registration.
 		 *
 		 * This callback is registered with pseudopostmeta definitions but

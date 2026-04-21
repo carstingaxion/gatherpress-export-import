@@ -167,6 +167,23 @@ if ( ! class_exists( 'Telex_GPM_Events_Manager_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the taxonomy mapping for Events Manager.
+		 *
+		 * Maps Events Manager's event-categories and event-tags taxonomies
+		 * to the GatherPress topic taxonomy and standard post tags respectively.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			return array(
+				'event-categories' => 'gatherpress_topic',
+				'event-tags'       => 'post_tag',
+			);
+		}
+
+		/**
 		 * No-op callback for pseudopostmeta registration.
 		 *
 		 * This callback is registered with pseudopostmeta definitions but

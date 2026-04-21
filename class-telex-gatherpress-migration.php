@@ -73,6 +73,15 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		private ?array $stash_meta_keys = null;
 
 		/**
+		 * Cached merged taxonomy map from all adapters.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @var array<string, string>|null
+		 */
+		private ?array $taxonomy_map = null;
+
+		/**
 		 * Gets the singleton instance.
 		 *
 		 * @since 0.1.0
@@ -142,6 +151,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			$this->event_type_map  = null;
 			$this->venue_type_map  = null;
 			$this->stash_meta_keys = null;
+			$this->taxonomy_map    = null;
 		}
 
 		/**
@@ -160,6 +170,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * Hooks into the WordPress import process at strategic points:
 		 * - `wp_import_post_data_raw` at priority 5 for post type rewriting
+		 * - `wp_import_post_data_raw` at priority 4 for taxonomy rewriting in post terms
 		 * - `add_post_metadata` at priority 5 for meta stashing
 		 * - `gatherpress_pseudopostmetas` for pseudopostmeta registration
 		 * - `wp_import_post_meta` at priority 20 for post-import processing
@@ -171,6 +182,8 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 */
 		private function setup_hooks(): void {
 			add_filter( 'wp_import_post_data_raw', array( $this, 'rewrite_post_type_on_import' ), 5 );
+			add_filter( 'wp_import_post_terms', array( $this, 'rewrite_post_terms_taxonomy' ), 5 );
+			add_filter( 'wp_import_terms', array( $this, 'rewrite_import_terms' ), 5 );
 			add_filter( 'add_post_metadata', array( $this, 'stash_meta_on_import' ), 5, 5 );
 			add_filter( 'gatherpress_pseudopostmetas', array( $this, 'register_pseudopostmetas' ) );
 			add_action( 'wp_import_post_meta', array( $this, 'process_stashed_meta' ), 20 );
@@ -261,6 +274,95 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			}
 
 			return $this->stash_meta_keys;
+		}
+
+		/**
+		 * Gets the merged taxonomy map from all adapters.
+		 *
+		 * Builds a combined map of all source taxonomy slugs to their
+		 * GatherPress (or WordPress) equivalents. The result is cached
+		 * and filterable via the `telex_gpm_taxonomy_map` filter.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Combined taxonomy map.
+		 */
+		public function get_taxonomy_map(): array {
+			if ( null === $this->taxonomy_map ) {
+				$this->taxonomy_map = array();
+				foreach ( $this->adapters as $adapter ) {
+					$this->taxonomy_map = array_merge( $this->taxonomy_map, $adapter->get_taxonomy_map() );
+				}
+			}
+
+			/**
+			 * Filters the taxonomy mapping used during import.
+			 *
+			 * Allows adding or modifying taxonomy slug rewrites from source
+			 * plugins to GatherPress or WordPress taxonomies.
+			 *
+			 * @since 0.1.0
+			 *
+			 * @param array<string, string> $taxonomy_map Source-to-target taxonomy map.
+			 */
+			return apply_filters( 'telex_gpm_taxonomy_map', $this->taxonomy_map );
+		}
+
+		/**
+		 * Rewrites taxonomy slugs in term data during the WordPress import.
+		 *
+		 * Hooked to `wp_import_terms` at priority 5. This filter receives the
+		 * full array of terms being imported and rewrites the taxonomy slug
+		 * for each term that matches the taxonomy map.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param array $terms Array of term data arrays from the WXR file.
+		 * @return array Modified term data with rewritten taxonomy slugs.
+		 */
+		public function rewrite_import_terms( array $terms ): array {
+			$tax_map = $this->get_taxonomy_map();
+
+			if ( empty( $tax_map ) ) {
+				return $terms;
+			}
+
+			foreach ( $terms as &$term ) {
+				if ( isset( $term['term_taxonomy'] ) && isset( $tax_map[ $term['term_taxonomy'] ] ) ) {
+					$term['term_taxonomy'] = $tax_map[ $term['term_taxonomy'] ];
+				}
+			}
+
+			return $terms;
+		}
+
+		/**
+		 * Rewrites taxonomy slugs in the per-post term assignments during import.
+		 *
+		 * Hooked to `wp_import_post_terms` at priority 5. The WordPress Importer
+		 * calls this filter with the array of terms assigned to each post being
+		 * imported. This method rewrites the `domain` (taxonomy) field to match
+		 * the GatherPress equivalent.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param array $terms Array of term assignment arrays, each with 'domain', 'slug', 'name' keys.
+		 * @return array Modified term assignments with rewritten taxonomy domains.
+		 */
+		public function rewrite_post_terms_taxonomy( array $terms ): array {
+			$tax_map = $this->get_taxonomy_map();
+
+			if ( empty( $tax_map ) ) {
+				return $terms;
+			}
+
+			foreach ( $terms as &$term ) {
+				if ( isset( $term['domain'] ) && isset( $tax_map[ $term['domain'] ] ) ) {
+					$term['domain'] = $tax_map[ $term['domain'] ];
+				}
+			}
+
+			return $terms;
 		}
 
 		/**

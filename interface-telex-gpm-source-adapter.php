@@ -142,5 +142,21 @@ if ( ! interface_exists( 'Telex_GPM_Source_Adapter' ) ) {
 		 * @return void
 		 */
 		public function link_venue( int $post_id, int $new_venue_id ): void;
+
+		/**
+		 * Gets the taxonomy mapping for the source plugin.
+		 *
+		 * Returns an associative array where keys are source taxonomy slugs
+		 * and values are the corresponding GatherPress (or WordPress) taxonomy
+		 * slugs. Used during import to rewrite taxonomy names so that terms
+		 * from the source plugin are assigned to the correct GatherPress taxonomy.
+		 *
+		 * Returns an empty array if no taxonomy rewriting is needed.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return array<string, string> Associative array of source_taxonomy => target_taxonomy.
+		 */
+		public function get_taxonomy_map(): array;
 	}
 }
