@@ -1,13 +1,19 @@
 <?php
 /**
- * Unit tests for the Telex_GPM_Taxonomy_Venue_Handler trait.
+ * Unit tests for the Taxonomy_Venue_Handler trait.
  *
  * Tests pass detection, event skipping, term filtering, and
  * post data capture in isolation using stubs.
  *
- * @package TelexGatherpressMigration\Tests\Unit
+ * @package GatherPressExportImport\Tests\Unit
  * @since   0.1.0
  */
+
+use GatherPressExportImport\Source_Adapter;
+use GatherPressExportImport\Hookable_Adapter;
+use GatherPressExportImport\Taxonomy_Venue_Adapter;
+use GatherPressExportImport\Datetime_Helper;
+use GatherPressExportImport\Taxonomy_Venue_Handler;
 
 /**
  * Concrete class using the Taxonomy Venue Handler trait for testing.
@@ -16,9 +22,9 @@
  *
  * @since 0.1.0
  */
-class TaxonomyVenueHandlerTestClass implements Telex_GPM_Source_Adapter, Telex_GPM_Hookable_Adapter, Telex_GPM_Taxonomy_Venue_Adapter {
-	use Telex_GPM_Datetime_Helper;
-	use Telex_GPM_Taxonomy_Venue_Handler;
+class TaxonomyVenueHandlerTestClass implements Hookable_Adapter, Source_Adapter, Taxonomy_Venue_Adapter {
+	use Datetime_Helper;
+	use Taxonomy_Venue_Handler;
 
 	/** @return string */
 	public function get_name(): string {
@@ -175,7 +181,7 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 		);
 
 		$result = $this->handler->tvh_maybe_flag_events_on_venue_pass( $data );
-		$this->assertSame( '_telex_gpm_skip', $result['post_type'] );
+		$this->assertSame( '_gpei_skip', $result['post_type'] );
 	}
 
 	/**
@@ -258,7 +264,7 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 	public function test_intercept_venue_term_creation_blocks_venue_terms(): void {
 		$result = $this->handler->tvh_intercept_venue_term_creation( 'My Venue', 'test-venue-tax' );
 		$this->assertInstanceOf( \WP_Error::class, $result );
-		$this->assertSame( 'telex_gpm_venue_handled', $result->get_error_code() );
+		$this->assertSame( 'gpei_venue_handled', $result->get_error_code() );
 	}
 
 	/**

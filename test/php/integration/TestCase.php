@@ -5,11 +5,14 @@
  * Extends WP_UnitTestCase with helper methods for creating events,
  * venues, and testing the import pipeline.
  *
- * @package TelexGatherpressMigration\Tests\Integration
+ * @package GatherPressExportImport\Tests\Integration
  * @since   0.1.0
  */
 
-namespace TelexGatherpressMigration\Tests\Integration;
+namespace GatherPressExportImport\Tests\Integration;
+
+use GatherPressExportImport\Migration;
+use GatherPressExportImport\Event_Organiser_Adapter;
 
 /**
  * Class TestCase.
@@ -25,10 +28,10 @@ abstract class TestCase extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @return \Telex_GatherPress_Migration The migration instance.
+	 * @return Migration The migration instance.
 	 */
-	protected function get_migration_instance(): \Telex_GatherPress_Migration {
-		return \Telex_GatherPress_Migration::get_instance();
+	protected function get_migration_instance(): Migration {
+		return Migration::get_instance();
 	}
 
 	/**
@@ -36,12 +39,12 @@ abstract class TestCase extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @return \Telex_GPM_Event_Organiser_Adapter|null The EO adapter or null.
+	 * @return Event_Organiser_Adapter|null The EO adapter or null.
 	 */
-	protected function get_eo_adapter(): ?\Telex_GPM_Event_Organiser_Adapter {
+	protected function get_eo_adapter(): ?Event_Organiser_Adapter {
 		$migration = $this->get_migration_instance();
 		foreach ( $migration->get_adapters() as $adapter ) {
-			if ( $adapter instanceof \Telex_GPM_Event_Organiser_Adapter ) {
+			if ( $adapter instanceof Event_Organiser_Adapter ) {
 				return $adapter;
 			}
 		}

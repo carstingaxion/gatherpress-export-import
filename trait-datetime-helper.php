@@ -6,25 +6,27 @@
  * and linking venues. Used by all adapters that follow the standard
  * pattern of converting source date/time data to GatherPress format.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
+if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 	/**
-	 * Trait Telex_GPM_Datetime_Helper.
+	 * Trait Datetime_Helper.
 	 *
 	 * Provides reusable methods for saving GatherPress datetimes and
 	 * linking venues to events during import. Intended to be used by
-	 * classes implementing the Telex_GPM_Source_Adapter interface.
+	 * classes implementing the Source_Adapter interface.
 	 *
 	 * @since 0.1.0
 	 */
-	trait Telex_GPM_Datetime_Helper {
+	trait Datetime_Helper {
 
 		/**
 		 * Saves datetimes into GatherPress via its Event class.
@@ -40,7 +42,7 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 		 * @param string $timezone       Timezone string (e.g., 'America/New_York').
 		 * @return bool|mixed The result of Event::save_datetimes(), or false on failure.
 		 */
-		protected function save_gatherpress_datetimes( int $post_id, string $datetime_start, string $datetime_end, string $timezone ) {
+		final protected function save_gatherpress_datetimes( int $post_id, string $datetime_start, string $datetime_end, string $timezone ) {
 			if ( ! class_exists( '\GatherPress\Core\Event' ) ) {
 				return false;
 			}
@@ -72,7 +74,7 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 		 * @param string $post_name Post name (slug) of the venue post.
 		 * @return string The generated term slug (e.g., '_my-venue-slug').
 		 */
-		protected function get_venue_term_slug( string $post_name ): string {
+		final protected function get_venue_term_slug( string $post_name ): string {
 			return sprintf( '_%s', $post_name );
 		}
 
@@ -92,7 +94,7 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 		 * @param int $new_venue_id The venue post ID to link.
 		 * @return void
 		 */
-		public function link_venue( int $post_id, int $new_venue_id ): void {
+		final public function link_venue( int $post_id, int $new_venue_id ): void {
 			$venue_post = get_post( $new_venue_id );
 
 			if ( ! $venue_post || 'gatherpress_venue' !== $venue_post->post_type ) {
@@ -123,7 +125,7 @@ if ( ! trait_exists( 'Telex_GPM_Datetime_Helper' ) ) {
 		 *
 		 * @return string The WordPress site timezone string.
 		 */
-		protected function get_default_timezone(): string {
+		final protected function get_default_timezone(): string {
 			return wp_timezone_string();
 		}
 	}

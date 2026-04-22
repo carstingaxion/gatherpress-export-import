@@ -1,15 +1,17 @@
 <?php
 /**
- * Integration tests for the main Telex_GatherPress_Migration class.
+ * Integration tests for the main Migration class.
  *
  * Tests the migration orchestrator against a real WordPress environment
  * with GatherPress active.
  *
- * @package TelexGatherpressMigration\Tests\Integration
+ * @package GatherPressExportImport\Tests\Integration
  * @since   0.1.0
  */
 
-namespace TelexGatherpressMigration\Tests\Integration;
+namespace GatherPressExportImport\Tests\Integration;
+
+use GatherPressExportImport\Migration;
 
 /**
  * Class MigrationIntegrationTest.
@@ -28,7 +30,7 @@ class MigrationIntegrationTest extends TestCase {
 	 */
 	public function test_migration_singleton_exists(): void {
 		$migration = $this->get_migration_instance();
-		$this->assertInstanceOf( \Telex_GatherPress_Migration::class, $migration );
+		$this->assertInstanceOf( Migration::class, $migration );
 	}
 
 	/**
@@ -60,7 +62,7 @@ class MigrationIntegrationTest extends TestCase {
 		$result    = $migration->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_event', $result['post_type'] );
-		$this->assertSame( $source_type, $result['_telex_gpm_source_type'] );
+		$this->assertSame( $source_type, $result['_gpei_source_type'] );
 	}
 
 	/**
@@ -72,11 +74,11 @@ class MigrationIntegrationTest extends TestCase {
 	 */
 	public function event_post_type_provider(): array {
 		return array(
-			'TEC'             => array( 'tribe_events' ),
-			'Events Manager'  => array( 'event' ),
-			'MEC'             => array( 'mec-events' ),
-			'EventON'         => array( 'ajde_events' ),
-			'AIOEC'           => array( 'ai1ec_event' ),
+			'TEC'            => array( 'tribe_events' ),
+			'Events Manager' => array( 'event' ),
+			'MEC'            => array( 'mec-events' ),
+			'EventON'        => array( 'ajde_events' ),
+			'AIOEC'          => array( 'ai1ec_event' ),
 		);
 	}
 
@@ -107,8 +109,8 @@ class MigrationIntegrationTest extends TestCase {
 	 */
 	public function venue_post_type_provider(): array {
 		return array(
-			'TEC venue'             => array( 'tribe_venue' ),
-			'Events Manager venue'  => array( 'location' ),
+			'TEC venue'            => array( 'tribe_venue' ),
+			'Events Manager venue' => array( 'location' ),
 		);
 	}
 
@@ -164,13 +166,13 @@ class MigrationIntegrationTest extends TestCase {
 		$this->assertTrue( $result );
 
 		// Verify both values in the transient.
-		$stash = get_transient( 'telex_gpm_meta_stash_' . $event_id );
+		$stash = get_transient( 'gpei_meta_stash_' . $event_id );
 		$this->assertIsArray( $stash );
 		$this->assertSame( '2025-09-15 09:00:00', $stash['_EventStartDate'] );
 		$this->assertSame( '2025-09-15 17:00:00', $stash['_EventEndDate'] );
 
 		// Clean up.
-		delete_transient( 'telex_gpm_meta_stash_' . $event_id );
+		delete_transient( 'gpei_meta_stash_' . $event_id );
 	}
 
 	/**
@@ -213,11 +215,11 @@ class MigrationIntegrationTest extends TestCase {
 
 		$migration->filter_post_meta_on_import( $postmeta, $event_id, array() );
 
-		$pending = get_transient( 'telex_gpm_pending_event_ids' );
+		$pending = get_transient( 'gpei_pending_event_ids' );
 		$this->assertIsArray( $pending );
 		$this->assertContains( $event_id, $pending );
 
 		// Clean up.
-		delete_transient( 'telex_gpm_pending_event_ids' );
+		delete_transient( 'gpei_pending_event_ids' );
 	}
 }

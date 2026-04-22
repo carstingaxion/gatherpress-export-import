@@ -6,13 +6,13 @@
  * TEC venue and event data, verifying post type rewrites, datetime
  * conversion, and venue linking.
  *
- * @package TelexGatherpressMigration\Tests\Integration
+ * @package GatherPressExportImport\Tests\Integration
  * @since   0.1.0
  */
 
-namespace TelexGatherpressMigration\Tests\Integration;
+namespace GatherPressExportImport\Tests\Integration;
 
-use TelexGatherpressMigration\Tests\WXRImportHelper;
+use GatherPressExportImport\Tests\WXRImportHelper;
 
 /**
  * Class WXRImportTECTest.

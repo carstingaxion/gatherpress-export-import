@@ -6,10 +6,10 @@
  * Requires GatherPress to be installed and activated in the test environment.
  *
  * Usage with wp-env:
- *   wp-env run tests-cli --env-cwd='wp-content/plugins/telex-gatherpress-migration' \
+ *   wp-env run tests-cli --env-cwd='wp-content/plugins/gatherpress-export-import' \
  *     bash -c 'WP_TESTS_DIR=/wordpress-phpunit composer test'
  *
- * @package TelexGatherpressMigration\Tests
+ * @package GatherPressExportImport\Tests
  * @since   0.1.0
  */
 
@@ -38,7 +38,7 @@ if ( ! file_exists( $wp_tests_dir . '/includes/functions.php' ) ) {
 	echo PHP_EOL;
 	echo 'Set the WP_TESTS_DIR environment variable to point to your WordPress test suite.' . PHP_EOL;
 	echo 'When using wp-env, run:' . PHP_EOL;
-	echo '  npx wp-env run tests-cli --env-cwd="wp-content/plugins/telex-gatherpress-migration" bash -c "WP_TESTS_DIR=/wordpress-phpunit vendor/bin/phpunit"' . PHP_EOL;
+	echo '  npx wp-env run tests-cli --env-cwd="wp-content/plugins/gatherpress-export-import" bash -c "WP_TESTS_DIR=/wordpress-phpunit vendor/bin/phpunit"' . PHP_EOL;
 	exit( 1 );
 }
 
@@ -98,7 +98,7 @@ tests_add_filter(
 		}
 
 		// Load our plugin.
-		require dirname( __DIR__, 2 ) . '/telex-gatherpress-migration.php';
+		require dirname( __DIR__, 2 ) . '/plugin.php';
 	}
 );
 

@@ -1,13 +1,15 @@
 <?php
 /**
- * Unit tests for the Telex_GPM_Datetime_Helper trait.
+ * Unit tests for the Datetime_Helper trait.
  *
  * Tests the venue term slug generation and default timezone retrieval
  * in isolation without a running WordPress environment.
  *
- * @package TelexGatherpressMigration\Tests\Unit
+ * @package GatherPressExportImport\Tests\Unit
  * @since   0.1.0
  */
+
+use GatherPressExportImport\Datetime_Helper;
 
 /**
  * Concrete class to expose the protected trait methods for testing.
@@ -15,7 +17,7 @@
  * @since 0.1.0
  */
 class DatetimeHelperTestClass {
-	use Telex_GPM_Datetime_Helper;
+	use Datetime_Helper;
 
 	/**
 	 * Public proxy for the protected get_venue_term_slug() method.

@@ -1,6 +1,6 @@
 <?php
 /**
- * Unit tests for the main Telex_GatherPress_Migration class.
+ * Unit tests for the main Migration class.
  *
  * Tests adapter registration, type map aggregation, taxonomy map
  * merging, and post type rewriting in isolation.
@@ -8,15 +8,17 @@
  * Note: The singleton pattern prevents full isolated testing of
  * the constructor. These tests focus on public methods.
  *
- * @package TelexGatherpressMigration\Tests\Unit
+ * @package GatherPressExportImport\Tests\Unit
  * @since   0.1.0
  */
+
+use GatherPressExportImport\Migration;
 
 /**
  * Class MigrationClassTest.
  *
  * @since 0.1.0
- * @coversDefaultClass \Telex_GatherPress_Migration
+ * @coversDefaultClass Migration
  */
 class MigrationClassTest extends \WP_UnitTestCase {
 
@@ -25,9 +27,9 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @var \Telex_GatherPress_Migration
+	 * @var Migration
 	 */
-	private \Telex_GatherPress_Migration $migration;
+	private Migration $migration;
 
 	/**
 	 * Sets up the test fixture.
@@ -38,7 +40,7 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->migration = \Telex_GatherPress_Migration::get_instance();
+		$this->migration = Migration::get_instance();
 	}
 
 	/**
@@ -50,8 +52,8 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_singleton_returns_same_instance(): void {
-		$instance1 = \Telex_GatherPress_Migration::get_instance();
-		$instance2 = \Telex_GatherPress_Migration::get_instance();
+		$instance1 = Migration::get_instance();
+		$instance2 = Migration::get_instance();
 		$this->assertSame( $instance1, $instance2 );
 	}
 
@@ -186,11 +188,11 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_rewrite_event_post_type(): void {
-		$data = array( 'post_type' => 'tribe_events' );
+		$data   = array( 'post_type' => 'tribe_events' );
 		$result = $this->migration->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_event', $result['post_type'] );
-		$this->assertSame( 'tribe_events', $result['_telex_gpm_source_type'] );
+		$this->assertSame( 'tribe_events', $result['_gpei_source_type'] );
 	}
 
 	/**
@@ -202,11 +204,11 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_rewrite_venue_post_type(): void {
-		$data = array( 'post_type' => 'tribe_venue' );
+		$data   = array( 'post_type' => 'tribe_venue' );
 		$result = $this->migration->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_venue', $result['post_type'] );
-		$this->assertSame( 'tribe_venue', $result['_telex_gpm_source_type'] );
+		$this->assertSame( 'tribe_venue', $result['_gpei_source_type'] );
 	}
 
 	/**
@@ -218,11 +220,11 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_rewrite_does_not_modify_unknown_types(): void {
-		$data = array( 'post_type' => 'post' );
+		$data   = array( 'post_type' => 'post' );
 		$result = $this->migration->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'post', $result['post_type'] );
-		$this->assertArrayNotHasKey( '_telex_gpm_source_type', $result );
+		$this->assertArrayNotHasKey( '_gpei_source_type', $result );
 	}
 
 	/**

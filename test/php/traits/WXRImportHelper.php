@@ -5,11 +5,11 @@
  * Provides a reusable method to programmatically run the WordPress
  * Importer against a WXR fixture file within a test method.
  *
- * @package TelexGatherpressMigration\Tests
+ * @package GatherPressExportImport\Tests
  * @since   0.1.0
  */
 
-namespace TelexGatherpressMigration\Tests;
+namespace GatherPressExportImport\Tests;
 
 /**
  * Trait WXRImportHelper.
@@ -34,7 +34,7 @@ trait WXRImportHelper {
 	 * @param bool   $fetch_attachments Whether to download attachments. Default false.
 	 * @return \WP_Import|null The importer instance after import, or null on failure.
 	 */
-	protected function import_wxr( string $wxr_file, bool $fetch_attachments = false ): ?\WP_Import {
+	final protected function import_wxr( string $wxr_file, bool $fetch_attachments = false ): ?\WP_Import {
 		if ( ! class_exists( 'WP_Import' ) ) {
 			// Try loading the WordPress Importer plugin file.
 			$importer_file = WP_PLUGIN_DIR . '/wordpress-importer/wordpress-importer.php';
@@ -72,7 +72,7 @@ trait WXRImportHelper {
 	 * @param string $filename The fixture filename (e.g., 'event-organiser.xml').
 	 * @return string Absolute file path.
 	 */
-	protected function get_wxr_fixture_path( string $filename ): string {
+	final protected function get_wxr_fixture_path( string $filename ): string {
 		return dirname( __DIR__, 2 ) . '/fixtures/wxr/' . $filename;
 	}
 }

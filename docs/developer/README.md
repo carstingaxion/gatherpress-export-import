@@ -92,7 +92,7 @@ npm run test:integration
 You can also run tests directly inside the container:
 
 ```bash
-npx wp-env run tests-cli --env-cwd='wp-content/plugins/telex-gatherpress-migration' \
+npx wp-env run tests-cli --env-cwd='wp-content/plugins/gatherpress-export-import' \
   bash -c 'WP_TESTS_DIR=/wordpress-phpunit vendor/bin/phpunit'
 ```
 
@@ -146,10 +146,10 @@ npm run test:integration -- --group=migration
 
 | Test File | Class Under Test | What's Tested |
 |---|---|---|
-| `EOAdapterTest.php` | `Telex_GPM_Event_Organiser_Adapter` | Name, post type maps, meta keys, pseudopostmetas, `can_handle()`, taxonomy map, venue taxonomy slug, skippable types, interface implementation |
-| `DatetimeHelperTraitTest.php` | `Telex_GPM_Datetime_Helper` trait | Venue term slug generation (`_`-prefix convention), default timezone |
-| `TaxonomyVenueHandlerTraitTest.php` | `Telex_GPM_Taxonomy_Venue_Handler` trait | Default venue pass, post data capture, event flagging, term filtering, venue term creation interception |
-| `MigrationClassTest.php` | `Telex_GatherPress_Migration` | Singleton pattern, adapter registration, merged type maps, taxonomy maps, stash meta keys, post type rewriting, taxonomy rewriting |
+| `EOAdapterTest.php` | `Event_Organiser_Adapter` | Name, post type maps, meta keys, pseudopostmetas, `can_handle()`, taxonomy map, venue taxonomy slug, skippable types, interface implementation |
+| `DatetimeHelperTraitTest.php` | `Datetime_Helper` trait | Venue term slug generation (`_`-prefix convention), default timezone |
+| `TaxonomyVenueHandlerTraitTest.php` | `Taxonomy_Venue_Handler` trait | Default venue pass, post data capture, event flagging, term filtering, venue term creation interception |
+| `MigrationClassTest.php` | `Migration` | Singleton pattern, adapter registration, merged type maps, taxonomy maps, stash meta keys, post type rewriting, taxonomy rewriting |
 
 ### Integration Tests
 
@@ -176,20 +176,20 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 ## Project Architecture
 
 ```
-├── telex-gatherpress-migration.php    # Main plugin file (boot)
-├── class-telex-gatherpress-migration.php  # Singleton orchestrator
-├── class-telex-gpm-importer.php       # Custom importer screen
-├── interface-telex-gpm-source-adapter.php
-├── interface-telex-gpm-hookable-adapter.php
-├── interface-telex-gpm-taxonomy-venue-adapter.php
-├── trait-telex-gpm-datetime-helper.php
-├── trait-telex-gpm-taxonomy-venue-handler.php
-├── class-telex-gpm-tec-adapter.php
-├── class-telex-gpm-events-manager-adapter.php
-├── class-telex-gpm-mec-adapter.php
-├── class-telex-gpm-eventon-adapter.php
-├── class-telex-gpm-aioec-adapter.php
-├── class-telex-gpm-event-organiser-adapter.php
+├── gatherpress-export-import.php    # Main plugin file (boot)
+├── class-gatherpress-export-import.php  # Singleton orchestrator
+├── class-importer.php       # Custom importer screen
+├── interface-source-adapter.php
+├── interface-hookable-adapter.php
+├── interface-taxonomy-venue-adapter.php
+├── trait-datetime-helper.php
+├── trait-taxonomy-venue-handler.php
+├── class-tec-adapter.php
+├── class-events-manager-adapter.php
+├── class-mec-adapter.php
+├── class-eventon-adapter.php
+├── class-aioec-adapter.php
+├── class-event-organiser-adapter.php
 ├── assets/css/importer.css
 ├── .wp-env.json                       # wp-env configuration
 ├── composer.json                      # PHP dependencies
@@ -233,7 +233,7 @@ When adding tests for another adapter (e.g., TEC):
 
 ### Gotchas
 
-- **Singleton pattern**: The `Telex_GatherPress_Migration` singleton persists across tests in the same process. Tests that modify the instance state may affect later tests. Use `setUp()` / `tearDown()` to manage state.
+- **Singleton pattern**: The `Migration` singleton persists across tests in the same process. Tests that modify the instance state may affect later tests. Use `setUp()` / `tearDown()` to manage state.
 - **GatherPress dependency**: Integration tests that test datetime conversion or venue linking will be skipped if GatherPress is not active. The `is_gatherpress_active()` helper in the base test case checks for this.
 - **wp-env ports**: The default wp-env port is `8888` for the main site and `8889` for the test site. If these ports are in use, wp-env will try alternative ports.
 - **Transient cleanup**: Tests that set transients should clean them up in `tearDown()` or at the end of the test to avoid leaking state.

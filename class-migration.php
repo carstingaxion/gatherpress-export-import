@@ -6,17 +6,19 @@
  * and dispatches to the appropriate adapter for post type rewriting,
  * meta stashing, and datetime conversion.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 	/**
-	 * Class Telex_GatherPress_Migration.
+	 * Class Migration.
 	 *
 	 * Singleton orchestrator that manages source adapter registration,
 	 * WordPress import hook integration, and meta data processing.
@@ -25,23 +27,23 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 	 *
 	 * @since 0.1.0
 	 */
-	class Telex_GatherPress_Migration {
+	class Migration {
 
 		/**
 		 * Singleton instance.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @var Telex_GatherPress_Migration|null
+		 * @var Migration|null
 		 */
-		private static ?Telex_GatherPress_Migration $instance = null;
+		private static ?Migration $instance = null;
 
 		/**
 		 * Registered source adapters.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @var Telex_GPM_Source_Adapter[]
+		 * @var Source_Adapter[]
 		 */
 		private array $adapters = array();
 
@@ -98,9 +100,9 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return Telex_GatherPress_Migration The singleton instance.
+		 * @return Migration The singleton instance.
 		 */
-		public static function get_instance(): Telex_GatherPress_Migration {
+		public static function get_instance(): Migration {
 			if ( null === self::$instance ) {
 				self::$instance = new self();
 			}
@@ -138,12 +140,12 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * @return void
 		 */
 		private function register_default_adapters(): void {
-			$this->register_adapter( new Telex_GPM_TEC_Adapter() );
-			$this->register_adapter( new Telex_GPM_Events_Manager_Adapter() );
-			$this->register_adapter( new Telex_GPM_MEC_Adapter() );
-			$this->register_adapter( new Telex_GPM_EventON_Adapter() );
-			$this->register_adapter( new Telex_GPM_AIOEC_Adapter() );
-			$this->register_adapter( new Telex_GPM_Event_Organiser_Adapter() );
+			$this->register_adapter( new TEC_Adapter() );
+			$this->register_adapter( new Events_Manager_Adapter() );
+			$this->register_adapter( new MEC_Adapter() );
+			$this->register_adapter( new EventON_Adapter() );
+			$this->register_adapter( new AIOEC_Adapter() );
+			$this->register_adapter( new Event_Organiser_Adapter() );
 		}
 
 		/**
@@ -156,10 +158,10 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param Telex_GPM_Source_Adapter $adapter The adapter instance to register.
+		 * @param Source_Adapter $adapter The adapter instance to register.
 		 * @return void
 		 */
-		public function register_adapter( Telex_GPM_Source_Adapter $adapter ): void {
+		public function register_adapter( Source_Adapter $adapter ): void {
 			$this->adapters[] = $adapter;
 
 			// Invalidate caches when a new adapter is registered.
@@ -169,7 +171,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			$this->taxonomy_map    = null;
 
 			// Allow adapters to register their own import hooks.
-			if ( $adapter instanceof Telex_GPM_Hookable_Adapter ) {
+			if ( $adapter instanceof Hookable_Adapter ) {
 				$adapter->setup_import_hooks();
 			}
 		}
@@ -179,7 +181,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return Telex_GPM_Source_Adapter[] Array of registered adapter instances.
+		 * @return Source_Adapter[] Array of registered adapter instances.
 		 */
 		public function get_adapters(): array {
 			return $this->adapters;
@@ -216,7 +218,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * Builds a combined map of all source event post types to their
 		 * GatherPress equivalents. The result is cached and filterable
-		 * via the `telex_gpm_event_post_type_map` filter.
+		 * via the `gpei_event_post_type_map` filter.
 		 *
 		 * @since 0.1.0
 		 *
@@ -237,7 +239,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			 *
 			 * @param array<string, string> $event_type_map Source-to-GatherPress event post type map.
 			 */
-			return apply_filters( 'telex_gpm_event_post_type_map', $this->event_type_map );
+			return apply_filters( 'gpei_event_post_type_map', $this->event_type_map );
 		}
 
 		/**
@@ -245,7 +247,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * Builds a combined map of all source venue post types to their
 		 * GatherPress equivalents. The result is cached and filterable
-		 * via the `telex_gpm_venue_post_type_map` filter.
+		 * via the `gpei_venue_post_type_map` filter.
 		 *
 		 * @since 0.1.0
 		 *
@@ -266,7 +268,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			 *
 			 * @param array<string, string> $venue_type_map Source-to-GatherPress venue post type map.
 			 */
-			return apply_filters( 'telex_gpm_venue_post_type_map', $this->venue_type_map );
+			return apply_filters( 'gpei_venue_post_type_map', $this->venue_type_map );
 		}
 
 		/**
@@ -302,7 +304,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 *
 		 * Builds a combined map of all source taxonomy slugs to their
 		 * GatherPress (or WordPress) equivalents. The result is cached
-		 * and filterable via the `telex_gpm_taxonomy_map` filter.
+		 * and filterable via the `gpei_taxonomy_map` filter.
 		 *
 		 * @since 0.1.0
 		 *
@@ -326,7 +328,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			 *
 			 * @param array<string, string> $taxonomy_map Source-to-target taxonomy map.
 			 */
-			return apply_filters( 'telex_gpm_taxonomy_map', $this->taxonomy_map );
+			return apply_filters( 'gpei_taxonomy_map', $this->taxonomy_map );
 		}
 
 		/**
@@ -372,10 +374,10 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			// Return a WP_Error to prevent insertion into the original
 			// (non-existent) taxonomy. The importer logs this as a skip.
 			return new \WP_Error(
-				'telex_gpm_taxonomy_rewritten',
+				'gpei_taxonomy_rewritten',
 				sprintf(
 					/* translators: 1: term name, 2: source taxonomy, 3: target taxonomy */
-					__( 'Term "%1$s" rewritten from "%2$s" to "%3$s".', 'telex-gatherpress-migration' ),
+					__( 'Term "%1$s" rewritten from "%2$s" to "%3$s".', 'gatherpress-export-import' ),
 					$term,
 					$taxonomy,
 					$target_taxonomy
@@ -438,15 +440,15 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 
 			$event_map = $this->get_event_post_type_map();
 			if ( isset( $event_map[ $source_type ] ) ) {
-				$post_data['post_type']              = $event_map[ $source_type ];
-				$post_data['_telex_gpm_source_type'] = $source_type;
+				$post_data['post_type']         = $event_map[ $source_type ];
+				$post_data['_gpei_source_type'] = $source_type;
 				return $post_data;
 			}
 
 			$venue_map = $this->get_venue_post_type_map();
 			if ( isset( $venue_map[ $source_type ] ) ) {
-				$post_data['post_type']              = $venue_map[ $source_type ];
-				$post_data['_telex_gpm_source_type'] = $source_type;
+				$post_data['post_type']         = $venue_map[ $source_type ];
+				$post_data['_gpei_source_type'] = $source_type;
 				return $post_data;
 			}
 
@@ -484,7 +486,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 				return $check;
 			}
 
-			$transient_key = 'telex_gpm_meta_stash_' . $object_id;
+			$transient_key = 'gpei_meta_stash_' . $object_id;
 			$stash         = get_transient( $transient_key );
 			if ( ! is_array( $stash ) ) {
 				$stash = array();
@@ -545,12 +547,12 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 
 			// Record this post ID so import_end knows to process it.
 			// We use a transient list to track all event post IDs that need processing.
-			$pending = get_transient( 'telex_gpm_pending_event_ids' );
+			$pending = get_transient( 'gpei_pending_event_ids' );
 			if ( ! is_array( $pending ) ) {
 				$pending = array();
 			}
 			$pending[] = $post_id;
-			set_transient( 'telex_gpm_pending_event_ids', array_unique( $pending ), HOUR_IN_SECONDS );
+			set_transient( 'gpei_pending_event_ids', array_unique( $pending ), HOUR_IN_SECONDS );
 
 			return $postmeta;
 		}
@@ -570,7 +572,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 		 * @return void
 		 */
 		public function process_all_remaining_stashes(): void {
-			$pending = get_transient( 'telex_gpm_pending_event_ids' );
+			$pending = get_transient( 'gpei_pending_event_ids' );
 
 			if ( ! is_array( $pending ) || empty( $pending ) ) {
 				return;
@@ -581,7 +583,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 			}
 
 			// Clean up the pending list.
-			delete_transient( 'telex_gpm_pending_event_ids' );
+			delete_transient( 'gpei_pending_event_ids' );
 		}
 
 		/**
@@ -608,7 +610,7 @@ if ( ! class_exists( 'Telex_GatherPress_Migration' ) ) {
 				return;
 			}
 
-			$transient_key = 'telex_gpm_meta_stash_' . $post_id;
+			$transient_key = 'gpei_meta_stash_' . $post_id;
 			$stash         = get_transient( $transient_key );
 
 			if ( ! is_array( $stash ) || empty( $stash ) ) {

@@ -11,21 +11,23 @@
  * - **Pass 2:** Imports events and links them to the previously created
  *   venues via the `_gatherpress_venue` shadow taxonomy.
  *
- * Classes using this trait MUST implement the `Telex_GPM_Taxonomy_Venue_Adapter`
- * interface and the `Telex_GPM_Hookable_Adapter` interface, and MUST use the
- * `Telex_GPM_Datetime_Helper` trait (for `get_venue_term_slug()`).
+ * Classes using this trait MUST implement the `Taxonomy_Venue_Adapter`
+ * interface and the `Hookable_Adapter` interface, and MUST use the
+ * `Datetime_Helper` trait (for `get_venue_term_slug()`).
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
+if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 	/**
-	 * Trait Telex_GPM_Taxonomy_Venue_Handler.
+	 * Trait Taxonomy_Venue_Handler.
 	 *
 	 * Encapsulates the two-pass import logic for taxonomy-based venues.
 	 * Any adapter that uses taxonomy terms for venues can include this
@@ -33,7 +35,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 	 *
 	 * @since 0.1.0
 	 */
-	trait Telex_GPM_Taxonomy_Venue_Handler {
+	trait Taxonomy_Venue_Handler {
 
 		/**
 		 * The temporary post type used to silently skip events during pass 1.
@@ -46,7 +48,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * @var string
 		 */
-		private static string $skip_post_type = '_telex_gpm_skip';
+		private static string $skip_post_type = '_gpei_skip';
 
 		/**
 		 * Whether this adapter is currently in venue-creation mode (pass 1).
@@ -150,7 +152,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * @return void
 		 */
-		protected function setup_taxonomy_venue_hooks(): void {
+		final protected function setup_taxonomy_venue_hooks(): void {
 			if ( $this->tvh_hooks_registered ) {
 				return;
 			}
@@ -270,7 +272,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 * @param array<string, mixed> $post_data Raw post data from the importer.
 		 * @return array<string, mixed> Unmodified post data.
 		 */
-		public function tvh_capture_current_post_data( array $post_data ): array {
+		final public function tvh_capture_current_post_data( array $post_data ): array {
 			$post_type       = $post_data['post_type'] ?? '';
 			$skippable_types = $this->get_skippable_event_post_types();
 
@@ -291,7 +293,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 * @param int $post_id The event post ID.
 		 * @return void
 		 */
-		public function tvh_track_saved_post_id( int $post_id ): void {
+		final public function tvh_track_saved_post_id( int $post_id ): void {
 			$post_type = get_post_type( $post_id );
 
 			if ( 'gatherpress_event' !== $post_type ) {
@@ -341,7 +343,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * Checks whether any `gatherpress_venue` posts exist that were created
 		 * from the source venue taxonomy terms (identified by the presence of
-		 * the `_telex_gpm_source_venue_term_slug` post meta).
+		 * the `_gpei_source_venue_term_slug` post meta).
 		 *
 		 * @since 0.1.0
 		 *
@@ -351,7 +353,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 			$venue_from_taxonomy = get_posts(
 				array(
 					'post_type'      => 'gatherpress_venue',
-					'meta_key'       => '_telex_gpm_source_venue_term_slug',
+					'meta_key'       => '_gpei_source_venue_term_slug',
 					'post_status'    => 'publish',
 					'posts_per_page' => 1,
 					'fields'         => 'ids',
@@ -438,7 +440,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 				return 0;
 			}
 
-			update_post_meta( $venue_post_id, '_telex_gpm_source_venue_term_slug', $venue_slug );
+			update_post_meta( $venue_post_id, '_gpei_source_venue_term_slug', $venue_slug );
 
 			return $venue_post_id;
 		}
@@ -458,7 +460,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 * @param array $terms Array of term assignment arrays.
 		 * @return array Filtered term assignments.
 		 */
-		public function tvh_filter_venue_terms( array $terms ): array {
+		final public function tvh_filter_venue_terms( array $terms ): array {
 			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
 			$event_post_id       = $this->tvh_last_saved_event_id;
 			$venue_slugs         = array();
@@ -504,7 +506,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 * @param string $taxonomy The taxonomy slug for the term.
 		 * @return string|\WP_Error The term name to proceed, or WP_Error to block insertion.
 		 */
-		public function tvh_intercept_venue_term_creation( $term, string $taxonomy ) {
+		final public function tvh_intercept_venue_term_creation( $term, string $taxonomy ) {
 			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
 
 			if ( $venue_taxonomy_slug !== $taxonomy ) {
@@ -520,10 +522,10 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 			}
 
 			return new \WP_Error(
-				'telex_gpm_venue_handled',
+				'gpei_venue_handled',
 				sprintf(
 					/* translators: %s: venue term name */
-					__( 'Venue "%s" handled by GatherPress migration.', 'telex-gatherpress-migration' ),
+					__( 'Venue "%s" handled by GatherPress migration.', 'gatherpress-export-import' ),
 					$term
 				)
 			);
@@ -540,7 +542,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 * @param array<string, mixed> $post_data Raw post data from the importer.
 		 * @return array<string, mixed> Modified post data with skip post_type, or unmodified.
 		 */
-		public function tvh_maybe_flag_events_on_venue_pass( array $post_data ): array {
+		final public function tvh_maybe_flag_events_on_venue_pass( array $post_data ): array {
 			$this->tvh_skip_current_event = false;
 
 			$post_type       = $post_data['post_type'] ?? '';
@@ -573,7 +575,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * @return void
 		 */
-		public function tvh_process_deferred_venue_links(): void {
+		final public function tvh_process_deferred_venue_links(): void {
 			$this->tvh_cleanup_skip_posts();
 
 			if ( empty( $this->tvh_deferred_venue_links ) ) {
@@ -608,7 +610,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 						$venue_posts = get_posts(
 							array(
 								'post_type'      => 'gatherpress_venue',
-								'meta_key'       => '_telex_gpm_source_venue_term_slug',
+								'meta_key'       => '_gpei_source_venue_term_slug',
 								'meta_value'     => $venue_slug,
 								'post_status'    => 'publish',
 								'posts_per_page' => 1,
@@ -638,7 +640,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 						}
 
 						if ( $linked ) {
-							delete_post_meta( $venue_post_id, '_telex_gpm_source_venue_term_slug' );
+							delete_post_meta( $venue_post_id, '_gpei_source_venue_term_slug' );
 						}
 
 						break; // GatherPress events have one venue.
@@ -656,7 +658,7 @@ if ( ! trait_exists( 'Telex_GPM_Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * @return bool True if in venue pass (pass 1), false if in event pass (pass 2).
 		 */
-		public function is_venue_pass(): bool {
+		final public function is_venue_pass(): bool {
 			return $this->tvh_is_venue_pass;
 		}
 	}
