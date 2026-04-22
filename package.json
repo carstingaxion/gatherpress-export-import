@@ -19,6 +19,7 @@
 	},
 	"main": "build/index.js",
 	"devDependencies": {
+		"@wordpress/env": "^10.39.0",
 		"@wordpress/scripts": "^30.15.0"
 	},
 	"scripts": {
@@ -36,6 +37,13 @@
 		"lint:phpstan": "vendor/bin/phpstan analyze -vv --memory-limit=2G",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
-		"plugin-zip": "wp-scripts plugin-zip"
+		"plugin-zip": "wp-scripts plugin-zip",
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop",
+		"env:destroy": "wp-env destroy",
+		"pretest:php": "wp-env start",
+		"test:php": "wp-env run tests-cli --env-cwd='wp-content/plugins/gatherpress-export-import' bash -c 'WP_TESTS_DIR=/wordpress-phpunit vendor/bin/phpunit'",
+		"test:php:unit": "wp-env run tests-cli --env-cwd='wp-content/plugins/gatherpress-export-import' bash -c 'WP_TESTS_DIR=/wordpress-phpunit vendor/bin/phpunit --testsuite unit'",
+		"test:php:integration": "wp-env run tests-cli --env-cwd='wp-content/plugins/gatherpress-export-import' bash -c 'WP_TESTS_DIR=/wordpress-phpunit vendor/bin/phpunit --testsuite integration'"
 	}
 }
