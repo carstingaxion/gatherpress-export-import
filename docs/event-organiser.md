@@ -1,14 +1,14 @@
 # Event Organiser — Import Guide
 
-This document explains how the GatherPress Event Migration plugin handles data from **Event Organiser** by Stephen Harris, and why a **two-pass import** is required.
+This document explains how the GatherPress Event Migration plugin handles data from **Event Organiser** by Stephen Harris.
 
-> **Architecture note:** The two-pass venue import logic is implemented as a shared trait (`Telex_GPM_Taxonomy_Venue_Handler`) and interface (`Telex_GPM_Taxonomy_Venue_Adapter`). Any adapter whose source plugin stores venues as taxonomy terms can use this same mechanism by implementing the interface and including the trait. The Event Organiser adapter was the first to use it, but the architecture is designed to be reusable. See [Two-Pass Architecture](#two-pass-architecture) at the end of this document.
+For general import architecture, data mapping, and the overall import flow, see the [Import Guide](import-guide.md).
 
 ---
 
 ## Why Two Passes?
 
-Event Organiser stores venues as **taxonomy terms** (`event-venue`) rather than as a dedicated custom post type. GatherPress, on the other hand, uses `gatherpress_venue` **posts** which are automatically "shadowed" into a hidden `_gatherpress_venue` taxonomy. Events reference venues by being assigned one of these shadow taxonomy terms.
+Event Organiser stores venues as **taxonomy terms** (`event-venue`) rather than as a dedicated custom post type. GatherPress uses `gatherpress_venue` **posts** which are automatically "shadowed" into a hidden `_gatherpress_venue` taxonomy. Events reference venues by being assigned one of these shadow taxonomy terms.
 
 Because the WordPress Importer processes posts before taxonomy terms in the WXR file, and because GatherPress needs a real `gatherpress_venue` post to exist before its shadow term is available, the import must happen in two passes over the **same WXR file**.
 
@@ -34,7 +34,7 @@ Because the WordPress Importer processes posts before taxonomy terms in the WXR 
 3. Events are imported normally:
    - `post_type` is rewritten from `event` to `gatherpress_event`
    - Schedule meta keys (`_eventorganiser_schedule_start_datetime`, `_eventorganiser_schedule_end_datetime`, etc.) are intercepted, stashed in a transient, and converted into GatherPress datetime format via `Event::save_datetimes()`
-4. Venue linking is **deferred** until `import_end` because the WordPress Importer processes per-post taxonomy terms _after_ calling `wp_insert_post()` (and thus after `save_post` hooks have already fired). The plugin collects event–venue slug mappings during term processing and resolves them all at the end.
+4. Venue linking is **deferred** until `import_end` because the WordPress Importer processes per-post taxonomy terms _after_ calling `wp_insert_post()`. The plugin collects event–venue slug mappings during term processing and resolves them all at the end.
 5. For each event, the plugin looks up the matching `gatherpress_venue` post by slug (or by the `_telex_gpm_source_venue_term_slug` meta as a fallback), generates the expected shadow term slug using the `_<post-slug>` convention, and assigns it to the event via `wp_set_object_terms()`.
 6. After a successful venue link, the temporary `_telex_gpm_source_venue_term_slug` meta is cleaned up from the venue post.
 
@@ -104,19 +104,6 @@ The linking process:
 
 ---
 
-## Venue Term Slug Convention
-
-GatherPress generates shadow taxonomy term slugs by prefixing the venue post slug with an underscore:
-
-```
-Venue post slug:    university-lecture-theatre
-Shadow term slug:   _university-lecture-theatre
-```
-
-This convention is defined in GatherPress's `Venue::get_venue_term_slug()` method. The migration plugin replicates this convention in its `Telex_GPM_Datetime_Helper` trait via the `get_venue_term_slug()` method to ensure consistent lookups.
-
----
-
 ## Taxonomy Mapping
 
 | Event Organiser Taxonomy | GatherPress / WordPress Target | Handling |
@@ -161,22 +148,22 @@ This should not happen with the current implementation. The `_telex_gpm_skip` po
 
 ## Hook Registration Summary
 
-The Event Organiser adapter registers the following hooks via `setup_import_hooks()`:
+The Event Organiser adapter registers the following hooks via `setup_import_hooks()` (delegated to the shared `Telex_GPM_Taxonomy_Venue_Handler` trait):
 
 | Hook | Priority | Callback | Purpose |
 |---|---|---|---|
-| `wp_import_post_data_raw` | 2 | `capture_current_event_post_data()` | Records the current post title for context |
-| `wp_import_post_data_raw` | 3 | `maybe_flag_events_on_venue_pass()` | Redirects events to skip post type during Pass 1 |
-| `pre_insert_term` | 3 | `intercept_venue_term_creation()` | Intercepts top-level `event-venue` term creation |
-| `wp_import_post_terms` | 4 | `filter_event_venue_terms()` | Intercepts per-post `event-venue` terms, creates venues (Pass 1) or records slugs (Pass 2) |
-| `save_post_gatherpress_event` | 1 | `track_saved_post_id()` | Records the last saved event post ID for term association |
-| `import_end` | 10 | `process_deferred_venue_links()` | Links events to venues and cleans up skip posts |
+| `wp_import_post_data_raw` | 2 | `tvh_capture_current_post_data()` | Records the current post title for context |
+| `wp_import_post_data_raw` | 3 | `tvh_maybe_flag_events_on_venue_pass()` | Redirects events to skip post type during Pass 1 |
+| `pre_insert_term` | 3 | `tvh_intercept_venue_term_creation()` | Intercepts top-level `event-venue` term creation |
+| `wp_import_post_terms` | 4 | `tvh_filter_venue_terms()` | Intercepts per-post `event-venue` terms, creates venues (Pass 1) or records slugs (Pass 2) |
+| `save_post_gatherpress_event` | 1 | `tvh_track_saved_post_id()` | Records the last saved event post ID for term association |
+| `import_end` | 10 | `tvh_process_deferred_venue_links()` | Links events to venues and cleans up skip posts |
 
 All priorities are chosen to run **before** the main migration class's hooks (which operate at priority 5 and above), ensuring adapter-specific logic takes precedence.
 
 ---
 
-## Two-Pass Architecture
+## Two-Pass Architecture (Reusable)
 
 The two-pass import logic is not specific to Event Organiser — it lives in shared components that any adapter can reuse:
 
