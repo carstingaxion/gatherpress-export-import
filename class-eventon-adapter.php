@@ -1,35 +1,38 @@
 <?php
 /**
- * The Events Calendar (StellarWP) adapter.
+ * EventON adapter.
  *
- * Handles import conversion for `tribe_events` and `tribe_venue` post types.
- * TEC stores event dates in `_EventStartDate` / `_EventEndDate` meta keys
- * as 'Y-m-d H:i:s' local time, with `_EventTimezone` for the timezone string.
+ * Handles import conversion for the `ajde_events` post type. EventON
+ * stores event dates as Unix timestamps in the `evcal_srow` (start)
+ * and `evcal_erow` (end) meta keys.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 	/**
-	 * Class Telex_GPM_TEC_Adapter.
+	 * Class EventON_Adapter.
 	 *
-	 * Source adapter for The Events Calendar (StellarWP).
-	 * Converts tribe_events to gatherpress_event and tribe_venue
-	 * to gatherpress_venue during WordPress XML import.
+	 * Source adapter for EventON. Converts `ajde_events` to
+	 * `gatherpress_event` during WordPress XML import. EventON
+	 * does not use a dedicated venue CPT; venue data is stored
+	 * via taxonomy terms and meta fields.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @see Telex_GPM_Source_Adapter
-	 * @see Telex_GPM_Datetime_Helper
+	 * @see Source_Adapter
+	 * @see Datetime_Helper
 	 */
-	class Telex_GPM_TEC_Adapter implements Telex_GPM_Source_Adapter {
+	class EventON_Adapter implements Source_Adapter {
 
-		use Telex_GPM_Datetime_Helper;
+		use Datetime_Helper;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -39,7 +42,7 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		 * @return string The source plugin name.
 		 */
 		public function get_name(): string {
-			return 'The Events Calendar (StellarWP)';
+			return 'EventON';
 		}
 
 		/**
@@ -51,21 +54,21 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		 */
 		public function get_event_post_type_map(): array {
 			return array(
-				'tribe_events' => 'gatherpress_event',
+				'ajde_events' => 'gatherpress_event',
 			);
 		}
 
 		/**
 		 * Gets the venue post type mapping.
 		 *
+		 * EventON does not use a custom post type for venues.
+		 *
 		 * @since 0.1.0
 		 *
-		 * @return array<string, string> Venue post type map.
+		 * @return array<string, string> Empty array; no venue CPT.
 		 */
 		public function get_venue_post_type_map(): array {
-			return array(
-				'tribe_venue' => 'gatherpress_venue',
-			);
+			return array();
 		}
 
 		/**
@@ -73,18 +76,17 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return string[] Meta keys for date/time and timezone.
+		 * @return string[] Meta keys for Unix timestamp-based start and end times.
 		 */
 		public function get_stash_meta_keys(): array {
 			return array(
-				'_EventStartDate',
-				'_EventEndDate',
-				'_EventTimezone',
+				'evcal_srow',
+				'evcal_erow',
 			);
 		}
 
 		/**
-		 * Gets pseudopostmeta definitions for TEC meta keys.
+		 * Gets pseudopostmeta definitions for EventON meta keys.
 		 *
 		 * @since 0.1.0
 		 *
@@ -94,19 +96,11 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 			$callback = array( $this, 'noop_callback' );
 
 			return array(
-				'_EventStartDate' => array(
+				'evcal_srow' => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
-				'_EventEndDate'   => array(
-					'post_type'       => 'gatherpress_event',
-					'import_callback' => $callback,
-				),
-				'_EventTimezone'  => array(
-					'post_type'       => 'gatherpress_event',
-					'import_callback' => $callback,
-				),
-				'_EventVenueID'   => array(
+				'evcal_erow' => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
@@ -116,23 +110,23 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		/**
 		 * Determines if the given stash data belongs to this adapter.
 		 *
-		 * Checks for the presence of the `_EventStartDate` meta key,
-		 * which is unique to The Events Calendar.
+		 * Checks for the presence of the `evcal_srow` meta key,
+		 * which is unique to EventON.
 		 *
 		 * @since 0.1.0
 		 *
 		 * @param array<string, mixed> $stash The collected meta key/value pairs.
-		 * @return bool True if TEC meta keys are present.
+		 * @return bool True if EventON meta keys are present.
 		 */
 		public function can_handle( array $stash ): bool {
-			return isset( $stash['_EventStartDate'] );
+			return isset( $stash['evcal_srow'] );
 		}
 
 		/**
-		 * Converts the stashed TEC meta data into GatherPress datetimes.
+		 * Converts the stashed EventON meta data into GatherPress datetimes.
 		 *
-		 * Reads `_EventStartDate`, `_EventEndDate`, and `_EventTimezone` from
-		 * the stash and saves them via the GatherPress Event class.
+		 * Converts Unix timestamps from `evcal_srow` and `evcal_erow` into
+		 * 'Y-m-d H:i:s' format using the site's configured timezone.
 		 *
 		 * @since 0.1.0
 		 *
@@ -141,37 +135,44 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		 * @return void
 		 */
 		public function convert_datetimes( int $post_id, array $stash ): void {
-			$start    = isset( $stash['_EventStartDate'] ) ? $stash['_EventStartDate'] : '';
-			$end      = isset( $stash['_EventEndDate'] ) ? $stash['_EventEndDate'] : '';
-			$timezone = isset( $stash['_EventTimezone'] ) ? $stash['_EventTimezone'] : $this->get_default_timezone();
+			$start_ts = isset( $stash['evcal_srow'] ) ? intval( $stash['evcal_srow'] ) : 0;
+			$end_ts   = isset( $stash['evcal_erow'] ) ? intval( $stash['evcal_erow'] ) : 0;
 
-			if ( empty( $start ) ) {
+			if ( 0 === $start_ts ) {
 				return;
 			}
 
-			if ( empty( $end ) ) {
-				$end = $start;
+			if ( 0 === $end_ts ) {
+				$end_ts = $start_ts;
 			}
 
-			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
+			$timezone       = $this->get_default_timezone();
+			$tz             = new \DateTimeZone( $timezone );
+			$datetime_start = ( new \DateTime( '@' . $start_ts ) )->setTimezone( $tz )->format( 'Y-m-d H:i:s' );
+			$datetime_end   = ( new \DateTime( '@' . $end_ts ) )->setTimezone( $tz )->format( 'Y-m-d H:i:s' );
+
+			$this->save_gatherpress_datetimes( $post_id, $datetime_start, $datetime_end, $timezone );
 		}
 
 		/**
 		 * Gets the meta key used for venue linking.
 		 *
+		 * EventON does not use a meta key for venue references.
+		 *
 		 * @since 0.1.0
 		 *
-		 * @return string The venue meta key '_EventVenueID'.
+		 * @return null Always null for EventON.
 		 */
 		public function get_venue_meta_key(): ?string {
-			return '_EventVenueID';
+			return null;
 		}
 
 		/**
-		 * Gets the taxonomy mapping for The Events Calendar.
+		 * Gets the taxonomy mapping for EventON.
 		 *
-		 * Maps TEC's custom event category taxonomy to the GatherPress topic
-		 * taxonomy. Standard post tags are already compatible.
+		 * Maps EventON's event_type taxonomy to GatherPress topic.
+		 * Location and organizer taxonomies are specific to EventON
+		 * and have no direct GatherPress equivalent.
 		 *
 		 * @since 0.1.0
 		 *
@@ -179,7 +180,7 @@ if ( ! class_exists( 'Telex_GPM_TEC_Adapter' ) ) {
 		 */
 		public function get_taxonomy_map(): array {
 			return array(
-				'tribe_events_cat' => 'gatherpress_topic',
+				'event_type' => 'gatherpress_topic',
 			);
 		}
 

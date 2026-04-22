@@ -5,14 +5,14 @@
  * Only custom styles are for the ordered step numbers.
  */
 
-.telex-gpm-steps {
+.gpei-steps {
 	counter-reset: gpm-step;
 	list-style: none;
 	padding: 0;
 	margin: 1em 0;
 }
 
-.telex-gpm-steps li {
+.gpei-steps li {
 	counter-increment: gpm-step;
 	position: relative;
 	padding: 12px 12px 12px 44px;
@@ -22,7 +22,7 @@
 	border-radius: 4px;
 }
 
-.telex-gpm-steps li::before {
+.gpei-steps li::before {
 	content: counter(gpm-step);
 	position: absolute;
 	left: 10px;
@@ -39,6 +39,6 @@
 	font-weight: 600;
 }
 
-.telex-gpm-steps li p.description {
+.gpei-steps li p.description {
 	margin: 4px 0 0;
 }

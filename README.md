@@ -1,10 +1,6 @@
-# GatherPress Event Migration
+# GatherPress Export Import
 
 **Intercepts WordPress XML imports from third-party event plugins and transforms them into GatherPress data automatically.**
-
-![License: GPLv2+](https://img.shields.io/badge/license-GPLv2%2B-blue.svg)
-![Tested up to: 6.8](https://img.shields.io/badge/tested%20up%20to-6.8-brightgreen.svg)
-![Version: 0.1.0](https://img.shields.io/badge/version-0.1.0-orange.svg)
 
 ---
 
@@ -32,13 +28,13 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 | **Event Organiser** (Stephen Harris) | `event` | Taxonomy (`event-venue`) | `Y-m-d H:i:s` (`_eventorganiser_schedule_*`) |
 
 > [!TIP]
-> You can add support for additional plugins using the `telex_gpm_event_post_type_map`, `telex_gpm_venue_post_type_map`, and `gatherpress_pseudopostmetas` filters.
+> You can add support for additional plugins using the `gpei_event_post_type_map`, `gpei_venue_post_type_map`, and `gatherpress_pseudopostmetas` filters.
 
 ---
 
 ## Installation
 
-1. Upload the plugin files to `/wp-content/plugins/telex-gatherpress-migration`, or install through the WordPress plugins screen.
+1. Upload the plugin files to `/wp-content/plugins/gatherpress-export-import`, or install through the WordPress plugins screen.
 2. Activate the plugin through **Plugins** in the WordPress admin.
 3. Ensure **GatherPress** and the **WordPress Importer** plugin are also active.
 4. Export your event data from the source plugin via **Tools > Export**.
@@ -136,7 +132,7 @@ Each lands on **Tools > Export** so you can export demo data and test the migrat
 - **Venue deduplication** — Importing the same file twice may create duplicates. Always import into a clean environment or verify existing data.
 - **Shortcodes in content** — Source plugin shortcodes will appear as raw text. Review imported event content and clean up as needed.
 - **Shared post type slugs** — Events Manager and Event Organiser both use `event`. The plugin distinguishes them by meta keys. Import data from only one source at a time.
-- **Taxonomy-based venues (two-pass import)** — Plugins that store venues as taxonomy terms (e.g., Event Organiser's `event-venue`) require a two-pass import: the first import creates `gatherpress_venue` posts from venue terms and skips events; the second import creates events and links them to venues. This logic is implemented as a shared trait (`Telex_GPM_Taxonomy_Venue_Handler`) and interface (`Telex_GPM_Taxonomy_Venue_Adapter`) that any adapter can reuse. Simply import the same WXR file twice. See [`docs/event-organiser.md`](docs/event-organiser.md) for a detailed explanation of the two-pass strategy and how to add support for additional taxonomy-venue plugins.
+- **Taxonomy-based venues (two-pass import)** — Plugins that store venues as taxonomy terms (e.g., Event Organiser's `event-venue`) require a two-pass import: the first import creates `gatherpress_venue` posts from venue terms and skips events; the second import creates events and links them to venues. This logic is implemented as a shared trait (`Taxonomy_Venue_Handler`) and interface (`Taxonomy_Venue_Adapter`) that any adapter can reuse. Simply import the same WXR file twice. See [`docs/event-organiser.md`](docs/event-organiser.md) for a detailed explanation of the two-pass strategy and how to add support for additional taxonomy-venue plugins.
 
 ---
 
@@ -146,13 +142,13 @@ Add support for additional event plugins using these filters:
 
 ```php
 // Map a custom event post type to GatherPress.
-add_filter( 'telex_gpm_event_post_type_map', function ( $map ) {
+add_filter( 'gpei_event_post_type_map', function ( $map ) {
     $map['my_custom_event'] = 'gatherpress_event';
     return $map;
 } );
 
 // Map a custom venue post type to GatherPress.
-add_filter( 'telex_gpm_venue_post_type_map', function ( $map ) {
+add_filter( 'gpei_venue_post_type_map', function ( $map ) {
     $map['my_custom_venue'] = 'gatherpress_venue';
     return $map;
 } );
@@ -167,7 +163,7 @@ add_filter( 'gatherpress_pseudopostmetas', function ( $metas ) {
 } );
 ```
 
-For a full adapter implementation, create a class implementing the `Telex_GPM_Source_Adapter` interface and register it via `Telex_GatherPress_Migration::get_instance()->register_adapter()`.
+For a full adapter implementation, create a class implementing the `Source_Adapter` interface and register it via `Migration::get_instance()->register_adapter()`.
 
 ---
 
@@ -189,7 +185,6 @@ GatherPress treats each event occurrence as a separate post. If your source plug
 ### 0.1.0
 
 - Initial release with import interception for six major event plugins.
-- Server-side rendered migration guide block.
 - Custom importer screen with prerequisite checks and step-by-step instructions.
 - Playground blueprints for all supported source plugins with demo data.
 

@@ -6,17 +6,19 @@
  * by the Events Manager plugin. Stores dates in `_event_start` / `_event_end`
  * meta keys in 'Y-m-d H:i:s' format with `_event_timezone` for the timezone.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Telex_GPM_Events_Manager_Adapter' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 	/**
-	 * Class Telex_GPM_Events_Manager_Adapter.
+	 * Class Events_Manager_Adapter.
 	 *
 	 * Source adapter for Events Manager. Converts `event` to
 	 * `gatherpress_event` and `location` to `gatherpress_venue`
@@ -24,12 +26,12 @@ if ( ! class_exists( 'Telex_GPM_Events_Manager_Adapter' ) ) {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @see Telex_GPM_Source_Adapter
-	 * @see Telex_GPM_Datetime_Helper
+	 * @see Source_Adapter
+	 * @see Datetime_Helper
 	 */
-	class Telex_GPM_Events_Manager_Adapter implements Telex_GPM_Source_Adapter {
+	class Events_Manager_Adapter implements Source_Adapter {
 
-		use Telex_GPM_Datetime_Helper;
+		use Datetime_Helper;
 
 		/**
 		 * Gets the human-readable name of the source plugin.

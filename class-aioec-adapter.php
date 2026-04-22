@@ -8,17 +8,19 @@
  * the post type rewrite. Datetime conversion from WXR postmeta is
  * limited because the source data is not available in standard meta.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Telex_GPM_AIOEC_Adapter' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\AIOEC_Adapter' ) ) {
 	/**
-	 * Class Telex_GPM_AIOEC_Adapter.
+	 * Class AIOEC_Adapter.
 	 *
 	 * Source adapter for All-in-One Event Calendar. Converts `ai1ec_event`
 	 * to `gatherpress_event` during WordPress XML import. Because AIOEC
@@ -27,12 +29,12 @@ if ( ! class_exists( 'Telex_GPM_AIOEC_Adapter' ) ) {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @see Telex_GPM_Source_Adapter
-	 * @see Telex_GPM_Datetime_Helper
+	 * @see Source_Adapter
+	 * @see Datetime_Helper
 	 */
-	class Telex_GPM_AIOEC_Adapter implements Telex_GPM_Source_Adapter {
+	class AIOEC_Adapter implements Source_Adapter {
 
-		use Telex_GPM_Datetime_Helper;
+		use Datetime_Helper;
 
 		/**
 		 * Gets the human-readable name of the source plugin.

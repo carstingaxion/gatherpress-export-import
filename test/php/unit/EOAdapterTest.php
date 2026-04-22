@@ -6,15 +6,20 @@
  * taxonomy maps, pseudopostmetas) and data detection in isolation
  * without a running WordPress environment.
  *
- * @package TelexGatherpressMigration\Tests\Unit
+ * @package GatherPressExportImport\Tests\Unit
  * @since   0.1.0
  */
+
+use GatherPressExportImport\Event_Organiser_Adapter;
+use GatherPressExportImport\Source_Adapter;
+use GatherPressExportImport\Hookable_Adapter;
+use GatherPressExportImport\Taxonomy_Venue_Adapter;
 
 /**
  * Class EOAdapterTest.
  *
  * @since 0.1.0
- * @coversDefaultClass \Telex_GPM_Event_Organiser_Adapter
+ * @coversDefaultClass Event_Organiser_Adapter
  */
 class EOAdapterTest extends \WP_UnitTestCase {
 
@@ -23,9 +28,9 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @var \Telex_GPM_Event_Organiser_Adapter
+	 * @var Event_Organiser_Adapter
 	 */
-	private \Telex_GPM_Event_Organiser_Adapter $adapter;
+	private Event_Organiser_Adapter $adapter;
 
 	/**
 	 * Sets up the test fixture.
@@ -36,7 +41,7 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->adapter = new \Telex_GPM_Event_Organiser_Adapter();
+		$this->adapter = new Event_Organiser_Adapter();
 	}
 
 	/**
@@ -224,9 +229,9 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_implements_interfaces(): void {
-		$this->assertInstanceOf( \Telex_GPM_Source_Adapter::class, $this->adapter );
-		$this->assertInstanceOf( \Telex_GPM_Hookable_Adapter::class, $this->adapter );
-		$this->assertInstanceOf( \Telex_GPM_Taxonomy_Venue_Adapter::class, $this->adapter );
+		$this->assertInstanceOf( Source_Adapter::class, $this->adapter );
+		$this->assertInstanceOf( Hookable_Adapter::class, $this->adapter );
+		$this->assertInstanceOf( Taxonomy_Venue_Adapter::class, $this->adapter );
 	}
 
 	/**

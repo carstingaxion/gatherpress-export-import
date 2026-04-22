@@ -8,7 +8,7 @@ This document explains the general architecture and import flow of the GatherPre
 
 The plugin intercepts the standard WordPress XML (WXR) import process and transforms third-party event plugin data into GatherPress format on the fly. No custom export files are needed — use your source plugin's normal WordPress export.
 
-The migration is orchestrated by the `Telex_GatherPress_Migration` singleton class, which registers hooks into the WordPress Importer at strategic points. Each supported source plugin has a dedicated **adapter** class that encapsulates the knowledge of how that plugin stores its data.
+The migration is orchestrated by the `Migration` singleton class, which registers hooks into the WordPress Importer at strategic points. Each supported source plugin has a dedicated **adapter** class that encapsulates the knowledge of how that plugin stores its data.
 
 ---
 
@@ -47,17 +47,17 @@ The main migration class hooks into `wp_import_post_data_raw` at priority 5. For
 - **Event post type map** — e.g., `tribe_events` → `gatherpress_event`, `event` → `gatherpress_event`
 - **Venue post type map** — e.g., `tribe_venue` → `gatherpress_venue`, `location` → `gatherpress_venue`
 
-The original source post type is preserved in a `_telex_gpm_source_type` key on the post data array for adapter differentiation.
+The original source post type is preserved in a `_gpei_source_type` key on the post data array for adapter differentiation.
 
 These maps are filterable:
 
 ```php
-add_filter( 'telex_gpm_event_post_type_map', function ( $map ) {
+add_filter( 'gpei_event_post_type_map', function ( $map ) {
     $map['my_custom_event'] = 'gatherpress_event';
     return $map;
 } );
 
-add_filter( 'telex_gpm_venue_post_type_map', function ( $map ) {
+add_filter( 'gpei_venue_post_type_map', function ( $map ) {
     $map['my_custom_venue'] = 'gatherpress_venue';
     return $map;
 } );
@@ -91,7 +91,7 @@ Each adapter declares a taxonomy map via `get_taxonomy_map()`. The main migratio
 The taxonomy map is filterable:
 
 ```php
-add_filter( 'telex_gpm_taxonomy_map', function ( $map ) {
+add_filter( 'gpei_taxonomy_map', function ( $map ) {
     $map['my_custom_category'] = 'gatherpress_topic';
     return $map;
 } );
@@ -116,7 +116,7 @@ For plugins that store venues as a custom post type (e.g., `tribe_venue`, `locat
 
 ### Plugins with taxonomy-based venues (e.g., Event Organiser)
 
-For plugins that store venues as taxonomy terms rather than posts, a **two-pass import** is required. This is handled by the shared `Telex_GPM_Taxonomy_Venue_Handler` trait and `Telex_GPM_Taxonomy_Venue_Adapter` interface. See the [Event Organiser documentation](event-organiser.md) for a detailed walkthrough.
+For plugins that store venues as taxonomy terms rather than posts, a **two-pass import** is required. This is handled by the shared `Taxonomy_Venue_Handler` trait and `Taxonomy_Venue_Adapter` interface. See the [Event Organiser documentation](event-organiser.md) for a detailed walkthrough.
 
 ---
 
@@ -165,13 +165,13 @@ For plugins that use taxonomy-based venues (e.g., Event Organiser), import the s
 
 ## Extending for Custom Plugins
 
-To add support for an additional event plugin, create a class implementing the `Telex_GPM_Source_Adapter` interface and register it:
+To add support for an additional event plugin, create a class implementing the `Source_Adapter` interface and register it:
 
 ```php
-$migration = Telex_GatherPress_Migration::get_instance();
+$migration = Migration::get_instance();
 $migration->register_adapter( new My_Custom_Adapter() );
 ```
 
-If the adapter needs to register its own import hooks, also implement `Telex_GPM_Hookable_Adapter`. If the source plugin stores venues as taxonomy terms, implement `Telex_GPM_Taxonomy_Venue_Adapter` and use the `Telex_GPM_Taxonomy_Venue_Handler` trait.
+If the adapter needs to register its own import hooks, also implement `Hookable_Adapter`. If the source plugin stores venues as taxonomy terms, implement `Taxonomy_Venue_Adapter` and use the `Taxonomy_Venue_Handler` trait.
 
 See the adapter source files and [`event-organiser.md`](event-organiser.md) for implementation examples.

@@ -7,13 +7,13 @@
  * - Pass 1 creates venues from taxonomy terms and skips events
  * - Pass 2 imports events with datetimes and links them to venues
  *
- * @package TelexGatherpressMigration\Tests\Integration
+ * @package GatherPressExportImport\Tests\Integration
  * @since   0.1.0
  */
 
-namespace TelexGatherpressMigration\Tests\Integration;
+namespace GatherPressExportImport\Tests\Integration;
 
-use TelexGatherpressMigration\Tests\WXRImportHelper;
+use GatherPressExportImport\Tests\WXRImportHelper;
 
 /**
  * Class WXRImportEOTest.
@@ -101,13 +101,13 @@ class WXRImportEOTest extends TestCase {
 
 		$skip_posts = get_posts(
 			array(
-				'post_type'      => '_telex_gpm_skip',
+				'post_type'      => '_gpei_skip',
 				'post_status'    => 'any',
 				'posts_per_page' => -1,
 			)
 		);
 
-		$this->assertCount( 0, $skip_posts, 'No _telex_gpm_skip posts should remain after Pass 1 cleanup.' );
+		$this->assertCount( 0, $skip_posts, 'No _gpei_skip posts should remain after Pass 1 cleanup.' );
 	}
 
 	/**
@@ -128,13 +128,13 @@ class WXRImportEOTest extends TestCase {
 		$venues = get_posts(
 			array(
 				'post_type'      => 'gatherpress_venue',
-				'meta_key'       => '_telex_gpm_source_venue_term_slug',
+				'meta_key'       => '_gpei_source_venue_term_slug',
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
 			)
 		);
 
-		$this->assertGreaterThanOrEqual( 3, count( $venues ), 'Venue posts should have _telex_gpm_source_venue_term_slug meta.' );
+		$this->assertGreaterThanOrEqual( 3, count( $venues ), 'Venue posts should have _gpei_source_venue_term_slug meta.' );
 	}
 
 	/**
@@ -257,7 +257,7 @@ class WXRImportEOTest extends TestCase {
 		$venues_with_meta = get_posts(
 			array(
 				'post_type'      => 'gatherpress_venue',
-				'meta_key'       => '_telex_gpm_source_venue_term_slug',
+				'meta_key'       => '_gpei_source_venue_term_slug',
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
 			)

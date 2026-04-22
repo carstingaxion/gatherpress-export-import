@@ -6,11 +6,13 @@
  * datetime conversion, and venue linking against a real WordPress
  * environment with GatherPress active.
  *
- * @package TelexGatherpressMigration\Tests\Integration
+ * @package GatherPressExportImport\Tests\Integration
  * @since   0.1.0
  */
 
-namespace TelexGatherpressMigration\Tests\Integration;
+namespace GatherPressExportImport\Tests\Integration;
+
+use GatherPressExportImport\Event_Organiser_Adapter;
 
 /**
  * Class EOAdapterIntegrationTest.
@@ -30,7 +32,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	public function test_eo_adapter_is_registered(): void {
 		$adapter = $this->get_eo_adapter();
 		$this->assertNotNull( $adapter, 'EO adapter should be registered.' );
-		$this->assertInstanceOf( \Telex_GPM_Event_Organiser_Adapter::class, $adapter );
+		$this->assertInstanceOf( Event_Organiser_Adapter::class, $adapter );
 	}
 
 	/**
@@ -114,13 +116,13 @@ class EOAdapterIntegrationTest extends TestCase {
 		$this->assertTrue( $result, 'stash_meta_on_import should return true to block meta saving.' );
 
 		// Verify the transient was set.
-		$stash = get_transient( 'telex_gpm_meta_stash_' . $event_id );
+		$stash = get_transient( 'gpei_meta_stash_' . $event_id );
 		$this->assertIsArray( $stash );
 		$this->assertArrayHasKey( '_eventorganiser_schedule_start_datetime', $stash );
 		$this->assertSame( '2025-08-28 18:30:00', $stash['_eventorganiser_schedule_start_datetime'] );
 
 		// Clean up.
-		delete_transient( 'telex_gpm_meta_stash_' . $event_id );
+		delete_transient( 'gpei_meta_stash_' . $event_id );
 	}
 
 	/**
@@ -192,7 +194,7 @@ class EOAdapterIntegrationTest extends TestCase {
 		$adapter->convert_datetimes( $event_id, $stash );
 
 		// Verify the datetime was saved by checking the GatherPress Event object.
-		$event = new \GatherPress\Core\Event( $event_id );
+		$event    = new \GatherPress\Core\Event( $event_id );
 		$datetime = $event->get_datetime();
 
 		$this->assertNotEmpty( $datetime, 'GatherPress event should have datetime data.' );
@@ -340,8 +342,8 @@ class EOAdapterIntegrationTest extends TestCase {
 	 */
 	public function test_skip_post_type_is_registered(): void {
 		$this->assertTrue(
-			post_type_exists( '_telex_gpm_skip' ),
-			'The _telex_gpm_skip post type should be registered.'
+			post_type_exists( '_gpei_skip' ),
+			'The _gpei_skip post type should be registered.'
 		);
 	}
 
@@ -361,7 +363,7 @@ class EOAdapterIntegrationTest extends TestCase {
 
 		// Set up the stash transient with EO data.
 		set_transient(
-			'telex_gpm_meta_stash_' . $event_id,
+			'gpei_meta_stash_' . $event_id,
 			array(
 				'_eventorganiser_schedule_start_datetime' => '2025-08-28 18:30:00',
 				'_eventorganiser_schedule_end_datetime'   => '2025-08-28 20:30:00',
@@ -373,7 +375,7 @@ class EOAdapterIntegrationTest extends TestCase {
 		$migration->process_stashed_meta( $event_id );
 
 		// The transient should be consumed (deleted).
-		$stash = get_transient( 'telex_gpm_meta_stash_' . $event_id );
+		$stash = get_transient( 'gpei_meta_stash_' . $event_id );
 		$this->assertFalse( $stash, 'Stash transient should be deleted after processing.' );
 	}
 

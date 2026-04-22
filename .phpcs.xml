@@ -26,7 +26,8 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="gatherpress"/>
+				<element value="gpei_"/>
+				<element value="GatherPressExportImport"/>
 				<element value="__NAMESPACE__"/>
 			</property>
 
@@ -38,7 +39,10 @@
 		<exclude name="Universal.Classes.RequireFinalClass.NonFinalClassFound" />
 		<exclude name="Universal.Files.SeparateFunctionsFromOO.Mixed" />
 	</rule>
-		<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+		<exclude-pattern>test/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts">
 		<exclude-pattern>test/*</exclude-pattern>
 	</rule>
 

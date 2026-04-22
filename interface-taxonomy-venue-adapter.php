@@ -2,29 +2,31 @@
 /**
  * Interface for adapters whose source plugin stores venues as taxonomy terms.
  *
- * Adapters implementing this interface (alongside the Telex_GPM_Taxonomy_Venue_Handler
+ * Adapters implementing this interface (alongside the Taxonomy_Venue_Handler
  * trait) gain automatic two-pass import support: Pass 1 creates `gatherpress_venue`
  * posts from taxonomy terms and skips events; Pass 2 imports events and links them
  * to the previously created venues via the `_gatherpress_venue` shadow taxonomy.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! interface_exists( 'Telex_GPM_Taxonomy_Venue_Adapter' ) ) {
+if ( ! interface_exists( __NAMESPACE__ . '\Taxonomy_Venue_Adapter' ) ) {
 	/**
-	 * Interface Telex_GPM_Taxonomy_Venue_Adapter.
+	 * Interface Taxonomy_Venue_Adapter.
 	 *
 	 * Defines the contract for adapters that use taxonomy-based venues
-	 * and need two-pass import support via the Telex_GPM_Taxonomy_Venue_Handler trait.
+	 * and need two-pass import support via the Taxonomy_Venue_Handler trait.
 	 *
 	 * @since 0.1.0
 	 */
-	interface Telex_GPM_Taxonomy_Venue_Adapter {
+	interface Taxonomy_Venue_Adapter {
 
 		/**
 		 * Gets the source taxonomy slug used for venues.

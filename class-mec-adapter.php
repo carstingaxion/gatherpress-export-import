@@ -6,17 +6,19 @@
  * dates as 'Y-m-d' strings and times as separate hour, minute, and AM/PM
  * fields in post meta.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Telex_GPM_MEC_Adapter' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 	/**
-	 * Class Telex_GPM_MEC_Adapter.
+	 * Class MEC_Adapter.
 	 *
 	 * Source adapter for Modern Events Calendar (Webnus).
 	 * Converts `mec-events` to `gatherpress_event` during WordPress XML import.
@@ -24,12 +26,12 @@ if ( ! class_exists( 'Telex_GPM_MEC_Adapter' ) ) {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @see Telex_GPM_Source_Adapter
-	 * @see Telex_GPM_Datetime_Helper
+	 * @see Source_Adapter
+	 * @see Datetime_Helper
 	 */
-	class Telex_GPM_MEC_Adapter implements Telex_GPM_Source_Adapter {
+	class MEC_Adapter implements Source_Adapter {
 
-		use Telex_GPM_Datetime_Helper;
+		use Datetime_Helper;
 
 		/**
 		 * Gets the human-readable name of the source plugin.

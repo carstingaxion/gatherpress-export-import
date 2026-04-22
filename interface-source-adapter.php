@@ -7,24 +7,26 @@
  * the knowledge of how a specific third-party event plugin stores its
  * data and how to convert that data into GatherPress format.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! interface_exists( 'Telex_GPM_Source_Adapter' ) ) {
+if ( ! interface_exists( __NAMESPACE__ . '\Source_Adapter' ) ) {
 	/**
-	 * Interface Telex_GPM_Source_Adapter.
+	 * Interface Source_Adapter.
 	 *
 	 * Defines the contract that all third-party event plugin adapters
 	 * must implement for the GatherPress migration system.
 	 *
 	 * @since 0.1.0
 	 */
-	interface Telex_GPM_Source_Adapter {
+	interface Source_Adapter {
 
 		/**
 		 * Gets the human-readable name of the source plugin.

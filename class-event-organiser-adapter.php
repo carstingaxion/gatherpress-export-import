@@ -7,7 +7,7 @@
  * and `_eventorganiser_schedule_end_datetime` meta keys in 'Y-m-d H:i:s' format.
  *
  * Venues are stored as terms of the `event-venue` taxonomy rather than a
- * separate post type. This adapter uses the shared `Telex_GPM_Taxonomy_Venue_Handler`
+ * separate post type. This adapter uses the shared `Taxonomy_Venue_Handler`
  * trait to implement the two-pass import strategy:
  *
  * - **Pass 1 (Venue creation):** When `event-venue` taxonomy terms are
@@ -20,17 +20,19 @@
  * Note: Event Organiser shares the `event` post type slug with Events Manager.
  * The adapter distinguishes itself via meta key detection in `can_handle()`.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
+if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 	/**
-	 * Class Telex_GPM_Event_Organiser_Adapter.
+	 * Class Event_Organiser_Adapter.
 	 *
 	 * Source adapter for Event Organiser by Stephen Harris. Converts the
 	 * `event` post type to `gatherpress_event` during WordPress XML import.
@@ -38,21 +40,21 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 	 * inspecting for Event Organiser-specific meta keys.
 	 *
 	 * Implements the two-pass import strategy for taxonomy-based venues via
-	 * the shared `Telex_GPM_Taxonomy_Venue_Handler` trait and the
-	 * `Telex_GPM_Taxonomy_Venue_Adapter` interface.
+	 * the shared `Taxonomy_Venue_Handler` trait and the
+	 * `Taxonomy_Venue_Adapter` interface.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @see Telex_GPM_Source_Adapter
-	 * @see Telex_GPM_Hookable_Adapter
-	 * @see Telex_GPM_Taxonomy_Venue_Adapter
-	 * @see Telex_GPM_Datetime_Helper
-	 * @see Telex_GPM_Taxonomy_Venue_Handler
+	 * @see Source_Adapter
+	 * @see Hookable_Adapter
+	 * @see Taxonomy_Venue_Adapter
+	 * @see Datetime_Helper
+	 * @see Taxonomy_Venue_Handler
 	 */
-	class Telex_GPM_Event_Organiser_Adapter implements Telex_GPM_Source_Adapter, Telex_GPM_Hookable_Adapter, Telex_GPM_Taxonomy_Venue_Adapter {
+	class Event_Organiser_Adapter implements Hookable_Adapter, Source_Adapter, Taxonomy_Venue_Adapter {
 
-		use Telex_GPM_Datetime_Helper;
-		use Telex_GPM_Taxonomy_Venue_Handler;
+		use Datetime_Helper;
+		use Taxonomy_Venue_Handler;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -235,7 +237,7 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 *
 		 * Event Organiser does not use a venue meta key on the event post.
 		 * Venues are taxonomy terms (`event-venue`), handled by the
-		 * two-pass import strategy via the Telex_GPM_Taxonomy_Venue_Handler trait.
+		 * two-pass import strategy via the Taxonomy_Venue_Handler trait.
 		 *
 		 * @since 0.1.0
 		 *
@@ -253,7 +255,7 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 * - `event-tag` → `post_tag`
 		 *
 		 * Note: `event-venue` is NOT mapped here because it requires special
-		 * two-pass handling via the Telex_GPM_Taxonomy_Venue_Handler trait.
+		 * two-pass handling via the Taxonomy_Venue_Handler trait.
 		 *
 		 * @since 0.1.0
 		 *
@@ -270,7 +272,7 @@ if ( ! class_exists( 'Telex_GPM_Event_Organiser_Adapter' ) ) {
 		 * Sets up the import hooks for the two-pass venue/event strategy.
 		 *
 		 * Delegates to the shared `setup_taxonomy_venue_hooks()` method
-		 * provided by the `Telex_GPM_Taxonomy_Venue_Handler` trait.
+		 * provided by the `Taxonomy_Venue_Handler` trait.
 		 *
 		 * @since 0.1.0
 		 *

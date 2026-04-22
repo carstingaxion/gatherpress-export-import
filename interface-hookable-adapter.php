@@ -11,17 +11,19 @@
  * The main migration class calls `setup_import_hooks()` on any adapter
  * that implements this interface when the adapter is registered.
  *
- * @package TelexGatherpressMigration
+ * @package GatherPressExportImport
  * @since   0.1.0
  */
+
+namespace GatherPressExportImport;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! interface_exists( 'Telex_GPM_Hookable_Adapter' ) ) {
+if ( ! interface_exists( __NAMESPACE__ . '\Hookable_Adapter' ) ) {
 	/**
-	 * Interface Telex_GPM_Hookable_Adapter.
+	 * Interface Hookable_Adapter.
 	 *
 	 * Defines a contract for adapters that require their own WordPress
 	 * hooks to be registered during the import process. This keeps
@@ -30,7 +32,7 @@ if ( ! interface_exists( 'Telex_GPM_Hookable_Adapter' ) ) {
 	 *
 	 * @since 0.1.0
 	 */
-	interface Telex_GPM_Hookable_Adapter {
+	interface Hookable_Adapter {
 
 		/**
 		 * Sets up adapter-specific import hooks.
