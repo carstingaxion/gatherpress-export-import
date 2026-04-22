@@ -118,7 +118,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 
 			wp_enqueue_style(
 				'gpei-importer',
-				plugins_url( 'assets/css/importer.css', __FILE__ ),
+				plugins_url( 'assets/css/importer.css', dirname( __DIR__ ) . '/../plugin.php' ),
 				array(),
 				'0.1.0'
 			);

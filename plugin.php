@@ -20,23 +20,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Load architecture files.
-require_once __DIR__ . '/interface-source-adapter.php';
-require_once __DIR__ . '/interface-hookable-adapter.php';
-require_once __DIR__ . '/interface-taxonomy-venue-adapter.php';
-require_once __DIR__ . '/trait-datetime-helper.php';
-require_once __DIR__ . '/trait-taxonomy-venue-handler.php';
+// Load interfaces.
+require_once __DIR__ . '/includes/interfaces/interface-source-adapter.php';
+require_once __DIR__ . '/includes/interfaces/interface-hookable-adapter.php';
+require_once __DIR__ . '/includes/interfaces/interface-taxonomy-venue-adapter.php';
 
-require_once __DIR__ . '/class-tec-adapter.php';
-require_once __DIR__ . '/class-events-manager-adapter.php';
-require_once __DIR__ . '/class-mec-adapter.php';
-require_once __DIR__ . '/class-eventon-adapter.php';
-require_once __DIR__ . '/class-aioec-adapter.php';
-require_once __DIR__ . '/class-event-organiser-adapter.php';
+// Load traits.
+require_once __DIR__ . '/includes/traits/trait-datetime-helper.php';
+require_once __DIR__ . '/includes/traits/trait-taxonomy-venue-handler.php';
 
-require_once __DIR__ . '/class-importer.php';
-require_once __DIR__ . '/class-migration.php';
+// Load classes.
+require_once __DIR__ . '/includes/classes/class-tec-adapter.php';
+require_once __DIR__ . '/includes/classes/class-events-manager-adapter.php';
+require_once __DIR__ . '/includes/classes/class-mec-adapter.php';
+require_once __DIR__ . '/includes/classes/class-eventon-adapter.php';
+require_once __DIR__ . '/includes/classes/class-aioec-adapter.php';
+require_once __DIR__ . '/includes/classes/class-event-organiser-adapter.php';
 
+require_once __DIR__ . '/includes/classes/class-importer.php';
+require_once __DIR__ . '/includes/classes/class-migration.php';
 
 // Boot the plugin.
 Migration::get_instance();

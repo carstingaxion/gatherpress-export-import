@@ -176,20 +176,24 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 ## Project Architecture
 
 ```
-├── gatherpress-export-import.php    # Main plugin file (boot)
-├── class-gatherpress-export-import.php  # Singleton orchestrator
-├── class-importer.php       # Custom importer screen
-├── interface-source-adapter.php
-├── interface-hookable-adapter.php
-├── interface-taxonomy-venue-adapter.php
-├── trait-datetime-helper.php
-├── trait-taxonomy-venue-handler.php
-├── class-tec-adapter.php
-├── class-events-manager-adapter.php
-├── class-mec-adapter.php
-├── class-eventon-adapter.php
-├── class-aioec-adapter.php
-├── class-event-organiser-adapter.php
+├── plugin.php   # Main plugin file (boot)
+├── includes/
+│   ├── interfaces/
+│   │   ├── interface-source-adapter.php
+│   │   ├── interface-hookable-adapter.php
+│   │   └── interface-taxonomy-venue-adapter.php
+│   ├── traits/
+│   │   ├── trait-datetime-helper.php
+│   │   └── trait-taxonomy-venue-handler.php
+│   └── classes/
+│       ├── class-tec-adapter.php
+│       ├── class-events-manager-adapter.php
+│       ├── class-mec-adapter.php
+│       ├── class-eventon-adapter.php
+│       ├── class-aioec-adapter.php
+│       ├── class-event-organiser-adapter.php
+│       ├── class-migration.php
+│       └── class-importer.php
 ├── assets/css/importer.css
 ├── .wp-env.json                       # wp-env configuration
 ├── composer.json                      # PHP dependencies
