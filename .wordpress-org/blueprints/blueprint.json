@@ -31,7 +31,13 @@
         "caption": "Installing plugin from GitHub: carstingaxion/gatherpress-export-import"
       }
     },
-		{
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+          "GATHERPRESS_ALPHA_VERSION": 1
+      }
+    },
+    {
 			"step": "login",
 			"username": "admin",
 			"password": "password"
