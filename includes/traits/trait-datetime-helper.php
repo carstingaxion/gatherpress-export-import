@@ -128,5 +128,80 @@ if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 		final protected function get_default_timezone(): string {
 			return wp_timezone_string();
 		}
+
+		/**
+		 * Saves venue information meta on a gatherpress_venue post.
+		 *
+		 * Builds the JSON structure expected by GatherPress for the
+		 * `gatherpress_venue_information` post meta key and persists it.
+		 * Only updates the meta if the post exists and is a `gatherpress_venue`.
+		 *
+		 * All parameters are optional; omitted or empty values are stored
+		 * as empty strings in the JSON, matching GatherPress's own behaviour.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param int    $venue_post_id The gatherpress_venue post ID.
+		 * @param string $full_address  Full address string (e.g., "WUK, holzplatz 7a, Halle (Saale)").
+		 * @param string $phone_number  Phone number. Default empty.
+		 * @param string $website       Website URL. Default empty.
+		 * @param string $latitude      Latitude coordinate. Default empty.
+		 * @param string $longitude     Longitude coordinate. Default empty.
+		 * @return bool True on success, false on failure.
+		 */
+		final protected function save_venue_information(
+			int $venue_post_id,
+			string $full_address = '',
+			string $phone_number = '',
+			string $website = '',
+			string $latitude = '',
+			string $longitude = ''
+		): bool {
+			$venue_post = get_post( $venue_post_id );
+
+			if ( ! $venue_post || 'gatherpress_venue' !== $venue_post->post_type ) {
+				return false;
+			}
+
+			$venue_information = wp_json_encode(
+				array(
+					'fullAddress'  => $full_address,
+					'phoneNumber'  => $phone_number,
+					'website'      => $website,
+					'latitude'     => $latitude,
+					'longitude'    => $longitude,
+				)
+			);
+
+			if ( false === $venue_information ) {
+				return false;
+			}
+
+			return (bool) update_post_meta( $venue_post_id, 'gatherpress_venue_information', $venue_information );
+		}
+
+		/**
+		 * Builds a full address string from individual address components.
+		 *
+		 * Concatenates non-empty components with a comma separator.
+		 * Useful for adapters that store address parts in separate meta fields
+		 * (e.g., TEC's `_VenueAddress`, `_VenueCity`, `_VenueState`, `_VenueZip`,
+		 * `_VenueCountry`).
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param string ...$parts Variable number of address component strings.
+		 * @return string Comma-separated address string, or empty if all parts are empty.
+		 */
+		final protected function build_full_address( string ...$parts ): string {
+			$non_empty = array_filter(
+				$parts,
+				function ( string $part ): bool {
+					return '' !== trim( $part );
+				}
+			);
+
+			return implode( ', ', array_map( 'trim', $non_empty ) );
+		}
 	}
 }
