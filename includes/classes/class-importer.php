@@ -61,7 +61,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 		 */
 		private function __construct() {
 			add_action( 'admin_init', array( $this, 'register_importer' ) );
-			add_action( 'admin_init', array( $this, 'maybe_redirect_to_wp_importer' ) );
+			// KEEP // Maybe used for two-pass imports later on!
+			// add_action( 'admin_init', array( $this, 'maybe_redirect_to_wp_importer' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
 		}
 
@@ -125,6 +126,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 		}
 
 		/**
+		 * KEEP // Maybe used for two-pass imports later on!
+		 *
 		 * Redirects to the WordPress Importer early, before headers are sent.
 		 *
 		 * Hooked to `admin_init` to intercept the step=1 request before
@@ -136,7 +139,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 		 * @since 0.1.0
 		 *
 		 * @return void
-		 */
+
 		public function maybe_redirect_to_wp_importer(): void {
 			if ( ! isset( $_GET['import'] ) || 'gatherpress-migration' !== $_GET['import'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				return;
@@ -151,7 +154,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 			$url = admin_url( 'admin.php?import=WordPress' );
 			wp_safe_redirect( $url );
 			exit;
-		}
+		} */
 
 		/**
 		 * Dispatches the importer screen based on the current step.
@@ -187,8 +190,10 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 		private function render_instructions(): void {
 			$proceed_url = add_query_arg(
 				array(
-					'import' => 'gatherpress-migration',
-					'step'   => 1,
+					// KEEP // Maybe used for two-pass imports later on!
+					// 'import' => 'gatherpress-migration',
+					'import' => 'wordpress',
+					// 'step'   => 1,
 				),
 				admin_url( 'admin.php' )
 			);
