@@ -153,9 +153,13 @@ GatherPress treats each event occurrence as a separate post. If your source plug
 
 ### 0.1.0
 
-- Initial release with import interception for six major event plugins.
-- Custom importer screen with prerequisite checks and step-by-step instructions.
-- Playground blueprints for all supported source plugins with demo data.
+- Import interception for six event plugins: The Events Calendar, Events Manager, Modern Events Calendar, EventON, All-in-One Event Calendar, and Event Organiser.
+- Automatic post type rewriting, datetime conversion, venue linking, and taxonomy mapping during standard WordPress XML imports.
+- Two-pass import strategy for plugins that store venues as taxonomy terms, with shared traits for easy extension.
+- Venue detail assembly from individual meta fields into GatherPress's `gatherpress_venue_information` JSON format (TEC, Events Manager).
+- Custom importer screen under Tools > Import with prerequisite checks and step-by-step guidance.
+- Comprehensive unit and integration test suites, including end-to-end WXR import tests with fixture files.
+- WordPress Playground blueprints with demo data for every supported source plugin.
 
 ---
 
