@@ -29,9 +29,10 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 	 * @see Source_Adapter
 	 * @see Datetime_Helper
 	 */
-	class MEC_Adapter implements Source_Adapter {
+	class MEC_Adapter implements Hookable_Adapter, Source_Adapter, Taxonomy_Venue_Adapter {
 
 		use Datetime_Helper;
+		use Taxonomy_Venue_Handler;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -194,6 +195,32 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the source taxonomy slug used for venues.
+		 *
+		 * MEC uses the `mec_location` taxonomy for venues.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return string The source venue taxonomy slug.
+		 */
+		public function get_venue_taxonomy_slug(): string {
+			return 'mec_location';
+		}
+
+		/**
+		 * Gets the source event post type slug(s) that should be skipped during Pass 1.
+		 *
+		 * MEC uses the `mec-events` post type.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return string[] Array of source event post type slugs.
+		 */
+		public function get_skippable_event_post_types(): array {
+			return array( 'mec-events' );
+		}
+
+		/**
 		 * Gets the meta key used for venue linking.
 		 *
 		 * MEC uses taxonomy terms for venues, not a meta key reference.
@@ -213,6 +240,9 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 		 * `mec_category` maps to `gatherpress_topic`, and `mec_label`
 		 * maps to `post_tag` as a reasonable default.
 		 *
+		 * Note: `mec_location` is NOT mapped here because it requires
+		 * special two-pass handling via the Taxonomy_Venue_Handler trait.
+		 *
 		 * @since 0.1.0
 		 *
 		 * @return array<string, string> Taxonomy map.
@@ -222,6 +252,20 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 				'mec_category' => 'gatherpress_topic',
 				'mec_label'    => 'post_tag',
 			);
+		}
+
+		/**
+		 * Sets up the import hooks for the two-pass venue/event strategy.
+		 *
+		 * Delegates to the shared `setup_taxonomy_venue_hooks()` method
+		 * provided by the `Taxonomy_Venue_Handler` trait.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function setup_import_hooks(): void {
+			$this->setup_taxonomy_venue_hooks();
 		}
 
 		/**

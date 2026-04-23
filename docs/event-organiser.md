@@ -165,7 +165,13 @@ All priorities are chosen to run **before** the main migration class's hooks (wh
 
 ## Two-Pass Architecture (Reusable)
 
-The two-pass import logic is not specific to Event Organiser — it lives in shared components that any adapter can reuse:
+The two-pass import logic is not specific to Event Organiser — it lives in shared components that any adapter can reuse. Three adapters currently use this strategy:
+
+| Adapter | Venue Taxonomy | Event CPT |
+|---|---|---|
+| **Event Organiser** | `event-venue` | `event` |
+| **Modern Events Calendar** | `mec_location` | `mec-events` |
+| **EventON** | `event_location` | `ajde_events` |
 
 ### `Taxonomy_Venue_Adapter` (interface)
 

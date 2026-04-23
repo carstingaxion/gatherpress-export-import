@@ -22,38 +22,61 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 |---|---|---|---|
 | **The Events Calendar** (StellarWP) | `tribe_events` | `tribe_venue` → `gatherpress_venue` | `Y-m-d H:i:s` + timezone string |
 | **Events Manager** | `event` | `location` → `gatherpress_venue` | `Y-m-d H:i:s` + timezone string |
-| **Modern Events Calendar** (Webnus) | `mec-events` | Taxonomy terms | `Y-m-d` + separate h/m/ampm fields |
+| **Modern Events Calendar** (Webnus) | `mec-events` | `mec_location` taxonomy | `Y-m-d` + separate h/m/ampm fields |
 | **All-in-One Event Calendar** | `ai1ec_event` | N/A (custom table) | Custom table (manual mapping needed) |
-| **EventON** | `ajde_events` | Taxonomy/meta | Unix timestamps (`evcal_srow` / `evcal_erow`) |
-| **Event Organiser** (Stephen Harris) | `event` | Taxonomy (`event-venue`) | `Y-m-d H:i:s` (`_eventorganiser_schedule_*`) |
+| **EventON** | `ajde_events` | `event_location` taxonomy | Unix timestamps (`evcal_srow` / `evcal_erow`) |
+| **Event Organiser** (Stephen Harris) | `event` | `event-venue` taxonomy | `Y-m-d H:i:s` (`_eventorganiser_schedule_*`) |
+
 
 ### WP Core Export Compatibility Matrix
 
-The table below shows which event data is available through standard WordPress XML (WXR) exports per source plugin, and which data is **missing or incomplete** in core exports. This determines what the migration plugin can work with automatically versus what requires manual intervention.
+The table below shows which event data is available through standard WordPress XML (WXR) exports per source plugin. The **GP** column indicates whether GatherPress supports the feature natively.
 
-| Data Type | TEC | Events Manager | MEC | AIOEC | EventON | Event Organiser |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Event title & content** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Featured image** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Start/end datetimes** | ✅ postmeta | ✅ postmeta | ✅ postmeta | ❌ custom table | ✅ postmeta | ✅ postmeta |
-| **Timezone** | ✅ `_EventTimezone` | ✅ `_event_timezone` | ❌ not stored | ❌ custom table | ❌ not in meta | ❌ uses site tz |
-| **Venue name** | ✅ `tribe_venue` CPT | ✅ `location` CPT | ⚠️ taxonomy term | ❌ custom table | ⚠️ taxonomy term | ⚠️ taxonomy term |
-| **Venue address/details** | ✅ venue postmeta | ✅ location postmeta | ❌ term meta (not in WXR) | ❌ custom table | ❌ term meta (not in WXR) | ❌ term meta (not in WXR) |
-| **Venue coordinates** | ⚠️ partial (via meta) | ⚠️ partial (via meta) | ❌ not exported | ❌ custom table | ❌ not exported | ❌ not exported |
-| **Venue–event link** | ✅ `_EventVenueID` | ⚠️ `_location_id` | ⚠️ taxonomy assignment | ❌ custom table | ⚠️ taxonomy assignment | ⚠️ taxonomy assignment |
-| **Event categories** | ✅ `tribe_events_cat` | ✅ `event-categories` | ✅ `mec_category` | ✅ `events_categories` | ✅ `event_type` | ✅ `event-category` |
-| **Event tags** | ✅ `post_tag` | ✅ `event-tags` | ⚠️ `mec_label` | ✅ `events_tags` | ❌ not standard | ✅ `event-tag` |
-| **Organizer** | ✅ `tribe_organizer` CPT | ⚠️ not a separate CPT | ⚠️ taxonomy term | ❌ custom table | ⚠️ taxonomy term | ❌ not available |
-| **Recurrence rules** | ❌ not in WXR | ❌ not in WXR | ❌ not in WXR | ❌ custom table | ❌ not in WXR | ❌ not in WXR |
-| **RSVP / Tickets** | ❌ separate plugin | ❌ custom tables | ❌ not exported | ❌ not exported | ❌ not exported | ❌ not exported |
+| Data Type | GP | TEC | Events Manager | MEC | AIOEC | EventON | Event Organiser |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Event title & content** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Featured image** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Start/end datetimes** | ✅ | ✅ | ✅ | ✅ | ❌ ² | ✅ | ✅ |
+| **Timezone** | ✅ | ✅ | ✅ | ❌ ³ | ❌ ² | ❌ ³ | ❌ ⁴ |
+| **Venue name** | ✅ | ✅ | ✅ | ✅ ⁵ | ❌ ² | ✅ ⁵ | ✅ ⁵ |
+| **Venue address/details** | ✅ | ✅ | ✅ | ❌ ⁶ | ❌ ² | ❌ ⁶ | ❌ ⁶ |
+| **Venue coordinates** | ✅ | ⚠️ ⁷ | ⚠️ ⁷ | ❌ ⁶ | ❌ ² | ❌ ⁶ | ❌ ⁶ |
+| **Venue–event link** | ✅ | ✅ | ⚠️ ⁸ | ✅ ⁵ | ❌ ² | ✅ ⁵ | ✅ ⁵ |
+| **Event categories** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Event tags** | ❌ ⁹ | ✅ | ✅ | ⚠️ ¹⁰ | ✅ | ❌ | ✅ |
+| **Organizer** | ❌ ¹¹ | ✅ | ⚠️ | ⚠️ | ❌ ² | ⚠️ | ❌ |
+| **Recurrence rules** | ❌ ¹² | ❌ | ❌ | ❌ | ❌ ² | ❌ | ❌ |
+| **RSVP / Tickets** | ✅ ¹³ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-**Legend:** ✅ Fully available in WXR export — ⚠️ Partially available or requires extra handling — ❌ Not available via core export
+**Legend:** ✅ Fully available — ⚠️ Partially available or requires extra handling — ❌ Not available via core export
 
-> [!NOTE]
-> **Venue details are the biggest gap for taxonomy-based plugins.** Event Organiser, MEC, and EventON store venue address, phone, website, and coordinates as taxonomy term meta. WordPress core WXR exports do **not** include term meta, so this data is lost in standard exports. For these plugins, venue names are preserved (as taxonomy term names) but address details must be re-entered manually or exported separately via a custom tool.
+**Footnotes:**
 
-> [!NOTE]
-> **All-in-One Event Calendar** stores nearly all event data (datetimes, venue, recurrence) in a custom database table (`ai1ec_events`) rather than in postmeta. Standard WXR exports contain only the post title and content — all structured event data requires direct database access or a plugin-specific export tool.
+¹ Uses the two-pass import strategy: first import creates `gatherpress_venue` posts from taxonomy terms, second import creates events and links them to venues.
+
+² AIOEC stores nearly all event data (datetimes, venue, recurrence) in a custom database table (`ai1ec_events`). Standard WXR exports contain only the post title and content.
+
+³ Timezone is not stored in a dedicated meta field; the site timezone is used as a fallback during conversion.
+
+⁴ Event Organiser stores datetimes in site-local time; the site timezone is used during conversion.
+
+⁵ Venue names are available as taxonomy term names in the WXR export and are converted to `gatherpress_venue` posts via the two-pass import strategy.
+
+⁶ Venue address, phone, website, and coordinates are stored as taxonomy term meta. WordPress core WXR exports do **not** include term meta, so this data must be re-entered manually or exported separately.
+
+⁷ Coordinates are partially available via venue post meta but may require additional mapping depending on source plugin version.
+
+⁸ Events Manager uses `_location_id` which requires ID mapping resolution during import.
+
+⁹ GatherPress does not register `post_tag` for the `gatherpress_event` post type. Tags from source plugins are imported but will not appear in the GatherPress event editor unless `post_tag` support is added separately.
+
+¹⁰ MEC uses `mec_label` as a tag-like taxonomy, which is mapped to `post_tag` during import.
+
+¹¹ GatherPress does not currently have a dedicated organizer entity. Organizer data from source plugins cannot be mapped to a GatherPress equivalent and is not imported.
+
+¹² GatherPress treats each event occurrence as a separate post. There is no recurrence rule system; each occurrence must be its own event.
+
+¹³ GatherPress has a built-in RSVP system, but no source plugin's RSVP or ticket data is convertible via WXR exports. RSVP data must be managed natively in GatherPress after migration.
 
 > [!TIP]
 > You can add support for additional plugins using the `gpei_event_post_type_map`, `gpei_venue_post_type_map`, `gpei_taxonomy_map`, and `gatherpress_pseudopostmetas` filters. See the [Hooks documentation](docs/developer/hooks/Hooks.md) for usage details.
@@ -160,7 +183,7 @@ Each lands on **Tools > Export** so you can export demo data and test the migrat
 - **Venue deduplication** — Importing the same file twice may create duplicates. Always import into a clean environment or verify existing data.
 - **Shortcodes in content** — Source plugin shortcodes will appear as raw text. Review imported event content and clean up as needed.
 - **Shared post type slugs** — Events Manager and Event Organiser both use `event`. The plugin distinguishes them by meta keys. Import data from only one source at a time.
-- **Taxonomy-based venues (two-pass import)** — Plugins that store venues as taxonomy terms (e.g., Event Organiser's `event-venue`) require a two-pass import: the first import creates `gatherpress_venue` posts from venue terms and skips events; the second import creates events and links them to venues. This logic is implemented as a shared trait (`Taxonomy_Venue_Handler`) and interface (`Taxonomy_Venue_Adapter`) that any adapter can reuse. Simply import the same WXR file twice. See [`docs/event-organiser.md`](docs/event-organiser.md) for a detailed explanation of the two-pass strategy and how to add support for additional taxonomy-venue plugins.
+- **Taxonomy-based venues (two-pass import)** — Plugins that store venues as taxonomy terms (e.g., Event Organiser's `event-venue`, MEC's `mec_location`, EventON's `event_location`) require a two-pass import: the first import creates `gatherpress_venue` posts from venue terms and skips events; the second import creates events and links them to venues. This logic is implemented as a shared trait (`Taxonomy_Venue_Handler`) and interface (`Taxonomy_Venue_Adapter`) that any adapter can reuse. Simply import the same WXR file twice. See [`docs/event-organiser.md`](docs/event-organiser.md) for a detailed explanation of the two-pass strategy and how to add support for additional taxonomy-venue plugins.
 
 ---
 

@@ -30,9 +30,10 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 	 * @see Source_Adapter
 	 * @see Datetime_Helper
 	 */
-	class EventON_Adapter implements Source_Adapter {
+	class EventON_Adapter implements Hookable_Adapter, Source_Adapter, Taxonomy_Venue_Adapter {
 
 		use Datetime_Helper;
+		use Taxonomy_Venue_Handler;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -155,6 +156,32 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 		}
 
 		/**
+		 * Gets the source taxonomy slug used for venues.
+		 *
+		 * EventON uses the `event_location` taxonomy for venues.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return string The source venue taxonomy slug.
+		 */
+		public function get_venue_taxonomy_slug(): string {
+			return 'event_location';
+		}
+
+		/**
+		 * Gets the source event post type slug(s) that should be skipped during Pass 1.
+		 *
+		 * EventON uses the `ajde_events` post type.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return string[] Array of source event post type slugs.
+		 */
+		public function get_skippable_event_post_types(): array {
+			return array( 'ajde_events' );
+		}
+
+		/**
 		 * Gets the meta key used for venue linking.
 		 *
 		 * EventON does not use a meta key for venue references.
@@ -171,8 +198,9 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 		 * Gets the taxonomy mapping for EventON.
 		 *
 		 * Maps EventON's event_type taxonomy to GatherPress topic.
-		 * Location and organizer taxonomies are specific to EventON
-		 * and have no direct GatherPress equivalent.
+		 *
+		 * Note: `event_location` is NOT mapped here because it requires
+		 * special two-pass handling via the Taxonomy_Venue_Handler trait.
 		 *
 		 * @since 0.1.0
 		 *
@@ -182,6 +210,20 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 			return array(
 				'event_type' => 'gatherpress_topic',
 			);
+		}
+
+		/**
+		 * Sets up the import hooks for the two-pass venue/event strategy.
+		 *
+		 * Delegates to the shared `setup_taxonomy_venue_hooks()` method
+		 * provided by the `Taxonomy_Venue_Handler` trait.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function setup_import_hooks(): void {
+			$this->setup_taxonomy_venue_hooks();
 		}
 
 		/**
