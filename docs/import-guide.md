@@ -95,6 +95,40 @@ For plugins that store venues as a custom post type (e.g., `tribe_venue`, `locat
 
 **Import order matters:** venues must be imported before events. If your WXR file contains both, ensure venues appear first in the XML.
 
+### Venue Detail Conversion
+
+Plugins that store venue details (address, city, state, ZIP, country, phone, website) as individual post meta keys on their venue CPT can use the shared `Venue_Detail_Handler` trait to automatically convert these into GatherPress's `gatherpress_venue_information` JSON format.
+
+The trait works by:
+
+1. **Stashing** venue detail meta keys during import (via the `add_post_metadata` filter at priority 4).
+2. **Processing** all stashed venue meta at `import_end` — mapping each source key to a component type (`address`, `city`, `state`, `zip`, `country`, `phone`, `website`, `latitude`, `longitude`), assembling a full address string, and saving the JSON via `save_venue_information()`.
+
+Adapters using the trait must implement `get_venue_detail_meta_map()` to declare the mapping. For example, TEC maps `_VenueAddress` → `address`, `_VenueCity` → `city`, etc. Events Manager maps `_location_address` → `address`, `_location_town` → `city`, etc.
+
+To add venue detail support to a new adapter:
+
+```php
+class My_Adapter implements Source_Adapter, Hookable_Adapter {
+    use Datetime_Helper;
+    use Venue_Detail_Handler;
+
+    protected function get_venue_detail_meta_map(): array {
+        return array(
+            '_my_venue_address' => 'address',
+            '_my_venue_city'    => 'city',
+            '_my_venue_phone'   => 'phone',
+        );
+    }
+
+    public function setup_import_hooks(): void {
+        $this->setup_venue_detail_hooks();
+    }
+
+    // ... rest of Source_Adapter methods ...
+}
+```
+
 ### Plugins with taxonomy-based venues (e.g., Event Organiser)
 
 For plugins that store venues as taxonomy terms rather than posts, a **two-pass import** is required. This is handled by the shared `Taxonomy_Venue_Handler` trait and `Taxonomy_Venue_Adapter` interface. See the [Event Organiser documentation](event-organiser.md) for a detailed walkthrough.

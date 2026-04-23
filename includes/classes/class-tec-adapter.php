@@ -6,6 +6,13 @@
  * TEC stores event dates in `_EventStartDate` / `_EventEndDate` meta keys
  * as 'Y-m-d H:i:s' local time, with `_EventTimezone` for the timezone string.
  *
+ * Venue details are stored as individual post meta keys on `tribe_venue` posts:
+ * `_VenueAddress`, `_VenueCity`, `_VenueState`, `_VenueZip`, `_VenueCountry`,
+ * `_VenuePhone`, `_VenueURL`. These are intercepted during import via the
+ * shared `Venue_Detail_Handler` trait, assembled into a full address string,
+ * and saved as `gatherpress_venue_information` on the converted
+ * `gatherpress_venue` post.
+ *
  * @package GatherPressExportImport
  * @since   0.1.0
  */
@@ -22,16 +29,21 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 	 *
 	 * Source adapter for The Events Calendar (StellarWP).
 	 * Converts tribe_events to gatherpress_event and tribe_venue
-	 * to gatherpress_venue during WordPress XML import.
+	 * to gatherpress_venue during WordPress XML import. Also converts
+	 * TEC venue detail meta into GatherPress venue information JSON
+	 * via the shared `Venue_Detail_Handler` trait.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @see Source_Adapter
+	 * @see Hookable_Adapter
 	 * @see Datetime_Helper
+	 * @see Venue_Detail_Handler
 	 */
-	class TEC_Adapter implements Source_Adapter {
+	class TEC_Adapter implements Source_Adapter, Hookable_Adapter {
 
 		use Datetime_Helper;
+		use Venue_Detail_Handler;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -71,22 +83,55 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 		}
 
 		/**
-		 * Gets the meta keys that should be stashed during import.
+		 * Gets the mapping of TEC venue meta keys to address components.
+		 *
+		 * Maps TEC's individual venue meta keys to the component types
+		 * understood by the `Venue_Detail_Handler` trait.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return string[] Meta keys for date/time and timezone.
+		 * @return array<string, string> Map of source_meta_key => component_type.
+		 */
+		protected function get_venue_detail_meta_map(): array {
+			return array(
+				'_VenueAddress' => 'address',
+				'_VenueCity'    => 'city',
+				'_VenueState'   => 'state',
+				'_VenueZip'     => 'zip',
+				'_VenueCountry' => 'country',
+				'_VenuePhone'   => 'phone',
+				'_VenueURL'     => 'website',
+			);
+		}
+
+		/**
+		 * Gets the meta keys that should be stashed during import.
+		 *
+		 * Includes both event datetime meta keys and venue detail meta keys.
+		 * The venue meta keys are stashed on `gatherpress_venue` posts and
+		 * processed at `import_end` to build GatherPress venue information.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return string[] Meta keys for date/time, timezone, and venue details.
 		 */
 		public function get_stash_meta_keys(): array {
-			return array(
-				'_EventStartDate',
-				'_EventEndDate',
-				'_EventTimezone',
+			return array_merge(
+				array(
+					'_EventStartDate',
+					'_EventEndDate',
+					'_EventTimezone',
+				),
+				$this->get_venue_detail_meta_keys()
 			);
 		}
 
 		/**
 		 * Gets pseudopostmeta definitions for TEC meta keys.
+		 *
+		 * Registers both event datetime keys and venue detail keys as
+		 * pseudopostmeta entries so GatherPress recognises them during
+		 * its own import/export flow.
 		 *
 		 * @since 0.1.0
 		 *
@@ -95,7 +140,7 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 		public function get_pseudopostmetas(): array {
 			$callback = array( $this, 'noop_callback' );
 
-			return array(
+			$pseudometas = array(
 				'_EventStartDate' => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
@@ -113,6 +158,16 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 					'import_callback' => $callback,
 				),
 			);
+
+			// Register venue detail keys as pseudopostmeta for gatherpress_venue.
+			foreach ( $this->get_venue_detail_meta_keys() as $key ) {
+				$pseudometas[ $key ] = array(
+					'post_type'       => 'gatherpress_venue',
+					'import_callback' => $callback,
+				);
+			}
+
+			return $pseudometas;
 		}
 
 		/**
@@ -183,6 +238,20 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 			return array(
 				'tribe_events_cat' => 'gatherpress_topic',
 			);
+		}
+
+		/**
+		 * Sets up adapter-specific import hooks.
+		 *
+		 * Delegates venue detail meta stashing and processing to the shared
+		 * `Venue_Detail_Handler` trait via `setup_venue_detail_hooks()`.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function setup_import_hooks(): void {
+			$this->setup_venue_detail_hooks();
 		}
 
 		/**

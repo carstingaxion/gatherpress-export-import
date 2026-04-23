@@ -197,6 +197,133 @@ class WXRImportTECTest extends TestCase {
 	}
 
 	/**
+	 * Tests that TEC venue details are saved as gatherpress_venue_information.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return void
+	 */
+	public function test_tec_venue_details_saved_as_venue_information(): void {
+		if ( ! $this->is_gatherpress_active() ) {
+			$this->markTestSkipped( 'GatherPress is not active.' );
+		}
+
+		$wxr_file = $this->get_wxr_fixture_path( 'tec.xml' );
+		$this->import_wxr( $wxr_file );
+
+		// Find the Downtown Convention Center venue.
+		$venues = get_posts(
+			array(
+				'post_type'      => 'gatherpress_venue',
+				'post_status'    => 'publish',
+				'name'           => 'downtown-convention-center',
+				'posts_per_page' => 1,
+			)
+		);
+
+		if ( empty( $venues ) ) {
+			$this->fail( 'Venue "Downtown Convention Center" was not created.' );
+		}
+
+		$venue_id   = $venues[0]->ID;
+		$venue_info = get_post_meta( $venue_id, 'gatherpress_venue_information', true );
+
+		$this->assertNotEmpty( $venue_info, 'Venue should have gatherpress_venue_information meta.' );
+
+		$decoded = json_decode( $venue_info, true );
+		$this->assertIsArray( $decoded, 'Venue information should be valid JSON.' );
+		$this->assertArrayHasKey( 'fullAddress', $decoded );
+		$this->assertStringContainsString( '123 Main Street', $decoded['fullAddress'] );
+		$this->assertStringContainsString( 'Portland', $decoded['fullAddress'] );
+		$this->assertStringContainsString( 'OR', $decoded['fullAddress'] );
+		$this->assertSame( '+1-503-555-0100', $decoded['phoneNumber'] );
+		$this->assertSame( 'https://www.downtownconvention.example.com', $decoded['website'] );
+	}
+
+	/**
+	 * Tests that TEC venue details with partial data are handled correctly.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return void
+	 */
+	public function test_tec_venue_partial_details_saved(): void {
+		if ( ! $this->is_gatherpress_active() ) {
+			$this->markTestSkipped( 'GatherPress is not active.' );
+		}
+
+		$wxr_file = $this->get_wxr_fixture_path( 'tec.xml' );
+		$this->import_wxr( $wxr_file );
+
+		// Find the Riverside Community Hall venue (no phone/URL in fixture).
+		$venues = get_posts(
+			array(
+				'post_type'      => 'gatherpress_venue',
+				'post_status'    => 'publish',
+				'name'           => 'riverside-community-hall',
+				'posts_per_page' => 1,
+			)
+		);
+
+		if ( empty( $venues ) ) {
+			$this->fail( 'Venue "Riverside Community Hall" was not created.' );
+		}
+
+		$venue_id   = $venues[0]->ID;
+		$venue_info = get_post_meta( $venue_id, 'gatherpress_venue_information', true );
+
+		$this->assertNotEmpty( $venue_info, 'Venue should have gatherpress_venue_information meta.' );
+
+		$decoded = json_decode( $venue_info, true );
+		$this->assertIsArray( $decoded );
+		$this->assertStringContainsString( '456 River Road', $decoded['fullAddress'] );
+		$this->assertStringContainsString( 'Austin', $decoded['fullAddress'] );
+		$this->assertSame( '', $decoded['phoneNumber'] );
+		$this->assertSame( '', $decoded['website'] );
+	}
+
+	/**
+	 * Tests that no TEC venue meta keys leak into wp_postmeta.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return void
+	 */
+	public function test_tec_venue_meta_keys_not_in_postmeta(): void {
+		if ( ! $this->is_gatherpress_active() ) {
+			$this->markTestSkipped( 'GatherPress is not active.' );
+		}
+
+		$wxr_file = $this->get_wxr_fixture_path( 'tec.xml' );
+		$this->import_wxr( $wxr_file );
+
+		$venues = get_posts(
+			array(
+				'post_type'      => 'gatherpress_venue',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+			)
+		);
+
+		$tec_meta_keys = array(
+			'_VenueAddress',
+			'_VenueCity',
+			'_VenueState',
+			'_VenueZip',
+			'_VenueCountry',
+			'_VenuePhone',
+			'_VenueURL',
+		);
+
+		foreach ( $venues as $venue ) {
+			foreach ( $tec_meta_keys as $key ) {
+				$value = get_post_meta( $venue->ID, $key, true );
+				$this->assertEmpty( $value, "TEC meta key '{$key}' should not be saved on venue post {$venue->ID}." );
+			}
+		}
+	}
+
+	/**
 	 * Tests that TEC taxonomy terms are rewritten to GatherPress topics.
 	 *
 	 * @since 0.1.0
