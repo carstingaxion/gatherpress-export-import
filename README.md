@@ -1,10 +1,20 @@
 # GatherPress Export Import
 
-**Intercepts WordPress XML imports from third-party event plugins and transforms them into GatherPress data automatically.**
+**Contributors:** carstenbach & WordPress Telex  
+**Tags:** data-liberation, import, migration, events  
+**Tested up to:** 6.9  
+**Stable tag:** 0.1.0  
+**Requires Plugins:**  gatherpress  
+**License:** GPLv2 or later  
+**License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
+
+[![Playground Demo Link](https://img.shields.io/badge/WordPress_Playground-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%233858e9)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/.wordpress-org/blueprints/blueprint.json) [![Build, test & measure](https://github.com/carstingaxion/gatherpress-export-import/actions/workflows/build-test-measure.yml/badge.svg?branch=main)](https://github.com/carstingaxion/gatherpress-export-import/actions/workflows/build-test-measure.yml)
+
+Intercepts WordPress XML imports from third-party event plugins and transforms them into GatherPress data automatically.
 
 ---
 
-## Overview
+## Description
 
 This plugin hooks into the standard WordPress Importer to transparently convert event data from third-party event plugins into GatherPress events and venues.
 
@@ -20,12 +30,12 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 
 | Source Plugin | Import | Manually Tested | PHPUnit Tested |
 |---|:---:|:---:|:---:|
-| [**The Events Calendar**](docs/source-tec.md) (StellarWP) | ✅ Supported | ✅ | ✅ |
-| [**Events Manager**](docs/source-events-manager.md) | ✅ Supported | ✅ | ✅ |
-| [**Modern Events Calendar**](docs/source-mec.md) (Webnus) | ⚠️ Partial | ❌ | ❌ |
-| [**All-in-One Event Calendar**](docs/source-aioec.md) | ⚠️ Partial | ❌ | ❌ |
-| [**EventON**](docs/source-eventon.md) | ⚠️ Partial | ❌ | ❌ |
-| [**Event Organiser**](docs/source-event-organiser.md) (Stephen Harris) | ✅ Supported | ✅ | ✅ |
+| [**The Events Calendar**](docs/source-tec.md) (StellarWP) | ✅ | ✅ | ✅ |
+| [**Events Manager**](docs/source-events-manager.md) | ✅ | ✅ | ✅ |
+| [**Modern Events Calendar**](docs/source-mec.md) (Webnus) | ⚠️ | ❌ | ❌ |
+| [**All-in-One Event Calendar**](docs/source-aioec.md) | ⚠️ | ❌ | ❌ |
+| [**EventON**](docs/source-eventon.md) | ⚠️ | ❌ | ❌ |
+| [**Event Organiser**](docs/source-event-organiser.md) (Stephen Harris) | ⚠️ | ✅ | ✅ |
 
 **Legend:** ✅ Fully supported/tested — ⚠️ Partial (some data unavailable via WXR) — ❌ Not yet
 
@@ -151,15 +161,7 @@ GatherPress treats each event occurrence as a separate post. If your source plug
 
 ## Changelog
 
-### 0.1.0
-
-- Import interception for six event plugins: The Events Calendar, Events Manager, Modern Events Calendar, EventON, All-in-One Event Calendar, and Event Organiser.
-- Automatic post type rewriting, datetime conversion, venue linking, and taxonomy mapping during standard WordPress XML imports.
-- Two-pass import strategy for plugins that store venues as taxonomy terms, with shared traits for easy extension.
-- Venue detail assembly from individual meta fields into GatherPress's `gatherpress_venue_information` JSON format (TEC, Events Manager).
-- Custom importer screen under Tools > Import with prerequisite checks and step-by-step guidance.
-- Comprehensive unit and integration test suites, including end-to-end WXR import tests with fixture files.
-- WordPress Playground blueprints with demo data for every supported source plugin.
+All notable changes to this project will be documented in the [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
