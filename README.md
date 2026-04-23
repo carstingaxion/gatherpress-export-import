@@ -92,7 +92,7 @@ Test the migration workflow by launching a WordPress Playground instance pre-loa
 
 | Environment | Description | Link |
 |---|---|---|
-| **GatherPress Migration** | Ready to receive imports | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint.json) |
+| **GatherPress Migration** | Ready to receive imports | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint.json) |
 
 ### Source Plugin Demos
 
@@ -100,12 +100,12 @@ Each lands on **Tools > Export** so you can export demo data and test the migrat
 
 | Source Plugin | Link |
 |---|---|
-| **The Events Calendar** (StellarWP) | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-tec.json) |
-| **Events Manager** | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-events-manager.json) |
-| **Modern Events Calendar** (Webnus) | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-mec.json) |
-| **EventON** | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-eventon.json) |
-| **All-in-One Event Calendar** | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-aioec.json) |
-| **Event Organiser** (Stephen Harris) | [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-event-organiser.json) |
+| **The Events Calendar** (StellarWP) | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-tec.json) |
+| **Events Manager** | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-events-manager.json) |
+| **Modern Events Calendar** (Webnus) | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-mec.json) |
+| **EventON** | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-eventon.json) |
+| **All-in-One Event Calendar** | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-aioec.json) |
+| **Event Organiser** (Stephen Harris) | [![Launch][playground_badge]](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-event-organiser.json) |
 
 ---
 
@@ -168,3 +168,6 @@ All notable changes to this project will be documented in the [CHANGELOG.md](CHA
 ## License
 
 This project is licensed under the [GPLv2 or later](https://www.gnu.org/licenses/gpl-2.0.html).
+
+
+[playground_badge]: https://img.shields.io/badge/WordPress_Playground-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%233858e9 "Start in WordPress Playground"
