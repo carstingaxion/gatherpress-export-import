@@ -356,19 +356,67 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 				<ol class="gpei-steps" style="max-width: 700px;">
 					<li>
 						<strong><?php esc_html_e( 'Export venues first', 'gatherpress-export-import' ); ?></strong>
-						<p class="description"><?php esc_html_e( 'On your source site, go to Tools > Export and export only the venue post type (e.g., tribe_venue, location). Download the WXR file.', 'gatherpress-export-import' ); ?></p>
+						<p class="description">
+							<?php
+							printf(
+								/* translators: 1: tribe_venue post type, 2: location post type */
+								wp_kses(
+									__( 'On your source site, go to Tools &gt; Export and export only the venue post type (e.g., <code>%1$s</code>, <code>%2$s</code>). Download the WXR file.', 'gatherpress-export-import' ),
+									array( 'code' => array() )
+								),
+								'tribe_venue',
+								'location'
+							);
+							?>
+						</p>
 					</li>
 					<li>
 						<strong><?php esc_html_e( 'Import venues', 'gatherpress-export-import' ); ?></strong>
-						<p class="description"><?php esc_html_e( 'Upload the venues WXR file via the WordPress Importer. The plugin will automatically convert venue post types to gatherpress_venue. GatherPress will then create the corresponding _gatherpress_venue shadow taxonomy terms.', 'gatherpress-export-import' ); ?></p>
+						<p class="description">
+							<?php
+							printf(
+								/* translators: 1: gatherpress_venue post type, 2: _gatherpress_venue taxonomy */
+								wp_kses(
+									__( 'Upload the venues WXR file via the WordPress Importer. The plugin will automatically convert venue post types to <code>%1$s</code>. GatherPress will then create the corresponding <code>%2$s</code> shadow taxonomy terms.', 'gatherpress-export-import' ),
+									array( 'code' => array() )
+								),
+								'gatherpress_venue',
+								'_gatherpress_venue'
+							);
+							?>
+						</p>
 					</li>
 					<li>
 						<strong><?php esc_html_e( 'Export events', 'gatherpress-export-import' ); ?></strong>
-						<p class="description"><?php esc_html_e( 'Back on the source site, export the event post type (e.g., tribe_events, event, mec-events). Download the WXR file.', 'gatherpress-export-import' ); ?></p>
+						<p class="description">
+							<?php
+							printf(
+								/* translators: 1: tribe_events post type, 2: event post type, 3: mec-events post type */
+								wp_kses(
+									__( 'Back on the source site, export the event post type (e.g., <code>%1$s</code>, <code>%2$s</code>, <code>%3$s</code>). Download the WXR file.', 'gatherpress-export-import' ),
+									array( 'code' => array() )
+								),
+								'tribe_events',
+								'event',
+								'mec-events'
+							);
+							?>
+						</p>
 					</li>
 					<li>
 						<strong><?php esc_html_e( 'Import events', 'gatherpress-export-import' ); ?></strong>
-						<p class="description"><?php esc_html_e( 'Upload the events WXR file. The plugin will rewrite post types, convert datetimes, and link venues to events via the _gatherpress_venue shadow taxonomy using the ID mapping from step 2.', 'gatherpress-export-import' ); ?></p>
+						<p class="description">
+							<?php
+							printf(
+								/* translators: %s: _gatherpress_venue taxonomy */
+								wp_kses(
+									__( 'Upload the events WXR file. The plugin will rewrite post types, convert datetimes, and link venues to events via the <code>%s</code> shadow taxonomy using the ID mapping from step 2.', 'gatherpress-export-import' ),
+									array( 'code' => array() )
+								),
+								'_gatherpress_venue'
+							);
+							?>
+						</p>
 					</li>
 					<li>
 						<strong><?php esc_html_e( 'Flush permalinks', 'gatherpress-export-import' ); ?></strong>
