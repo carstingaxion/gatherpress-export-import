@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.0...HEAD)
+## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.1...HEAD)
+
+## [0.2.1](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.0...0.2.1) - 2026-04-23
+
+- [Small UI cleanup](https://github.com/carstingaxion/gatherpress-export-import/commit/54eeb4a9a8007edbda4177a3c4555961884cfddf)
+- [Small UI cleanup](https://github.com/carstingaxion/gatherpress-export-import/commit/54dc24ace6dfba21e6c805e85443bc3d58887f83)
+- [Hide Alpha notice from Playground](https://github.com/carstingaxion/gatherpress-export-import/commit/2008aba4562cb594630ff30297dae84bb3e1bfb8)
+- [Just link the importer (as temp. fix for the button logic)](https://github.com/carstingaxion/gatherpress-export-import/commit/356bba59d448890ec0967e72cf29c5219a678ab3)
 
 ## [0.2.0](https://github.com/carstingaxion/gatherpress-export-import/compare/0.1.0...0.2.0) - 2026-04-23
 
