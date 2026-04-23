@@ -64,6 +64,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 			// KEEP // Maybe used for two-pass imports later on!
 			// add_action( 'admin_init', array( $this, 'maybe_redirect_to_wp_importer' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
+			add_action( 'admin_notices', array( $this, 'maybe_show_two_pass_notice' ) );
 		}
 
 		/**
@@ -155,6 +156,105 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 			wp_safe_redirect( $url );
 			exit;
 		} */
+
+		/**
+		 * Shows an admin notice reminding the user to run Pass 2 of a two-pass import.
+		 *
+		 * Checks for the existence of `gatherpress_venue` posts that still have
+		 * the `_gpei_source_venue_term_slug` post meta. This meta is created
+		 * during Pass 1 (venue creation from taxonomy terms) and cleaned up
+		 * during Pass 2 (event import with venue linking). Its presence indicates
+		 * that Pass 1 has been completed but Pass 2 has not yet run.
+		 *
+		 * The notice is displayed on the Tools > Import page and on the
+		 * GatherPress migration importer page.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @return void
+		 */
+		public function maybe_show_two_pass_notice(): void {
+			$screen = get_current_screen();
+
+			if ( ! $screen ) {
+				return;
+			}
+
+			// Show only on import-related admin pages.
+			$allowed_screens = array( 'import', 'admin' );
+			if ( ! in_array( $screen->base, $allowed_screens, true ) ) {
+				return;
+			}
+
+			// Check for venue posts that still have the source venue term slug meta,
+			// which indicates Pass 1 has completed but Pass 2 has not.
+			$venues_pending_pass2 = get_posts(
+				array(
+					'post_type'      => 'gatherpress_venue',
+					'meta_key'       => '_gpei_source_venue_term_slug',
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+				)
+			);
+
+			if ( empty( $venues_pending_pass2 ) ) {
+				return;
+			}
+
+			// Count how many venues are waiting.
+			$venue_count = count(
+				get_posts(
+					array(
+						'post_type'      => 'gatherpress_venue',
+						'meta_key'       => '_gpei_source_venue_term_slug',
+						'post_status'    => 'publish',
+						'posts_per_page' => -1,
+						'fields'         => 'ids',
+					)
+				)
+			);
+
+			$importer_url = admin_url( 'admin.php?import=wordpress' );
+			?>
+			<div class="notice notice-warning is-dismissible">
+				<p>
+					<strong><?php esc_html_e( 'GatherPress Migration — Step 2 Required', 'gatherpress-export-import' ); ?></strong>
+				</p>
+				<p>
+					<?php
+					printf(
+						/* translators: %d: number of venue posts waiting for event linking */
+						esc_html(
+							_n(
+								'%d venue was created from taxonomy terms during the first import pass, but events have not been imported yet.',
+								'%d venues were created from taxonomy terms during the first import pass, but events have not been imported yet.',
+								$venue_count,
+								'gatherpress-export-import'
+							)
+						),
+						$venue_count
+					);
+					?>
+				</p>
+				<p>
+					<?php
+					printf(
+						/* translators: %s: URL to the WordPress Importer */
+						wp_kses(
+							__( 'To complete the migration, <a href="%s"><strong>import the same WXR file again</strong></a>. This second pass will create the events and link them to the venues created in step 1.', 'gatherpress-export-import' ),
+							array(
+								'a'      => array( 'href' => array() ),
+								'strong' => array(),
+							)
+						),
+						esc_url( $importer_url )
+					);
+					?>
+				</p>
+			</div>
+			<?php
+		}
 
 		/**
 		 * Dispatches the importer screen based on the current step.
@@ -252,14 +352,6 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 
 				<hr />
 
-				<h2><?php esc_html_e( 'Critical: Import Order Matters', 'gatherpress-export-import' ); ?></h2>
-
-				<div class="notice notice-warning inline" style="max-width: 700px;">
-					<p><strong><?php esc_html_e( 'Venues must be imported BEFORE events.', 'gatherpress-export-import' ); ?></strong></p>
-					<p><?php esc_html_e( 'GatherPress uses a shadow taxonomy (_gatherpress_venue) to link events to venues. When a gatherpress_venue post is created, GatherPress automatically creates a corresponding hidden taxonomy term. Events reference venues by being assigned this taxonomy term.', 'gatherpress-export-import' ); ?></p>
-					<p><?php esc_html_e( 'If venues are not imported first, the shadow taxonomy terms will not exist when events are imported, and venue links will be lost.', 'gatherpress-export-import' ); ?></p>
-				</div>
-
 				<h3><?php esc_html_e( 'Recommended import sequence', 'gatherpress-export-import' ); ?></h3>
 				<ol class="gpei-steps" style="max-width: 700px;">
 					<li>
@@ -284,128 +376,96 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 					</li>
 				</ol>
 
-				<div class="notice notice-info inline" style="max-width: 700px;">
-					<p><strong><?php esc_html_e( 'Single-file imports:', 'gatherpress-export-import' ); ?></strong> <?php esc_html_e( 'If your WXR file contains both venues and events, ensure venues appear before events in the file. Most export tools list venues first, but verify by opening the XML file.', 'gatherpress-export-import' ); ?></p>
-				</div>
-
-				<div class="notice notice-info inline" style="max-width: 700px;">
-					<p><strong><?php esc_html_e( 'Taxonomy-based venues (Event Organiser):', 'gatherpress-export-import' ); ?></strong> <?php esc_html_e( 'Event Organiser stores venues as taxonomy terms, not posts. Import the same WXR file twice: the first import creates gatherpress_venue posts from venue terms (events are skipped), the second import creates events and links them to venues.', 'gatherpress-export-import' ); ?></p>
-				</div>
-
-				<hr />
-
-				<h2><?php esc_html_e( 'What Gets Converted', 'gatherpress-export-import' ); ?></h2>
-				<table class="widefat striped" style="max-width: 700px;">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Source Data', 'gatherpress-export-import' ); ?></th>
-							<th><?php esc_html_e( 'GatherPress Target', 'gatherpress-export-import' ); ?></th>
-							<th><?php esc_html_e( 'Method', 'gatherpress-export-import' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td><?php esc_html_e( 'Event post type', 'gatherpress-export-import' ); ?></td>
-							<td><code>gatherpress_event</code></td>
-							<td><?php esc_html_e( 'Post type rewrite via wp_import_post_data_raw', 'gatherpress-export-import' ); ?></td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Venue post type', 'gatherpress-export-import' ); ?></td>
-							<td><code>gatherpress_venue</code></td>
-							<td><?php esc_html_e( 'Post type rewrite via wp_import_post_data_raw', 'gatherpress-export-import' ); ?></td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Start/end datetimes', 'gatherpress-export-import' ); ?></td>
-							<td><?php esc_html_e( 'gp_event_extended table', 'gatherpress-export-import' ); ?></td>
-							<td><?php esc_html_e( 'Meta stash + adapter conversion', 'gatherpress-export-import' ); ?></td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Venue reference', 'gatherpress-export-import' ); ?></td>
-							<td><code>_gatherpress_venue</code></td>
-							<td><?php esc_html_e( 'ID mapping + shadow taxonomy assignment', 'gatherpress-export-import' ); ?></td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Title, content, featured image', 'gatherpress-export-import' ); ?></td>
-							<td><?php esc_html_e( 'Standard post fields', 'gatherpress-export-import' ); ?></td>
-							<td><?php esc_html_e( 'Automatic (WordPress Importer)', 'gatherpress-export-import' ); ?></td>
-						</tr>
-					</tbody>
-				</table>
-
 				<hr />
 
 				<h2><?php esc_html_e( 'Supported Source Plugins', 'gatherpress-export-import' ); ?></h2>
 				<table class="widefat striped" style="max-width: 700px;">
 					<thead>
 						<tr>
-							<th><?php esc_html_e( 'Plugin', 'gatherpress-export-import' ); ?></th>
-							<th><?php esc_html_e( 'Event CPT', 'gatherpress-export-import' ); ?></th>
-							<th><?php esc_html_e( 'Venue Handling', 'gatherpress-export-import' ); ?></th>
+							<th><?php esc_html_e( 'Source Plugin', 'gatherpress-export-import' ); ?></th>
+							<th style="text-align: center;"><?php esc_html_e( 'Import', 'gatherpress-export-import' ); ?></th>
+							<th style="text-align: center;"><?php esc_html_e( 'Manually Tested', 'gatherpress-export-import' ); ?></th>
+							<th style="text-align: center;"><?php esc_html_e( 'PHPUnit Tested', 'gatherpress-export-import' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $adapters as $adapter ) { ?>
-							<tr>
-								<td><?php echo esc_html( $adapter->get_name() ); ?></td>
-								<td>
-									<?php
-									$event_types = array_keys( $adapter->get_event_post_type_map() );
-									if ( ! empty( $event_types ) ) {
-										echo '<code>' . esc_html( implode( '</code>, <code>', $event_types ) ) . '</code>';
-									} else {
-										echo '&mdash;';
-									}
-									?>
-								</td>
-								<td>
-									<?php
-									$venue_types = array_keys( $adapter->get_venue_post_type_map() );
-									if ( ! empty( $venue_types ) ) {
-										echo '<code>' . esc_html( implode( ', ', $venue_types ) ) . '</code> &rarr; <code>gatherpress_venue</code>';
-									} else {
-										$venue_key = $adapter->get_venue_meta_key();
-										if ( $venue_key ) {
-											echo esc_html__( 'Via meta key: ', 'gatherpress-export-import' ) . '<code>' . esc_html( $venue_key ) . '</code>';
-										} else {
-											echo esc_html__( 'Taxonomy or N/A', 'gatherpress-export-import' );
-										}
-									}
-									?>
-								</td>
-							</tr>
-						<?php } ?>
+						<tr>
+							<td><strong><?php esc_html_e( 'The Events Calendar', 'gatherpress-export-import' ); ?></strong> <span class="description">(StellarWP)</span></td>
+							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">✅</td>
+						</tr>
+						<tr>
+							<td><strong><?php esc_html_e( 'Events Manager', 'gatherpress-export-import' ); ?></strong></td>
+							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">✅</td>
+						</tr>
+						<tr>
+							<td><strong><?php esc_html_e( 'Modern Events Calendar', 'gatherpress-export-import' ); ?></strong> <span class="description">(Webnus)</span></td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">❌</td>
+							<td style="text-align: center;">❌</td>
+						</tr>
+						<tr>
+							<td><strong><?php esc_html_e( 'All-in-One Event Calendar', 'gatherpress-export-import' ); ?></strong></td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">❌</td>
+							<td style="text-align: center;">❌</td>
+						</tr>
+						<tr>
+							<td><strong><?php esc_html_e( 'EventON', 'gatherpress-export-import' ); ?></strong></td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">❌</td>
+							<td style="text-align: center;">❌</td>
+						</tr>
+						<tr>
+							<td><strong><?php esc_html_e( 'Event Organiser', 'gatherpress-export-import' ); ?></strong> <span class="description">(Stephen Harris)</span></td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">✅</td>
+						</tr>
 					</tbody>
 				</table>
+				<p class="description" style="max-width: 700px;">
+					<?php esc_html_e( '✅ Fully supported/tested — ⚠️ Partial (some data unavailable via WXR) — ❌ Not yet', 'gatherpress-export-import' ); ?>
+				</p>
 
 				<hr />
 
-				<h2><?php esc_html_e( 'Important Notes', 'gatherpress-export-import' ); ?></h2>
-				<ul style="max-width: 700px; list-style: disc; padding-left: 20px;">
-					<li>
-						<strong><?php esc_html_e( 'Always backup first.', 'gatherpress-export-import' ); ?></strong>
-						<?php esc_html_e( 'Create a full database backup and test the import on a staging site before running it on production.', 'gatherpress-export-import' ); ?>
-					</li>
-					<li>
-						<strong><?php esc_html_e( 'Shared post type slugs.', 'gatherpress-export-import' ); ?></strong>
-						<?php esc_html_e( 'Events Manager and Event Organiser both use the "event" post type. The plugin distinguishes between them by inspecting meta keys. Import data from only one source plugin at a time.', 'gatherpress-export-import' ); ?>
-					</li>
-					<li>
-						<strong><?php esc_html_e( 'Recurring events.', 'gatherpress-export-import' ); ?></strong>
-						<?php esc_html_e( 'GatherPress treats each occurrence as a separate event. Recurrence rules are not converted — each exported occurrence becomes its own GatherPress event.', 'gatherpress-export-import' ); ?>
-					</li>
-					<li>
-						<strong><?php esc_html_e( 'Taxonomy-based venues (two-pass import).', 'gatherpress-export-import' ); ?></strong>
-						<?php esc_html_e( 'Plugins like Event Organiser store venues as taxonomy terms. Import the same WXR file twice: first pass creates venue posts, second pass imports events and links them to venues.', 'gatherpress-export-import' ); ?>
-					</li>
-					<li>
-						<strong><?php esc_html_e( 'Duplicate prevention.', 'gatherpress-export-import' ); ?></strong>
-						<?php esc_html_e( 'Importing the same file twice may create duplicates. Always import into a clean environment or verify existing data first.', 'gatherpress-export-import' ); ?>
-					</li>
-					<li>
-						<strong><?php esc_html_e( 'Shortcodes in content.', 'gatherpress-export-import' ); ?></strong>
-						<?php esc_html_e( 'Source plugin shortcodes will appear as raw text. Review imported event content and clean up as needed.', 'gatherpress-export-import' ); ?>
-					</li>
-				</ul>
+				<details style="max-width: 700px;">
+					<summary><h2 style="display: inline; cursor: pointer;"><?php esc_html_e( 'Notes', 'gatherpress-export-import' ); ?></h2></summary>
+					<ul style="list-style: disc; padding-left: 20px; margin-top: 12px;">
+						<li>
+							<strong><?php esc_html_e( 'Always backup first.', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'Create a full database backup and test the import on a staging site before running it on production.', 'gatherpress-export-import' ); ?>
+						</li>
+						<li>
+							<strong><?php esc_html_e( 'Shared post type slugs.', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'Events Manager and Event Organiser both use the "event" post type. The plugin distinguishes between them by inspecting meta keys. Import data from only one source plugin at a time.', 'gatherpress-export-import' ); ?>
+						</li>
+						<li>
+							<strong><?php esc_html_e( 'Recurring events.', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'GatherPress treats each occurrence as a separate event. Recurrence rules are not converted — each exported occurrence becomes its own GatherPress event.', 'gatherpress-export-import' ); ?>
+						</li>
+						<li>
+							<strong><?php esc_html_e( 'Taxonomy-based venues (two-pass import).', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'Plugins like Event Organiser, MEC, and EventON store venues as taxonomy terms. Import the same WXR file twice: first pass creates venue posts, second pass imports events and links them to venues.', 'gatherpress-export-import' ); ?>
+						</li>
+						<li>
+							<strong><?php esc_html_e( 'Duplicate prevention.', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'Importing the same file twice may create duplicates (except for the intentional two-pass workflow). Always import into a clean environment or verify existing data first.', 'gatherpress-export-import' ); ?>
+						</li>
+						<li>
+							<strong><?php esc_html_e( 'Shortcodes in content.', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'Source plugin shortcodes will appear as raw text. Review imported event content and clean up as needed.', 'gatherpress-export-import' ); ?>
+						</li>
+						<li>
+							<strong><?php esc_html_e( 'Timezone handling.', 'gatherpress-export-import' ); ?></strong>
+							<?php esc_html_e( 'Some plugins store local time, others UTC. The converter uses the source timezone when available, falling back to your site timezone. Verify datetimes after import.', 'gatherpress-export-import' ); ?>
+						</li>
+					</ul>
+				</details>
 
 				<hr />
 
