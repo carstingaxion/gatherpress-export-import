@@ -27,8 +27,36 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 | **EventON** | `ajde_events` | Taxonomy/meta | Unix timestamps (`evcal_srow` / `evcal_erow`) |
 | **Event Organiser** (Stephen Harris) | `event` | Taxonomy (`event-venue`) | `Y-m-d H:i:s` (`_eventorganiser_schedule_*`) |
 
+### WP Core Export Compatibility Matrix
+
+The table below shows which event data is available through standard WordPress XML (WXR) exports per source plugin, and which data is **missing or incomplete** in core exports. This determines what the migration plugin can work with automatically versus what requires manual intervention.
+
+| Data Type | TEC | Events Manager | MEC | AIOEC | EventON | Event Organiser |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Event title & content** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Featured image** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Start/end datetimes** | ✅ postmeta | ✅ postmeta | ✅ postmeta | ❌ custom table | ✅ postmeta | ✅ postmeta |
+| **Timezone** | ✅ `_EventTimezone` | ✅ `_event_timezone` | ❌ not stored | ❌ custom table | ❌ not in meta | ❌ uses site tz |
+| **Venue name** | ✅ `tribe_venue` CPT | ✅ `location` CPT | ⚠️ taxonomy term | ❌ custom table | ⚠️ taxonomy term | ⚠️ taxonomy term |
+| **Venue address/details** | ✅ venue postmeta | ✅ location postmeta | ❌ term meta (not in WXR) | ❌ custom table | ❌ term meta (not in WXR) | ❌ term meta (not in WXR) |
+| **Venue coordinates** | ⚠️ partial (via meta) | ⚠️ partial (via meta) | ❌ not exported | ❌ custom table | ❌ not exported | ❌ not exported |
+| **Venue–event link** | ✅ `_EventVenueID` | ⚠️ `_location_id` | ⚠️ taxonomy assignment | ❌ custom table | ⚠️ taxonomy assignment | ⚠️ taxonomy assignment |
+| **Event categories** | ✅ `tribe_events_cat` | ✅ `event-categories` | ✅ `mec_category` | ✅ `events_categories` | ✅ `event_type` | ✅ `event-category` |
+| **Event tags** | ✅ `post_tag` | ✅ `event-tags` | ⚠️ `mec_label` | ✅ `events_tags` | ❌ not standard | ✅ `event-tag` |
+| **Organizer** | ✅ `tribe_organizer` CPT | ⚠️ not a separate CPT | ⚠️ taxonomy term | ❌ custom table | ⚠️ taxonomy term | ❌ not available |
+| **Recurrence rules** | ❌ not in WXR | ❌ not in WXR | ❌ not in WXR | ❌ custom table | ❌ not in WXR | ❌ not in WXR |
+| **RSVP / Tickets** | ❌ separate plugin | ❌ custom tables | ❌ not exported | ❌ not exported | ❌ not exported | ❌ not exported |
+
+**Legend:** ✅ Fully available in WXR export — ⚠️ Partially available or requires extra handling — ❌ Not available via core export
+
+> [!NOTE]
+> **Venue details are the biggest gap for taxonomy-based plugins.** Event Organiser, MEC, and EventON store venue address, phone, website, and coordinates as taxonomy term meta. WordPress core WXR exports do **not** include term meta, so this data is lost in standard exports. For these plugins, venue names are preserved (as taxonomy term names) but address details must be re-entered manually or exported separately via a custom tool.
+
+> [!NOTE]
+> **All-in-One Event Calendar** stores nearly all event data (datetimes, venue, recurrence) in a custom database table (`ai1ec_events`) rather than in postmeta. Standard WXR exports contain only the post title and content — all structured event data requires direct database access or a plugin-specific export tool.
+
 > [!TIP]
-> You can add support for additional plugins using the `gpei_event_post_type_map`, `gpei_venue_post_type_map`, and `gatherpress_pseudopostmetas` filters.
+> You can add support for additional plugins using the `gpei_event_post_type_map`, `gpei_venue_post_type_map`, `gpei_taxonomy_map`, and `gatherpress_pseudopostmetas` filters. See the [Hooks documentation](docs/developer/hooks/Hooks.md) for usage details.
 
 ---
 
@@ -138,32 +166,14 @@ Each lands on **Tools > Export** so you can export demo data and test the migrat
 
 ## Extending for Custom Plugins
 
-Add support for additional event plugins using these filters:
+Add support for additional event plugins by creating a class that implements the `Source_Adapter` interface and registering it:
 
 ```php
-// Map a custom event post type to GatherPress.
-add_filter( 'gpei_event_post_type_map', function ( $map ) {
-    $map['my_custom_event'] = 'gatherpress_event';
-    return $map;
-} );
-
-// Map a custom venue post type to GatherPress.
-add_filter( 'gpei_venue_post_type_map', function ( $map ) {
-    $map['my_custom_venue'] = 'gatherpress_venue';
-    return $map;
-} );
-
-// Register pseudopostmeta keys with import callbacks.
-add_filter( 'gatherpress_pseudopostmetas', function ( $metas ) {
-    $metas['_my_start_date'] = array(
-        'post_type'       => 'gatherpress_event',
-        'import_callback' => 'my_datetime_converter',
-    );
-    return $metas;
-} );
+$migration = \GatherPressExportImport\Migration::get_instance();
+$migration->register_adapter( new My_Custom_Adapter() );
 ```
 
-For a full adapter implementation, create a class implementing the `Source_Adapter` interface and register it via `Migration::get_instance()->register_adapter()`.
+All available filters (`gpei_event_post_type_map`, `gpei_venue_post_type_map`, `gpei_taxonomy_map`, `gatherpress_pseudopostmetas`) are documented with `@example` annotations directly in the source code. Filter reference docs are auto-generated from those docblocks.
 
 ---
 

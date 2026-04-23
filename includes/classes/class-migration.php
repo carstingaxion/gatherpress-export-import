@@ -233,11 +233,36 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 			}
 
 			/**
-			 * Filters the event post type mapping.
+			 * Filters the merged event post type mapping used during import.
+			 *
+			 * This filter allows third-party code to add, remove, or modify the
+			 * mapping of source event post type slugs to GatherPress post type
+			 * slugs. The map is built by merging all registered adapter definitions
+			 * and is consulted every time the WordPress Importer processes a post
+			 * during `wp_import_post_data_raw`. Any source post type present as a
+			 * key in this map will be rewritten to the corresponding value.
 			 *
 			 * @since 0.1.0
 			 *
-			 * @param array<string, string> $event_type_map Source-to-GatherPress event post type map.
+			 * @example Add support for a custom event post type:
+			 *```php
+			 *     add_filter( 'gpei_event_post_type_map', function ( array $map ): array {
+			 *         $map['my_custom_event'] = 'gatherpress_event';
+			 *         return $map;
+			 *     } );
+			 *```
+			 *
+			 * @example Remove a built-in mapping to prevent automatic conversion:
+			 *```php
+			 *     add_filter( 'gpei_event_post_type_map', function ( array $map ): array {
+			 *         unset( $map['ai1ec_event'] );
+			 *         return $map;
+			 *     } );
+			 *```
+			 *
+			 * @param array<string, string> $event_type_map Associative array where keys are
+			 *                                              source event post type slugs and
+			 *                                              values are GatherPress post type slugs.
 			 */
 			return apply_filters( 'gpei_event_post_type_map', $this->event_type_map );
 		}
@@ -262,11 +287,37 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 			}
 
 			/**
-			 * Filters the venue post type mapping.
+			 * Filters the merged venue post type mapping used during import.
+			 *
+			 * This filter allows third-party code to add, remove, or modify the
+			 * mapping of source venue post type slugs to GatherPress venue post
+			 * type slugs. Works identically to `gpei_event_post_type_map` but
+			 * for venue/location post types. Source venue posts whose type appears
+			 * as a key in this map will be rewritten to `gatherpress_venue`,
+			 * and GatherPress will automatically create the corresponding shadow
+			 * taxonomy term in `_gatherpress_venue`.
 			 *
 			 * @since 0.1.0
 			 *
-			 * @param array<string, string> $venue_type_map Source-to-GatherPress venue post type map.
+			 * @example Add support for a custom venue post type:
+			 *```php
+			 *     add_filter( 'gpei_venue_post_type_map', function ( array $map ): array {
+			 *         $map['my_venue_cpt'] = 'gatherpress_venue';
+			 *         return $map;
+			 *     } );
+			 *```
+			 *
+			 * @example Remove the Events Manager location mapping if you handle it differently:
+			 *```php
+			 *     add_filter( 'gpei_venue_post_type_map', function ( array $map ): array {
+			 *         unset( $map['location'] );
+			 *         return $map;
+			 *     } );
+			 *```
+			 *
+			 * @param array<string, string> $venue_type_map Associative array where keys are
+			 *                                              source venue post type slugs and
+			 *                                              values are GatherPress post type slugs.
 			 */
 			return apply_filters( 'gpei_venue_post_type_map', $this->venue_type_map );
 		}
@@ -319,14 +370,44 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 			}
 
 			/**
-			 * Filters the taxonomy mapping used during import.
+			 * Filters the merged taxonomy mapping used during import.
 			 *
-			 * Allows adding or modifying taxonomy slug rewrites from source
-			 * plugins to GatherPress or WordPress taxonomies.
+			 * This filter controls how source plugin taxonomy slugs are rewritten
+			 * to GatherPress or WordPress taxonomy slugs during the import process.
+			 * It is applied in two places:
+			 *
+			 * 1. In `rewrite_post_terms_taxonomy()` — rewrites the `domain` field
+			 *    in per-post term assignments so terms are assigned to the correct
+			 *    target taxonomy on the imported post.
+			 * 2. In `intercept_term_creation()` — intercepts top-level `<wp:term>`
+			 *    entries in the WXR file, creates the term in the target taxonomy,
+			 *    and blocks creation in the source taxonomy.
+			 *
+			 * Note: Taxonomy-based venue slugs (e.g., `event-venue` for Event
+			 * Organiser) should NOT be added here if they require special two-pass
+			 * handling — those are managed by the `Taxonomy_Venue_Handler` trait.
 			 *
 			 * @since 0.1.0
 			 *
-			 * @param array<string, string> $taxonomy_map Source-to-target taxonomy map.
+			 * @example Map a custom source taxonomy to `gatherpress_topic`:
+			 *```php
+			 *     add_filter( 'gpei_taxonomy_map', function ( array $map ): array {
+			 *         $map['my_event_category'] = 'gatherpress_topic';
+			 *         return $map;
+			 *     } );
+			 *```
+			 *
+			 * @example Redirect a source tag taxonomy to WordPress core `post_tag`:
+			 *```php
+			 *     add_filter( 'gpei_taxonomy_map', function ( array $map ): array {
+			 *         $map['custom_event_tags'] = 'post_tag';
+			 *         return $map;
+			 *     } );
+			 *```
+			 *
+			 * @param array<string, string> $taxonomy_map Associative array where keys are
+			 *                                            source taxonomy slugs and values
+			 *                                            are target taxonomy slugs.
 			 */
 			return apply_filters( 'gpei_taxonomy_map', $this->taxonomy_map );
 		}

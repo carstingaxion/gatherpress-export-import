@@ -49,19 +49,7 @@ The main migration class hooks into `wp_import_post_data_raw` at priority 5. For
 
 The original source post type is preserved in a `_gpei_source_type` key on the post data array for adapter differentiation.
 
-These maps are filterable:
-
-```php
-add_filter( 'gpei_event_post_type_map', function ( $map ) {
-    $map['my_custom_event'] = 'gatherpress_event';
-    return $map;
-} );
-
-add_filter( 'gpei_venue_post_type_map', function ( $map ) {
-    $map['my_custom_venue'] = 'gatherpress_venue';
-    return $map;
-} );
-```
+These maps are filterable via `gpei_event_post_type_map` and `gpei_venue_post_type_map`. See the [Hooks documentation](developer/hooks/Hooks.md) for usage details.
 
 ---
 
@@ -88,14 +76,7 @@ Each adapter declares a taxonomy map via `get_taxonomy_map()`. The main migratio
 - **`wp_import_post_terms` (priority 5)** — rewrites the `domain` field in per-post term assignments.
 - **`pre_insert_term` (priority 5)** — intercepts top-level term creation from `<wp:term>` entries in the WXR file, creates the term in the target taxonomy, and blocks creation in the source taxonomy.
 
-The taxonomy map is filterable:
-
-```php
-add_filter( 'gpei_taxonomy_map', function ( $map ) {
-    $map['my_custom_category'] = 'gatherpress_topic';
-    return $map;
-} );
-```
+The taxonomy map is filterable via `gpei_taxonomy_map`. See the inline `@example` annotations in `class-migration.php` for usage details.
 
 ---
 
