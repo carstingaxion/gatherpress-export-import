@@ -69,6 +69,22 @@
 			<wp:meta_key>_VenueState</wp:meta_key>
 			<wp:meta_value>OR</wp:meta_value>
 		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_VenueZip</wp:meta_key>
+			<wp:meta_value>97201</wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_VenueCountry</wp:meta_key>
+			<wp:meta_value>United States</wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_VenuePhone</wp:meta_key>
+			<wp:meta_value>+1-503-555-0100</wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_VenueURL</wp:meta_key>
+			<wp:meta_value>https://www.downtownconvention.example.com</wp:meta_value>
+		</wp:postmeta>
 	</item>
 
 	<item>
@@ -99,6 +115,14 @@
 		<wp:postmeta>
 			<wp:meta_key>_VenueCity</wp:meta_key>
 			<wp:meta_value>Austin</wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_VenueState</wp:meta_key>
+			<wp:meta_value>TX</wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_VenueCountry</wp:meta_key>
+			<wp:meta_value>United States</wp:meta_value>
 		</wp:postmeta>
 	</item>
 

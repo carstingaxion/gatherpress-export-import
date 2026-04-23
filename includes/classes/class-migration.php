@@ -540,10 +540,11 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 		 * Intercepts add_post_metadata to stash third-party meta values during import.
 		 *
 		 * Hooked to `add_post_metadata` at priority 5. When a recognized meta key
-		 * is being added to a `gatherpress_event` post, the value is stored in a
-		 * transient instead of being written to `wp_postmeta`. This prevents
-		 * the original meta from polluting the database while collecting all
-		 * values needed for datetime conversion.
+		 * is being added to a `gatherpress_event` or `gatherpress_venue` post,
+		 * the value is stored in a transient instead of being written to
+		 * `wp_postmeta`. This prevents the original meta from polluting the
+		 * database while collecting all values needed for datetime conversion
+		 * and venue information assembly.
 		 *
 		 * @since 0.1.0
 		 *
@@ -563,7 +564,14 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 
 			$post_type = get_post_type( $object_id );
 
-			if ( 'gatherpress_event' !== $post_type ) {
+			if ( 'gatherpress_event' !== $post_type && 'gatherpress_venue' !== $post_type ) {
+				return $check;
+			}
+
+			// Venue meta stashing is handled by adapter-specific hooks
+			// (e.g., TEC_Adapter::stash_venue_meta_on_import at priority 4).
+			// If we reach here for a venue post, let the adapter handle it.
+			if ( 'gatherpress_venue' === $post_type ) {
 				return $check;
 			}
 

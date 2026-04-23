@@ -18,74 +18,22 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 
 ## Supported Source Plugins
 
-| Source Plugin | Event CPT | Venue Handling | Date Format |
-|---|---|---|---|
-| **The Events Calendar** (StellarWP) | `tribe_events` | `tribe_venue` → `gatherpress_venue` | `Y-m-d H:i:s` + timezone string |
-| **Events Manager** | `event` | `location` → `gatherpress_venue` | `Y-m-d H:i:s` + timezone string |
-| **Modern Events Calendar** (Webnus) | `mec-events` | `mec_location` taxonomy | `Y-m-d` + separate h/m/ampm fields |
-| **All-in-One Event Calendar** | `ai1ec_event` | N/A (custom table) | Custom table (manual mapping needed) |
-| **EventON** | `ajde_events` | `event_location` taxonomy | Unix timestamps (`evcal_srow` / `evcal_erow`) |
-| **Event Organiser** (Stephen Harris) | `event` | `event-venue` taxonomy | `Y-m-d H:i:s` (`_eventorganiser_schedule_*`) |
+| Source Plugin | Import | Manually Tested | PHPUnit Tested |
+|---|:---:|:---:|:---:|
+| [**The Events Calendar**](docs/source-tec.md) (StellarWP) | ✅ Supported | ✅ | ✅ |
+| [**Events Manager**](docs/source-events-manager.md) | ✅ Supported | ✅ | ✅ |
+| [**Modern Events Calendar**](docs/source-mec.md) (Webnus) | ⚠️ Partial | ❌ | ❌ |
+| [**All-in-One Event Calendar**](docs/source-aioec.md) | ⚠️ Partial | ❌ | ❌ |
+| [**EventON**](docs/source-eventon.md) | ⚠️ Partial | ❌ | ❌ |
+| [**Event Organiser**](docs/source-event-organiser.md) (Stephen Harris) | ✅ Supported | ✅ | ✅ |
 
-
-### WP Core Export Compatibility Matrix
-
-The table below shows which event data is available through standard WordPress XML (WXR) exports per source plugin. The **GP** column indicates whether GatherPress supports the feature natively.
-
-| Data Type | GP | TEC | Events Manager | MEC | AIOEC | EventON | Event Organiser |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Event title & content** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Featured image** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Start/end datetimes** | ✅ | ✅ | ✅ | ✅ | ❌ ² | ✅ | ✅ |
-| **Timezone** | ✅ | ✅ | ✅ | ❌ ³ | ❌ ² | ❌ ³ | ❌ ⁴ |
-| **Venue name** | ✅ | ✅ | ✅ | ✅ ⁵ | ❌ ² | ✅ ⁵ | ✅ ⁵ |
-| **Venue address/details** | ✅ | ✅ | ✅ | ❌ ⁶ | ❌ ² | ❌ ⁶ | ❌ ⁶ |
-| **Venue coordinates** | ✅ | ⚠️ ⁷ | ⚠️ ⁷ | ❌ ⁶ | ❌ ² | ❌ ⁶ | ❌ ⁶ |
-| **Venue–event link** | ✅ | ✅ | ⚠️ ⁸ | ✅ ⁵ | ❌ ² | ✅ ⁵ | ✅ ⁵ |
-| **Event categories** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Event tags** | ❌ ⁹ | ✅ | ✅ | ⚠️ ¹⁰ | ✅ | ❌ | ✅ |
-| **Organizer** | ❌ ¹¹ | ✅ | ⚠️ | ⚠️ | ❌ ² | ⚠️ | ❌ |
-| **Recurrence rules** | ❌ ¹² | ❌ | ❌ | ❌ | ❌ ² | ❌ | ❌ |
-| **RSVP / Tickets** | ✅ ¹³ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-
-**Legend:** ✅ Fully available — ⚠️ Partially available or requires extra handling — ❌ Not available via core export
-
-**Footnotes:**
-
-¹ Uses the two-pass import strategy: first import creates `gatherpress_venue` posts from taxonomy terms, second import creates events and links them to venues.
-
-² AIOEC stores nearly all event data (datetimes, venue, recurrence) in a custom database table (`ai1ec_events`). Standard WXR exports contain only the post title and content.
-
-³ Timezone is not stored in a dedicated meta field; the site timezone is used as a fallback during conversion.
-
-⁴ Event Organiser stores datetimes in site-local time; the site timezone is used during conversion.
-
-⁵ Venue names are available as taxonomy term names in the WXR export and are converted to `gatherpress_venue` posts via the two-pass import strategy.
-
-⁶ Venue address, phone, website, and coordinates are stored as taxonomy term meta. WordPress core WXR exports do **not** include term meta, so this data must be re-entered manually or exported separately.
-
-⁷ Coordinates are partially available via venue post meta but may require additional mapping depending on source plugin version.
-
-⁸ Events Manager uses `_location_id` which requires ID mapping resolution during import.
-
-⁹ GatherPress does not register `post_tag` for the `gatherpress_event` post type. Tags from source plugins are imported but will not appear in the GatherPress event editor unless `post_tag` support is added separately.
-
-¹⁰ MEC uses `mec_label` as a tag-like taxonomy, which is mapped to `post_tag` during import.
-
-¹¹ GatherPress does not currently have a dedicated organizer entity. Organizer data from source plugins cannot be mapped to a GatherPress equivalent and is not imported.
-
-¹² GatherPress treats each event occurrence as a separate post. There is no recurrence rule system; each occurrence must be its own event.
-
-¹³ GatherPress has a built-in RSVP system, but no source plugin's RSVP or ticket data is convertible via WXR exports. RSVP data must be managed natively in GatherPress after migration.
-
-> [!TIP]
-> You can add support for additional plugins using the `gpei_event_post_type_map`, `gpei_venue_post_type_map`, `gpei_taxonomy_map`, and `gatherpress_pseudopostmetas` filters. See the [Hooks documentation](docs/developer/hooks/Hooks.md) for usage details.
+**Legend:** ✅ Fully supported/tested — ⚠️ Partial (some data unavailable via WXR) — ❌ Not yet
 
 ---
 
 ## Installation
 
-1. Upload the plugin files to `/wp-content/plugins/gatherpress-export-import`, or install through the WordPress plugins screen.
+1. Upload the plugin files to `/wp-content/plugins/gatherpress-export-import`.
 2. Activate the plugin through **Plugins** in the WordPress admin.
 3. Ensure **GatherPress** and the **WordPress Importer** plugin are also active.
 4. Export your event data from the source plugin via **Tools > Export**.
@@ -123,18 +71,6 @@ Source WXR File
 │  Resolves old→new venue ID mapping      │
 └─────────────────────────────────────────┘
 ```
-
----
-
-## Data Mapping
-
-| Source Data | GatherPress Target | Handling |
-|---|---|---|
-| Event title and content | `gatherpress_event` post | Automatic (post type rewrite) |
-| Start/end date, time, timezone | `gp_event_extended` table | Pseudopostmeta composite callback |
-| Venue / location | `gatherpress_venue` post + `_gatherpress_venue` taxonomy | Post type rewrite + ID mapping + shadow taxonomy term assignment |
-| Categories / tags | `gatherpress_topic` taxonomy | May need manual re-assignment |
-| Featured image | Post thumbnail | Automatic (standard WXR) |
 
 ---
 
@@ -196,7 +132,7 @@ $migration = \GatherPressExportImport\Migration::get_instance();
 $migration->register_adapter( new My_Custom_Adapter() );
 ```
 
-All available filters (`gpei_event_post_type_map`, `gpei_venue_post_type_map`, `gpei_taxonomy_map`, `gatherpress_pseudopostmetas`) are documented with `@example` annotations directly in the source code. Filter reference docs are auto-generated from those docblocks.
+All available filters are documented, see the [Hooks documentation](docs/developer/hooks/Hooks.md) for usage details.
 
 ---
 
@@ -217,9 +153,13 @@ GatherPress treats each event occurrence as a separate post. If your source plug
 
 ### 0.1.0
 
-- Initial release with import interception for six major event plugins.
-- Custom importer screen with prerequisite checks and step-by-step instructions.
-- Playground blueprints for all supported source plugins with demo data.
+- Import interception for six event plugins: The Events Calendar, Events Manager, Modern Events Calendar, EventON, All-in-One Event Calendar, and Event Organiser.
+- Automatic post type rewriting, datetime conversion, venue linking, and taxonomy mapping during standard WordPress XML imports.
+- Two-pass import strategy for plugins that store venues as taxonomy terms, with shared traits for easy extension.
+- Venue detail assembly from individual meta fields into GatherPress's `gatherpress_venue_information` JSON format (TEC, Events Manager).
+- Custom importer screen under Tools > Import with prerequisite checks and step-by-step guidance.
+- Comprehensive unit and integration test suites, including end-to-end WXR import tests with fixture files.
+- WordPress Playground blueprints with demo data for every supported source plugin.
 
 ---
 

@@ -6,6 +6,12 @@
  * by the Events Manager plugin. Stores dates in `_event_start` / `_event_end`
  * meta keys in 'Y-m-d H:i:s' format with `_event_timezone` for the timezone.
  *
+ * Venue details are stored as individual post meta keys on `location` posts:
+ * `_location_address`, `_location_town`, `_location_state`, `_location_postcode`,
+ * `_location_country`. These are intercepted during import via the shared
+ * `Venue_Detail_Handler` trait, assembled into a full address string, and saved
+ * as `gatherpress_venue_information` on the converted `gatherpress_venue` post.
+ *
  * @package GatherPressExportImport
  * @since   0.1.0
  */
@@ -22,16 +28,21 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 	 *
 	 * Source adapter for Events Manager. Converts `event` to
 	 * `gatherpress_event` and `location` to `gatherpress_venue`
-	 * during WordPress XML import.
+	 * during WordPress XML import. Also converts Events Manager
+	 * venue detail meta into GatherPress venue information JSON
+	 * via the shared `Venue_Detail_Handler` trait.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @see Source_Adapter
+	 * @see Hookable_Adapter
 	 * @see Datetime_Helper
+	 * @see Venue_Detail_Handler
 	 */
-	class Events_Manager_Adapter implements Source_Adapter {
+	class Events_Manager_Adapter implements Source_Adapter, Hookable_Adapter {
 
 		use Datetime_Helper;
+		use Venue_Detail_Handler;
 
 		/**
 		 * Gets the human-readable name of the source plugin.
@@ -71,22 +82,51 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 		}
 
 		/**
-		 * Gets the meta keys that should be stashed during import.
+		 * Gets the mapping of Events Manager venue meta keys to address components.
+		 *
+		 * Maps Events Manager's individual location meta keys to the component
+		 * types understood by the `Venue_Detail_Handler` trait.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return string[] Meta keys for date/time and timezone.
+		 * @return array<string, string> Map of source_meta_key => component_type.
+		 */
+		protected function get_venue_detail_meta_map(): array {
+			return array(
+				'_location_address'  => 'address',
+				'_location_town'     => 'city',
+				'_location_state'    => 'state',
+				'_location_postcode' => 'zip',
+				'_location_country'  => 'country',
+			);
+		}
+
+		/**
+		 * Gets the meta keys that should be stashed during import.
+		 *
+		 * Includes both event datetime meta keys and venue detail meta keys.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return string[] Meta keys for date/time, timezone, and venue details.
 		 */
 		public function get_stash_meta_keys(): array {
-			return array(
-				'_event_start',
-				'_event_end',
-				'_event_timezone',
+			return array_merge(
+				array(
+					'_event_start',
+					'_event_end',
+					'_event_timezone',
+				),
+				$this->get_venue_detail_meta_keys()
 			);
 		}
 
 		/**
 		 * Gets pseudopostmeta definitions for Events Manager meta keys.
+		 *
+		 * Registers both event datetime keys and venue detail keys as
+		 * pseudopostmeta entries so GatherPress recognises them during
+		 * its own import/export flow.
 		 *
 		 * @since 0.1.0
 		 *
@@ -95,7 +135,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 		public function get_pseudopostmetas(): array {
 			$callback = array( $this, 'noop_callback' );
 
-			return array(
+			$pseudometas = array(
 				'_event_start'    => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
@@ -109,6 +149,16 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 					'import_callback' => $callback,
 				),
 			);
+
+			// Register venue detail keys as pseudopostmeta for gatherpress_venue.
+			foreach ( $this->get_venue_detail_meta_keys() as $key ) {
+				$pseudometas[ $key ] = array(
+					'post_type'       => 'gatherpress_venue',
+					'import_callback' => $callback,
+				);
+			}
+
+			return $pseudometas;
 		}
 
 		/**
@@ -183,6 +233,20 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 				'event-categories' => 'gatherpress_topic',
 				'event-tags'       => 'post_tag',
 			);
+		}
+
+		/**
+		 * Sets up adapter-specific import hooks.
+		 *
+		 * Delegates venue detail meta stashing and processing to the shared
+		 * `Venue_Detail_Handler` trait via `setup_venue_detail_hooks()`.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @return void
+		 */
+		public function setup_import_hooks(): void {
+			$this->setup_venue_detail_hooks();
 		}
 
 		/**
