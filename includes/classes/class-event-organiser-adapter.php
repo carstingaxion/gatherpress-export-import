@@ -229,6 +229,10 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 
 			$timezone = $this->get_default_timezone();
 
+			if ( ! is_string( $start ) || ! is_string( $end ) ) {
+				return;
+			}
+
 			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
 		}
 

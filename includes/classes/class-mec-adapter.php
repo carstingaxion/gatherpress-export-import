@@ -188,10 +188,15 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 				isset( $stash['mec_end_time_ampm'] ) ? $stash['mec_end_time_ampm'] : 'AM'
 			);
 
-			$datetime_start = $start_date . ' ' . $start_time;
-			$datetime_end   = $end_date . ' ' . $end_time;
+			$start    = $start_date . ' ' . $start_time;
+			$end      = $end_date . ' ' . $end_time;
+			$timezone = $this->get_default_timezone();
 
-			$this->save_gatherpress_datetimes( $post_id, $datetime_start, $datetime_end, $this->get_default_timezone() );
+			if ( ! is_string( $start ) || ! is_string( $end ) || ! is_string( $timezone ) ) {
+				return;
+			}
+
+			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
 		}
 
 		/**

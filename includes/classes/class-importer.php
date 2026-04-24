@@ -233,7 +233,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 								'gatherpress-export-import'
 							)
 						),
-						esc_html( $venue_count )
+						esc_attr( (string) $venue_count )
 					);
 					?>
 				</p>

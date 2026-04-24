@@ -249,6 +249,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 			foreach ( $skip_posts as $skip_post_id ) {
 				if (
 					isset( $GLOBALS['wp_import'] )
+					&& $GLOBALS['wp_import'] instanceof \stdClass
 					&& ! empty( $GLOBALS['wp_import']->processed_posts )
 					&& is_array( $GLOBALS['wp_import']->processed_posts )
 				) {
@@ -277,7 +278,8 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 			$skippable_types = $this->get_skippable_event_post_types();
 
 			if ( in_array( $post_type, $skippable_types, true ) ) {
-				$this->tvh_current_post_title = $post_data['post_title'] ?? '(untitled)';
+				$post_title                   = is_string( $post_data['post_title'] ) && ! empty( $post_data['post_title'] ) ? $post_data['post_title'] : '(untitled)';
+				$this->tvh_current_post_title = $post_title;
 			}
 
 			return $post_data;
@@ -368,10 +370,14 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 
 			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
 
-			if ( isset( $GLOBALS['wp_import'] ) && ! empty( $GLOBALS['wp_import']->terms ) ) {
+			if ( isset( $GLOBALS['wp_import'] ) && $GLOBALS['wp_import'] instanceof \stdClass && is_array( $GLOBALS['wp_import']->terms ) ) {
 				foreach ( $GLOBALS['wp_import']->terms as $term_data ) {
+					if ( ! is_array( $term_data ) ) {
+						continue;
+					}
 					if ( isset( $term_data['term_taxonomy'] ) && $venue_taxonomy_slug === $term_data['term_taxonomy'] ) {
-						$venue_slug = sanitize_title( $term_data['slug'] ?? '' );
+						$term_data_slug = is_string( $term_data['slug'] ) ? $term_data['slug'] : '';
+						$venue_slug     = sanitize_title( $term_data_slug );
 						if ( empty( $venue_slug ) ) {
 							continue;
 						}
@@ -436,10 +442,6 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 				return 0;
 			}
 
-			if ( ! $venue_post_id ) {
-				return 0;
-			}
-
 			update_post_meta( $venue_post_id, '_gpei_source_venue_term_slug', $venue_slug );
 
 			return $venue_post_id;
@@ -457,8 +459,8 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param array $terms Array of term assignment arrays.
-		 * @return array Filtered term assignments.
+		 * @param array<int, array<string, string>> $terms Array of term assignment arrays.
+		 * @return array<int, array<string, string>> Filtered term assignments.
 		 */
 		final public function tvh_filter_venue_terms( array $terms ): array {
 			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
@@ -628,7 +630,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 							$term_slug   = $this->get_venue_term_slug( $venue_post_obj->post_name );
 							$shadow_term = get_term_by( 'slug', $term_slug, '_gatherpress_venue' );
 
-							if ( $shadow_term && ! is_wp_error( $shadow_term ) ) {
+							if ( $shadow_term instanceof \WP_Term ) {
 								$result = wp_set_object_terms( $post_id, array( $shadow_term->term_id ), '_gatherpress_venue', false );
 								$linked = ! is_wp_error( $result );
 							}

@@ -268,7 +268,10 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 			$meta_map = $this->get_venue_detail_meta_map();
 
 			foreach ( $pending as $venue_post_id ) {
-				$venue_post_id = (int) $venue_post_id;
+				if ( ! is_int( $venue_post_id ) ) {
+					continue;
+				}
+
 				$transient_key = 'gpei_venue_meta_stash_' . $venue_post_id;
 				$stash         = get_transient( $transient_key );
 
@@ -293,7 +296,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 					if ( isset( $meta_map[ $key ] ) ) {
 						$component_type = $meta_map[ $key ];
 						if ( isset( $components[ $component_type ] ) ) {
-							$components[ $component_type ] = (string) $value;
+							$components[ $component_type ] = is_string( $value ) ? $value : '';
 						}
 					}
 				}

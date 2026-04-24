@@ -210,6 +210,10 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 				$end = $start;
 			}
 
+			if ( ! is_string( $start ) || ! is_string( $end ) || ! is_string( $timezone ) ) {
+				return;
+			}
+
 			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
 		}
 

@@ -147,8 +147,11 @@ npm run test:integration -- --group=migration
 | Test File | Class Under Test | What's Tested |
 |---|---|---|
 | `EOAdapterTest.php` | `Event_Organiser_Adapter` | Name, post type maps, meta keys, pseudopostmetas, `can_handle()`, taxonomy map, venue taxonomy slug, skippable types, interface implementation |
+| `TECAdapterTest.php` | `TEC_Adapter` | Name, post type maps, stash meta keys (event + venue detail), pseudopostmetas, `can_handle()`, venue meta key, taxonomy map, interface implementation |
+| `EventsManagerAdapterTest.php` | `Events_Manager_Adapter` | Name, post type maps, stash meta keys (event + venue detail), pseudopostmetas, `can_handle()`, venue meta key, taxonomy map, interface implementation |
 | `DatetimeHelperTraitTest.php` | `Datetime_Helper` trait | Venue term slug generation (`_`-prefix convention), default timezone |
-| `TaxonomyVenueHandlerTraitTest.php` | `Taxonomy_Venue_Handler` trait | Default venue pass, post data capture, event flagging, term filtering, venue term creation interception |
+| `TaxonomyVenueHandlerTraitTest.php` | `Taxonomy_Venue_Handler` trait | Default venue pass, post data capture, event flagging, term filtering (single, multiple, empty), venue term creation interception (single, successive), skip post type registration, hook idempotency |
+| `VenueDetailHandlerTraitTest.php` | `Venue_Detail_Handler` trait | Full address building (all parts, partial, empty, single, whitespace), meta key extraction, venue info saving (success, empty fields, non-venue post, nonexistent post), meta stashing (intercept, pass-through, accumulation, pending ID tracking), hook idempotency |
 | `MigrationClassTest.php` | `Migration` | Singleton pattern, adapter registration, merged type maps, taxonomy maps, stash meta keys, post type rewriting, taxonomy rewriting |
 
 ### Integration Tests
@@ -156,9 +159,11 @@ npm run test:integration -- --group=migration
 | Test File | Scope | What's Tested |
 |---|---|---|
 | `EOAdapterIntegrationTest.php` | EO adapter + GatherPress | Adapter registration, post type rewriting, taxonomy rewriting, meta stashing, datetime conversion, venue shadow term creation, venue linking via `link_venue()`, skip post type registration |
+| `VenueDetailHandlerIntegrationTest.php` | Venue detail handler + TEC/EM adapters | TEC venue detail stash-and-process, EM venue detail stash-and-process, partial venue details, multiple venues in single import, non-venue-detail meta pass-through, venue detail meta ignored on event posts, transient cleanup, meta key blocking from postmeta |
+| `GatherPressCompatibilityTest.php` | GatherPress API | `Event` class existence, `save_datetimes()` method, `get_datetime()` method, shadow taxonomy, post type registration, parameter format |
 | `MigrationIntegrationTest.php` | Main migration class | All event/venue type rewrites (data provider), standard type passthrough, meta stashing for events, pseudopostmeta registration, pending event tracking |
 | `WXRImportEOTest.php` | EO adapter end-to-end WXR import | Full two-pass strategy: Pass 1 venue creation, event skipping, skip post cleanup, source meta tracking; Pass 2 event creation, venue linking, meta cleanup |
-| `WXRImportTECTest.php` | TEC adapter end-to-end WXR import | Venue/event post type rewrites, datetime conversion, venue linking via ID mapping, taxonomy term rewriting |
+| `WXRImportTECTest.php` | TEC adapter end-to-end WXR import | Venue/event post type rewrites, datetime conversion, venue linking via ID mapping, taxonomy term rewriting, venue detail meta conversion, partial venue details, meta key blocking |
 
 ### WXR Fixture Files
 
@@ -184,7 +189,8 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │   │   └── interface-taxonomy-venue-adapter.php
 │   ├── traits/
 │   │   ├── trait-datetime-helper.php
-│   │   └── trait-taxonomy-venue-handler.php
+│   │   ├── trait-taxonomy-venue-handler.php
+│   │   └── trait-venue-detail-handler.php
 │   └── classes/
 │       ├── class-tec-adapter.php
 │       ├── class-events-manager-adapter.php

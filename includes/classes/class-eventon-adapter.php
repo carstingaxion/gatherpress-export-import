@@ -136,8 +136,8 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 		 * @return void
 		 */
 		public function convert_datetimes( int $post_id, array $stash ): void {
-			$start_ts = isset( $stash['evcal_srow'] ) ? intval( $stash['evcal_srow'] ) : 0;
-			$end_ts   = isset( $stash['evcal_erow'] ) ? intval( $stash['evcal_erow'] ) : 0;
+			$start_ts = isset( $stash['evcal_srow'] ) && is_numeric( $stash['evcal_srow'] ) ? $stash['evcal_srow'] : 0;
+			$end_ts   = isset( $stash['evcal_erow'] ) && is_numeric( $stash['evcal_erow'] ) ? $stash['evcal_erow'] : 0;
 
 			if ( 0 === $start_ts ) {
 				return;
