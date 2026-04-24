@@ -38,12 +38,26 @@
 		<exclude name="Universal.PHP.RequireExitDieParentheses.Missing" />
 		<exclude name="Universal.Classes.RequireFinalClass.NonFinalClassFound" />
 		<exclude name="Universal.Files.SeparateFunctionsFromOO.Mixed" />
+
+		<!-- Allow slow meta queries - because migrations happen once and that's how it works ;) -->
+		<exclude name="WordPress.DB.SlowDBQuery.slow_db_query_meta_key" />
+		<exclude name="WordPress.DB.SlowDBQuery.slow_db_query_meta_value" />
+	</rule>
+
+	<!-- Allow uncached queries - because migrations happen once and stuff shouldn't be cached -->
+	<rule ref="WordPressVIPMinimum">
+		<exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts" />
+	</rule>
+
+	<rule ref="Generic.Files.OneObjectStructurePerFile.MultipleFound">
+		<exclude-pattern>test/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
 		<exclude-pattern>test/*</exclude-pattern>
 	</rule>
-	<rule ref="WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts">
+	<rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_key">
 		<exclude-pattern>test/*</exclude-pattern>
 	</rule>
+
 
 </ruleset>

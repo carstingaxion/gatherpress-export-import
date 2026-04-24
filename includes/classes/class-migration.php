@@ -628,9 +628,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 		 * @return array The unmodified post meta array.
 		 */
 		public function filter_post_meta_on_import( array $postmeta, int $post_id, array $post ): array {
-			$post_type = get_post_type( $post_id );
 
-			if ( 'gatherpress_event' !== $post_type ) {
+			if ( 'gatherpress_event' !== $post['post_type'] ) {
 				return $postmeta;
 			}
 

@@ -128,6 +128,5 @@ if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 		final protected function get_default_timezone(): string {
 			return wp_timezone_string();
 		}
-
 	}
 }

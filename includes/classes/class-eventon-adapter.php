@@ -235,11 +235,9 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param int   $post_id    The post ID.
-		 * @param mixed $meta_value The meta value.
 		 * @return void
 		 */
-		public function noop_callback( int $post_id, $meta_value ): void {
+		public function noop_callback(): void {
 			// Intentionally empty; meta is handled via stash mechanism.
 		}
 	}

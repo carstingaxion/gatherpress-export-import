@@ -215,7 +215,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 				)
 			);
 
-			$importer_url = admin_url( 'admin.php?import=wordpress' );
+			$importer_url = admin_url( 'admin.php?import=wordpress' ); // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText
 			?>
 			<div class="notice notice-warning is-dismissible">
 				<p>
@@ -224,8 +224,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 				<p>
 					<?php
 					printf(
-						/* translators: %d: number of venue posts waiting for event linking */
 						esc_html(
+							/* translators: %d: number of venue posts waiting for event linking */
 							_n(
 								'%d venue was created from taxonomy terms during the first import pass, but events have not been imported yet.',
 								'%d venues were created from taxonomy terms during the first import pass, but events have not been imported yet.',
@@ -233,15 +233,15 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 								'gatherpress-export-import'
 							)
 						),
-						$venue_count
+						esc_html( $venue_count )
 					);
 					?>
 				</p>
 				<p>
 					<?php
 					printf(
-						/* translators: %s: URL to the WordPress Importer */
 						wp_kses(
+							/* translators: %s: URL to the WordPress Importer */
 							__( 'To complete the migration, <a href="%s"><strong>import the same WXR file again</strong></a>. This second pass will create the events and link them to the venues created in step 1.', 'gatherpress-export-import' ),
 							array(
 								'a'      => array( 'href' => array() ),
@@ -298,8 +298,6 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 				admin_url( 'admin.php' )
 			);
 
-			$migration   = Migration::get_instance();
-			$adapters    = $migration->get_adapters();
 			$wp_importer = defined( 'WP_IMPORTER_VERSION' ) || class_exists( 'WP_Import' );
 			$gatherpress = class_exists( '\GatherPress\Core\Event' );
 			?>
@@ -359,8 +357,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 						<p class="description">
 							<?php
 							printf(
-								/* translators: 1: tribe_venue post type, 2: location post type */
 								wp_kses(
+									/* translators: 1: tribe_venue post type, 2: location post type */
 									__( 'On your source site, go to Tools &gt; Export and export only the venue post type (e.g., <code>%1$s</code>, <code>%2$s</code>). Download the WXR file.', 'gatherpress-export-import' ),
 									array( 'code' => array() )
 								),
@@ -375,8 +373,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 						<p class="description">
 							<?php
 							printf(
-								/* translators: 1: gatherpress_venue post type, 2: _gatherpress_venue taxonomy */
 								wp_kses(
+									/* translators: 1: gatherpress_venue post type, 2: _gatherpress_venue taxonomy */
 									__( 'Upload the venues WXR file via the WordPress Importer. The plugin will automatically convert venue post types to <code>%1$s</code>. GatherPress will then create the corresponding <code>%2$s</code> shadow taxonomy terms.', 'gatherpress-export-import' ),
 									array( 'code' => array() )
 								),
@@ -391,8 +389,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 						<p class="description">
 							<?php
 							printf(
-								/* translators: 1: tribe_events post type, 2: event post type, 3: mec-events post type */
 								wp_kses(
+									/* translators: 1: tribe_events post type, 2: event post type, 3: mec-events post type */
 									__( 'Back on the source site, export the event post type (e.g., <code>%1$s</code>, <code>%2$s</code>, <code>%3$s</code>). Download the WXR file.', 'gatherpress-export-import' ),
 									array( 'code' => array() )
 								),
@@ -408,8 +406,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 						<p class="description">
 							<?php
 							printf(
-								/* translators: %s: _gatherpress_venue taxonomy */
 								wp_kses(
+									/* translators: %s: _gatherpress_venue taxonomy */
 									__( 'Upload the events WXR file. The plugin will rewrite post types, convert datetimes, and link venues to events via the <code>%s</code> shadow taxonomy using the ID mapping from step 2.', 'gatherpress-export-import' ),
 									array( 'code' => array() )
 								),

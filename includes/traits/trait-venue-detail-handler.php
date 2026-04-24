@@ -71,11 +71,11 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 
 			$venue_information = wp_json_encode(
 				array(
-					'fullAddress'  => $full_address,
-					'phoneNumber'  => $phone_number,
-					'website'      => $website,
-					'latitude'     => $latitude,
-					'longitude'    => $longitude,
+					'fullAddress' => $full_address,
+					'phoneNumber' => $phone_number,
+					'website'     => $website,
+					'latitude'    => $latitude,
+					'longitude'   => $longitude,
 				)
 			);
 
@@ -188,7 +188,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 
 			// Intercept venue detail meta keys on gatherpress_venue posts.
 			// Priority 4 runs before the main migration class's stash at priority 5.
-			add_filter( 'add_post_metadata', array( $this, 'vdh_stash_venue_meta_on_import' ), 4, 5 );
+			add_filter( 'add_post_metadata', array( $this, 'vdh_stash_venue_meta_on_import' ), 4, 4 );
 
 			// Process all stashed venue meta after the import completes.
 			// Priority 5 runs before the main migration class's processing at priority 10.
@@ -208,10 +208,9 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 		 * @param int    $object_id  Post ID receiving the meta.
 		 * @param string $meta_key   The meta key being added.
 		 * @param mixed  $meta_value The meta value being added.
-		 * @param bool   $unique     Whether the meta should be unique.
 		 * @return mixed True to short-circuit meta saving, or original $check.
 		 */
-		final public function vdh_stash_venue_meta_on_import( $check, int $object_id, string $meta_key, $meta_value, bool $unique ) {
+		final public function vdh_stash_venue_meta_on_import( $check, int $object_id, string $meta_key, $meta_value ) {
 			$meta_map = $this->get_venue_detail_meta_map();
 
 			if ( ! isset( $meta_map[ $meta_key ] ) ) {

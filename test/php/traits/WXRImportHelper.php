@@ -39,7 +39,7 @@ trait WXRImportHelper {
 			// Try loading the WordPress Importer plugin file.
 			$importer_file = WP_PLUGIN_DIR . '/wordpress-importer/wordpress-importer.php';
 			if ( file_exists( $importer_file ) ) {
-				require_once $importer_file;
+				require_once $importer_file; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable
 			}
 
 			if ( ! class_exists( 'WP_Import' ) ) {

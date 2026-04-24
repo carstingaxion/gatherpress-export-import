@@ -40,7 +40,7 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 	 * @see Datetime_Helper
 	 * @see Venue_Detail_Handler
 	 */
-	class TEC_Adapter implements Source_Adapter, Hookable_Adapter {
+	class TEC_Adapter implements Hookable_Adapter, Source_Adapter {
 
 		use Datetime_Helper;
 		use Venue_Detail_Handler;
@@ -263,11 +263,9 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param int   $post_id    The post ID.
-		 * @param mixed $meta_value The meta value.
 		 * @return void
 		 */
-		public function noop_callback( int $post_id, $meta_value ): void {
+		public function noop_callback(): void {
 			// Intentionally empty; meta is handled via stash mechanism.
 		}
 	}
