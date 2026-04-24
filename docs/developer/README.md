@@ -228,7 +228,8 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 ├── docs/
 │   ├── developer/
 │   │   └── README.md                 # This file
-│   └── event-organiser.md            # EO import guide
+│   ├── source-*.md                   # Info about each Source plugin
+│   └── import-guide.md               # Import guide (architecture, two-pass strategy, troubleshooting)
 └── .wordpress-org/
     └── blueprints/                    # Playground blueprints
 ```

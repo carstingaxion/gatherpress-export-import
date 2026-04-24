@@ -2,7 +2,7 @@
 
 Adapter class: `Event_Organiser_Adapter`
 
-For a detailed walkthrough of the two-pass import architecture, see [`event-organiser.md`](event-organiser.md).
+For a detailed walkthrough of the two-pass import architecture and troubleshooting, see the [Import Guide](import-guide.md#plugins-with-taxonomy-based-venues-two-pass-import).
 
 ---
 
@@ -59,6 +59,10 @@ Import the same WXR file twice.
 1. Import the WXR file (**Pass 1** — creates venues, skips events).
 2. Import the **same WXR file again** (**Pass 2** — creates events, links venues).
 3. Flush permalinks.
+
+## Technical Details
+
+For a detailed explanation of the two-pass import architecture — including hook registration, event skipping, deferred venue linking, pass detection logic, and troubleshooting — see the [Import Guide: Taxonomy-based venues](import-guide.md#taxonomy-venue-handler-internals).
 
 ## Playground Blueprint
 
