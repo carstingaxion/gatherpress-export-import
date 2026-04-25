@@ -50,9 +50,9 @@ Import the same WXR file twice.
 | Venue–event link | ✅ | Via two-pass taxonomy import |
 | Event categories | ✅ | |
 | Event tags | ✅ | |
-| Organizer | ❌ | Event Organiser does not have an organizer entity |
-| Recurrence rules | ❌ | Not available via WXR; each occurrence must be a separate event |
-| RSVP / Tickets | ❌ | Not convertible via WXR |
+| Organizer | 🚫 | Event Organiser does not have an organizer entity |
+| Recurrence rules | 🚫 | Not available via WXR; each occurrence must be a separate event |
+| RSVP / Tickets | 🚫 | Not convertible via WXR |
 
 ## Import Sequence
 

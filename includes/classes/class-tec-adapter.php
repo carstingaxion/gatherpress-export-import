@@ -7,11 +7,20 @@
  * as 'Y-m-d H:i:s' local time, with `_EventTimezone` for the timezone string.
  *
  * Venue details are stored as individual post meta keys on `tribe_venue` posts:
- * `_VenueAddress`, `_VenueCity`, `_VenueState`, `_VenueZip`, `_VenueCountry`,
- * `_VenuePhone`, `_VenueURL`. These are intercepted during import via the
- * shared `Venue_Detail_Handler` trait, assembled into a full address string,
- * and saved as `gatherpress_venue_information` on the converted
- * `gatherpress_venue` post.
+ * `_VenueAddress`, `_VenueCity`, `_VenueState`, `_VenueStateProvince`,
+ * `_VenueZip`, `_VenueCountry`, `_VenuePhone`, `_VenueURL`. These are
+ * intercepted during import via the shared `Venue_Detail_Handler` trait,
+ * assembled into a full address string, and saved as
+ * `gatherpress_venue_information` on the converted `gatherpress_venue` post.
+ *
+ * Additional TEC meta keys present in real WXR exports (e.g., `_VenueOrigin`,
+ * `_VenueShowMap`, `_VenueShowMapLink`, `_EventOrigin`, `_EventShowMap`,
+ * `_EventShowMapLink`, `_EventStartDateUTC`, `_EventEndDateUTC`,
+ * `_EventDuration`, `_EventTimezoneAbbr`, `_EventCost`,
+ * `_EventCurrencySymbol`, `_EventCurrencyCode`, `_EventCurrencyPosition`,
+ * `_EventURL`, `_EventOrganizerID`, `_EventAllDay`,
+ * `_EventHideFromUpcoming`) are stashed to prevent them from polluting
+ * `wp_postmeta` on converted GatherPress posts.
  *
  * @package GatherPressExportImport
  * @since   0.1.0
@@ -86,7 +95,10 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 		 * Gets the mapping of TEC venue meta keys to address components.
 		 *
 		 * Maps TEC's individual venue meta keys to the component types
-		 * understood by the `Venue_Detail_Handler` trait.
+		 * understood by the `Venue_Detail_Handler` trait. Includes both
+		 * `_VenueState` and `_VenueStateProvince` because TEC uses the
+		 * latter in some versions and configurations; the trait's processing
+		 * logic will use whichever is non-empty.
 		 *
 		 * @since 0.1.0
 		 *
@@ -94,44 +106,108 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 		 */
 		protected function get_venue_detail_meta_map(): array {
 			return array(
-				'_VenueAddress' => 'address',
-				'_VenueCity'    => 'city',
-				'_VenueState'   => 'state',
-				'_VenueZip'     => 'zip',
-				'_VenueCountry' => 'country',
-				'_VenuePhone'   => 'phone',
-				'_VenueURL'     => 'website',
+				'_VenueAddress'       => 'address',
+				'_VenueCity'          => 'city',
+				'_VenueState'         => 'state',
+				'_VenueStateProvince' => 'state',
+				'_VenueZip'           => 'zip',
+				'_VenueCountry'       => 'country',
+				'_VenuePhone'         => 'phone',
+				'_VenueURL'           => 'website',
+			);
+		}
+
+		/**
+		 * Additional TEC venue meta keys that should be stashed but are not
+		 * part of the venue detail address mapping.
+		 *
+		 * These keys appear in real TEC WXR exports and must be intercepted
+		 * to prevent them from being saved as raw post meta on the converted
+		 * `gatherpress_venue` posts. They carry TEC-internal information
+		 * (origin tracking, map display toggles) that has no equivalent in
+		 * GatherPress.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @return string[] Array of additional venue meta keys to stash.
+		 */
+		private function get_additional_venue_stash_keys(): array {
+			return array(
+				'_VenueOrigin',
+				'_VenueShowMap',
+				'_VenueShowMapLink',
+			);
+		}
+
+		/**
+		 * Additional TEC event meta keys that should be stashed but are not
+		 * used for datetime conversion or venue linking.
+		 *
+		 * These keys appear in real TEC WXR exports and must be intercepted
+		 * to prevent them from being saved as raw post meta on the converted
+		 * `gatherpress_event` posts. They carry TEC-internal information
+		 * (UTC variants, duration, cost, map toggles, organizer references)
+		 * that is either derived from the primary datetime fields or has no
+		 * equivalent in GatherPress.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @return string[] Array of additional event meta keys to stash.
+		 */
+		private function get_additional_event_stash_keys(): array {
+			return array(
+				'_EventStartDateUTC',
+				'_EventEndDateUTC',
+				'_EventDuration',
+				'_EventTimezoneAbbr',
+				'_EventCost',
+				'_EventCurrencySymbol',
+				'_EventCurrencyCode',
+				'_EventCurrencyPosition',
+				'_EventURL',
+				'_EventOrganizerID',
+				'_EventAllDay',
+				'_EventHideFromUpcoming',
+				'_EventOrigin',
+				'_EventShowMap',
+				'_EventShowMapLink',
 			);
 		}
 
 		/**
 		 * Gets the meta keys that should be stashed during import.
 		 *
-		 * Includes both event datetime meta keys and venue detail meta keys.
-		 * The venue meta keys are stashed on `gatherpress_venue` posts and
-		 * processed at `import_end` to build GatherPress venue information.
+		 * Includes event datetime meta keys, venue detail meta keys, and
+		 * all additional TEC-internal meta keys that appear in real WXR
+		 * exports. Stashing these keys prevents them from polluting the
+		 * `wp_postmeta` table on converted GatherPress posts.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return string[] Meta keys for date/time, timezone, and venue details.
+		 * @return string[] Meta keys for date/time, timezone, venue details,
+		 *                  and additional TEC-internal keys.
 		 */
 		public function get_stash_meta_keys(): array {
-			return array_merge(
-				array(
-					'_EventStartDate',
-					'_EventEndDate',
-					'_EventTimezone',
-				),
-				$this->get_venue_detail_meta_keys()
+			return array_unique(
+				array_merge(
+					array(
+						'_EventStartDate',
+						'_EventEndDate',
+						'_EventTimezone',
+					),
+					$this->get_venue_detail_meta_keys(),
+					$this->get_additional_venue_stash_keys(),
+					$this->get_additional_event_stash_keys()
+				)
 			);
 		}
 
 		/**
 		 * Gets pseudopostmeta definitions for TEC meta keys.
 		 *
-		 * Registers both event datetime keys and venue detail keys as
-		 * pseudopostmeta entries so GatherPress recognises them during
-		 * its own import/export flow.
+		 * Registers event datetime keys, venue detail keys, and all
+		 * additional TEC-internal meta keys as pseudopostmeta entries so
+		 * GatherPress recognises them during its own import/export flow.
 		 *
 		 * @since 0.1.0
 		 *
@@ -159,8 +235,24 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 				),
 			);
 
+			// Register additional event meta keys as pseudopostmeta.
+			foreach ( $this->get_additional_event_stash_keys() as $key ) {
+				$pseudometas[ $key ] = array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				);
+			}
+
 			// Register venue detail keys as pseudopostmeta for gatherpress_venue.
 			foreach ( $this->get_venue_detail_meta_keys() as $key ) {
+				$pseudometas[ $key ] = array(
+					'post_type'       => 'gatherpress_venue',
+					'import_callback' => $callback,
+				);
+			}
+
+			// Register additional venue meta keys as pseudopostmeta.
+			foreach ( $this->get_additional_venue_stash_keys() as $key ) {
 				$pseudometas[ $key ] = array(
 					'post_type'       => 'gatherpress_venue',
 					'import_callback' => $callback,
