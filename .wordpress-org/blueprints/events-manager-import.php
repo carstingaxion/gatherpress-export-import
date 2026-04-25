@@ -132,17 +132,30 @@ $loc3_id = $location3->location_id;
  * @see EM_Event::get_post() for how properties map to post fields
  */
 
-// Event 1: Summer Jazz Festival.
+/*
+ * Event 1: Summer Jazz Festival.
+ *
+ * Most EM_Event properties (datetimes, timezone, status) are protected
+ * and must be set via the `__set()` magic method, which validates format:
+ * - Dates must match `/^\d{4}-\d{2}-\d{2}$/`
+ * - Times must match `/^\d{2}:\d{2}:\d{2}$/`
+ * - Combined start/end accepts a timestamp or parseable datetime string.
+ *
+ * @see EM_Event::__set() in events-manager/classes/em-event.php
+ */
 $event1 = new \EM_Event();
-$event1->event_name       = 'Summer Jazz Festival';
-$event1->post_content     = 'An evening of live jazz performances from local and international artists under the stars.';
-$event1->event_start_date = '2025-07-18';
-$event1->event_start_time = '18:00:00';
-$event1->event_end_date   = '2025-07-18';
-$event1->event_end_time   = '23:00:00';
-$event1->event_timezone   = 'America/New_York';
-$event1->location_id      = $loc1_id;
-$event1->event_status     = 1;
+$event1->event_name   = 'Summer Jazz Festival';
+$event1->post_content = 'An evening of live jazz performances from local and international artists under the stars.';
+$event1->__set( 'event_start_date', '2025-07-18' );
+$event1->__set( 'event_start_time', '18:00:00' );
+$event1->__set( 'event_end_date', '2025-07-18' );
+$event1->__set( 'event_end_time', '23:00:00' );
+$event1->__set( 'event_start', '2025-07-18 18:00:00' );
+$event1->__set( 'event_end', '2025-07-18 23:00:00' );
+$event1->event_timezone = 'America/New_York';
+$event1->location_id    = $loc1_id;
+$event1->event_status   = 1;
+$event1->event_rsvp     = false;
 $event1->save();
 
 // Assign taxonomy terms after save (EM_Event::save() creates the post).
@@ -153,15 +166,18 @@ if ( $event1->post_id ) {
 
 // Event 2: Community 5K Fun Run.
 $event2 = new \EM_Event();
-$event2->event_name       = 'Community 5K Fun Run';
-$event2->post_content     = 'Join the annual community fun run around the lakefront. All fitness levels welcome!';
-$event2->event_start_date = '2025-08-10';
-$event2->event_start_time = '08:00:00';
-$event2->event_end_date   = '2025-08-10';
-$event2->event_end_time   = '11:00:00';
-$event2->event_timezone   = 'America/Chicago';
-$event2->location_id      = $loc2_id;
-$event2->event_status     = 1;
+$event2->event_name   = 'Community 5K Fun Run';
+$event2->post_content = 'Join the annual community fun run around the lakefront. All fitness levels welcome!';
+$event2->__set( 'event_start_date', '2025-08-10' );
+$event2->__set( 'event_start_time', '08:00:00' );
+$event2->__set( 'event_end_date', '2025-08-10' );
+$event2->__set( 'event_end_time', '11:00:00' );
+$event2->__set( 'event_start', '2025-08-10 08:00:00' );
+$event2->__set( 'event_end', '2025-08-10 11:00:00' );
+$event2->event_timezone = 'America/Chicago';
+$event2->location_id    = $loc2_id;
+$event2->event_status   = 1;
+$event2->event_rsvp     = false;
 $event2->save();
 
 if ( $event2->post_id ) {
@@ -171,15 +187,18 @@ if ( $event2->post_id ) {
 
 // Event 3: Open Source Book Club Kickoff.
 $event3 = new \EM_Event();
-$event3->event_name       = 'Open Source Book Club Kickoff';
-$event3->post_content     = 'First meeting of our monthly book club focused on open source culture, history, and innovation.';
-$event3->event_start_date = '2025-09-05';
-$event3->event_start_time = '19:00:00';
-$event3->event_end_date   = '2025-09-05';
-$event3->event_end_time   = '21:00:00';
-$event3->event_timezone   = 'America/Los_Angeles';
-$event3->location_id      = $loc3_id;
-$event3->event_status     = 1;
+$event3->event_name   = 'Open Source Book Club Kickoff';
+$event3->post_content = 'First meeting of our monthly book club focused on open source culture, history, and innovation.';
+$event3->__set( 'event_start_date', '2025-09-05' );
+$event3->__set( 'event_start_time', '19:00:00' );
+$event3->__set( 'event_end_date', '2025-09-05' );
+$event3->__set( 'event_end_time', '21:00:00' );
+$event3->__set( 'event_start', '2025-09-05 19:00:00' );
+$event3->__set( 'event_end', '2025-09-05 21:00:00' );
+$event3->event_timezone = 'America/Los_Angeles';
+$event3->location_id    = $loc3_id;
+$event3->event_status   = 1;
+$event3->event_rsvp     = false;
 $event3->save();
 
 if ( $event3->post_id ) {
