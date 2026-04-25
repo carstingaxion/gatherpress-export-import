@@ -8,7 +8,7 @@
  * @package GatherPressExportImport
  */
 
-require_once 'wordpress/wp-load.php';
+require_once __DIR__ . '/../wordpress/wp-load.php';
 
 // Create event categories (Event Organiser uses event-category taxonomy).
 if ( ! term_exists( 'Lecture', 'event-category' ) ) {
@@ -46,62 +46,70 @@ $venue3_term = wp_insert_term( 'Community Hackerspace', 'event-venue', array(
 	'description' => '18 Brick Lane, London E1 6RF',
 ) );
 
+// Helper to extract term ID from wp_insert_term result.
+$get_term_id = function ( $result ) {
+	if ( is_wp_error( $result ) ) {
+		return array();
+	}
+	return array( intval( is_array( $result ) ? $result['term_id'] : $result ) );
+};
+
 // Create events.
-$ev1 = wp_insert_post( array(
+wp_insert_post( array(
 	'post_title'   => 'The History of Open Source Software',
 	'post_content' => 'A fascinating lecture tracing the origins and evolution of open source software from the 1970s to today.',
 	'post_type'    => 'event',
 	'post_status'  => 'publish',
+	'meta_input'   => array(
+		'_eventorganiser_schedule_start_datetime' => '2025-08-28 18:30:00',
+		'_eventorganiser_schedule_end_datetime'   => '2025-08-28 20:30:00',
+		'_eventorganiser_schedule_start_finish'   => '2025-08-28 20:30:00',
+		'_eventorganiser_schedule_last_start'     => '2025-08-28 18:30:00',
+		'_eventorganiser_schedule_last_finish'    => '2025-08-28 20:30:00',
+	),
+	'tax_input'    => array(
+		'event-category' => array( 'lecture' ),
+		'event-tag'      => array( 'evening', 'beginner-friendly' ),
+		'event-venue'    => $get_term_id( $venue1_term ),
+	),
 ) );
-if ( $ev1 ) {
-	update_post_meta( $ev1, '_eventorganiser_schedule_start_datetime', '2025-08-28 18:30:00' );
-	update_post_meta( $ev1, '_eventorganiser_schedule_end_datetime', '2025-08-28 20:30:00' );
-	update_post_meta( $ev1, '_eventorganiser_schedule_start_finish', '2025-08-28 20:30:00' );
-	update_post_meta( $ev1, '_eventorganiser_schedule_last_start', '2025-08-28 18:30:00' );
-	update_post_meta( $ev1, '_eventorganiser_schedule_last_finish', '2025-08-28 20:30:00' );
-	wp_set_object_terms( $ev1, array( 'lecture' ), 'event-category' );
-	wp_set_object_terms( $ev1, array( 'evening', 'beginner-friendly' ), 'event-tag' );
-	if ( ! is_wp_error( $venue1_term ) ) {
-		wp_set_object_terms( $ev1, array( intval( is_array( $venue1_term ) ? $venue1_term['term_id'] : $venue1_term ) ), 'event-venue' );
-	}
-}
 
-$ev2 = wp_insert_post( array(
+wp_insert_post( array(
 	'post_title'   => 'Friday Night Live Jazz Session',
 	'post_content' => 'Live jazz performances every Friday night. This week featuring the Django Reinhardt Tribute Quartet.',
 	'post_type'    => 'event',
 	'post_status'  => 'publish',
+	'meta_input'   => array(
+		'_eventorganiser_schedule_start_datetime' => '2025-09-05 20:00:00',
+		'_eventorganiser_schedule_end_datetime'   => '2025-09-05 23:00:00',
+		'_eventorganiser_schedule_start_finish'   => '2025-09-05 23:00:00',
+		'_eventorganiser_schedule_last_start'     => '2025-09-05 20:00:00',
+		'_eventorganiser_schedule_last_finish'    => '2025-09-05 23:00:00',
+	),
+	'tax_input'    => array(
+		'event-category' => array( 'performance' ),
+		'event-tag'      => array( 'evening' ),
+		'event-venue'    => $get_term_id( $venue2_term ),
+	),
 ) );
-if ( $ev2 ) {
-	update_post_meta( $ev2, '_eventorganiser_schedule_start_datetime', '2025-09-05 20:00:00' );
-	update_post_meta( $ev2, '_eventorganiser_schedule_end_datetime', '2025-09-05 23:00:00' );
-	update_post_meta( $ev2, '_eventorganiser_schedule_start_finish', '2025-09-05 23:00:00' );
-	update_post_meta( $ev2, '_eventorganiser_schedule_last_start', '2025-09-05 20:00:00' );
-	update_post_meta( $ev2, '_eventorganiser_schedule_last_finish', '2025-09-05 23:00:00' );
-	wp_set_object_terms( $ev2, array( 'performance' ), 'event-category' );
-	wp_set_object_terms( $ev2, array( 'evening' ), 'event-tag' );
-	if ( ! is_wp_error( $venue2_term ) ) {
-		wp_set_object_terms( $ev2, array( intval( is_array( $venue2_term ) ? $venue2_term['term_id'] : $venue2_term ) ), 'event-venue' );
-	}
-}
 
-$ev3 = wp_insert_post( array(
+wp_insert_post( array(
 	'post_title'   => 'WordPress Translation Sprint',
 	'post_content' => 'A collaborative day-long sprint to translate WordPress core and popular plugins into underrepresented languages.',
 	'post_type'    => 'event',
 	'post_status'  => 'publish',
+	'meta_input'   => array(
+		'_eventorganiser_schedule_start_datetime' => '2025-09-20 10:00:00',
+		'_eventorganiser_schedule_end_datetime'   => '2025-09-20 17:00:00',
+		'_eventorganiser_schedule_start_finish'   => '2025-09-20 17:00:00',
+		'_eventorganiser_schedule_last_start'     => '2025-09-20 10:00:00',
+		'_eventorganiser_schedule_last_finish'    => '2025-09-20 17:00:00',
+	),
+	'tax_input'    => array(
+		'event-category' => array( 'sprint' ),
+		'event-tag'      => array( 'daytime', 'beginner-friendly' ),
+		'event-venue'    => $get_term_id( $venue3_term ),
+	),
 ) );
-if ( $ev3 ) {
-	update_post_meta( $ev3, '_eventorganiser_schedule_start_datetime', '2025-09-20 10:00:00' );
-	update_post_meta( $ev3, '_eventorganiser_schedule_end_datetime', '2025-09-20 17:00:00' );
-	update_post_meta( $ev3, '_eventorganiser_schedule_start_finish', '2025-09-20 17:00:00' );
-	update_post_meta( $ev3, '_eventorganiser_schedule_last_start', '2025-09-20 10:00:00' );
-	update_post_meta( $ev3, '_eventorganiser_schedule_last_finish', '2025-09-20 17:00:00' );
-	wp_set_object_terms( $ev3, array( 'sprint' ), 'event-category' );
-	wp_set_object_terms( $ev3, array( 'daytime', 'beginner-friendly' ), 'event-tag' );
-	if ( ! is_wp_error( $venue3_term ) ) {
-		wp_set_object_terms( $ev3, array( intval( is_array( $venue3_term ) ? $venue3_term['term_id'] : $venue3_term ) ), 'event-venue' );
-	}
-}
 
 flush_rewrite_rules();
