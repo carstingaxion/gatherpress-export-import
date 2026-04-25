@@ -2,15 +2,35 @@
 /**
  * Events Manager demo data import script for WordPress Playground.
  *
- * Creates sample events, locations, categories, and tags
- * for Events Manager migration testing.
+ * Creates sample events, locations, categories, and tags using the
+ * Events Manager plugin's own API classes (`EM_Location`, `EM_Event`)
+ * to ensure all internal database tables are properly populated.
+ *
+ * Plain `wp_insert_post()` is insufficient for Events Manager because
+ * the plugin maintains its own custom tables (`wp_em_locations` and
+ * `wp_em_events`) that must be populated for events and locations to
+ * function correctly in the EM admin UI, shortcodes, and widgets.
+ *
+ * @see https://developer.wordpress.org/reference/classes/EM_Event/
+ * @see https://developer.wordpress.org/reference/classes/EM_Location/
+ * @see https://wp-events-plugin.com/documentation/developer-docs/
  *
  * @package GatherPressExportImport
  */
 
 require_once __DIR__ . '/../wordpress/wp-load.php';
 
-// Create event categories (Events Manager uses event-categories taxonomy).
+// Ensure Events Manager classes are available.
+if ( ! class_exists( 'EM_Location' ) || ! class_exists( 'EM_Event' ) ) {
+	echo 'Events Manager plugin is not active or its classes are not available.' . PHP_EOL;
+	return;
+}
+
+/*
+ * Create event categories.
+ *
+ * Events Manager uses the `event-categories` taxonomy.
+ */
 if ( ! term_exists( 'Music', 'event-categories' ) ) {
 	wp_insert_term( 'Music', 'event-categories', array( 'slug' => 'music' ) );
 }
@@ -21,7 +41,11 @@ if ( ! term_exists( 'Education', 'event-categories' ) ) {
 	wp_insert_term( 'Education', 'event-categories', array( 'slug' => 'education' ) );
 }
 
-// Create event tags.
+/*
+ * Create event tags.
+ *
+ * Events Manager uses the `event-tags` taxonomy.
+ */
 if ( ! term_exists( 'outdoor', 'event-tags' ) ) {
 	wp_insert_term( 'outdoor', 'event-tags', array( 'slug' => 'outdoor' ) );
 }
@@ -32,96 +56,135 @@ if ( ! term_exists( 'free-entry', 'event-tags' ) ) {
 	wp_insert_term( 'free-entry', 'event-tags', array( 'slug' => 'free-entry' ) );
 }
 
-// Create locations (venue post type).
-$loc1 = wp_insert_post( array(
-	'post_title'  => 'Central Park Amphitheatre',
-	'post_type'   => 'location',
-	'post_status' => 'publish',
-	'meta_input'  => array(
-		'_location_address'  => '830 5th Ave',
-		'_location_town'     => 'New York',
-		'_location_state'    => 'NY',
-		'_location_postcode' => '10065',
-		'_location_country'  => 'US',
-	),
-) );
+/*
+ * Create locations using EM_Location.
+ *
+ * EM_Location::save() populates both the `wp_posts` table (as a `location`
+ * post type) and the `wp_em_locations` custom table. Setting properties
+ * directly on the object before calling save() is the documented approach.
+ *
+ * @see EM_Location::save() in events-manager/classes/em-location.php
+ */
 
-$loc2 = wp_insert_post( array(
-	'post_title'  => 'Lakeside Sports Complex',
-	'post_type'   => 'location',
-	'post_status' => 'publish',
-	'meta_input'  => array(
-		'_location_address'  => '200 Lake Shore Blvd',
-		'_location_town'     => 'Chicago',
-		'_location_state'    => 'IL',
-		'_location_postcode' => '60601',
-		'_location_country'  => 'US',
-	),
-) );
+// Location 1: Central Park Amphitheatre.
+$location1 = new \EM_Location();
+$location1->location_name     = 'Central Park Amphitheatre';
+$location1->location_slug     = 'central-park-amphitheatre';
+$location1->location_address  = '830 5th Ave';
+$location1->location_town     = 'New York';
+$location1->location_state    = 'NY';
+$location1->location_postcode = '10065';
+$location1->location_country  = 'US';
+$location1->location_region   = '';
+$location1->location_status   = 1;
+$location1->post_content      = '';
+$location1->save();
+$loc1_id = $location1->location_id;
 
-$loc3 = wp_insert_post( array(
-	'post_title'  => 'Public Library Main Hall',
-	'post_type'   => 'location',
-	'post_status' => 'publish',
-	'meta_input'  => array(
-		'_location_address'  => '42 Library Lane',
-		'_location_town'     => 'San Francisco',
-		'_location_state'    => 'CA',
-		'_location_postcode' => '94102',
-		'_location_country'  => 'US',
-	),
-) );
+// Location 2: Lakeside Sports Complex.
+$location2 = new \EM_Location();
+$location2->location_name     = 'Lakeside Sports Complex';
+$location2->location_slug     = 'lakeside-sports-complex';
+$location2->location_address  = '200 Lake Shore Blvd';
+$location2->location_town     = 'Chicago';
+$location2->location_state    = 'IL';
+$location2->location_postcode = '60601';
+$location2->location_country  = 'US';
+$location2->location_region   = '';
+$location2->location_status   = 1;
+$location2->post_content      = '';
+$location2->save();
+$loc2_id = $location2->location_id;
 
-// Create events.
-wp_insert_post( array(
-	'post_title'   => 'Summer Jazz Festival',
-	'post_content' => 'An evening of live jazz performances from local and international artists under the stars.',
-	'post_type'    => 'event',
-	'post_status'  => 'publish',
-	'meta_input'   => array(
-		'_event_start'    => '2025-07-18 18:00:00',
-		'_event_end'      => '2025-07-18 23:00:00',
-		'_event_timezone' => 'America/New_York',
-		'_location_id'    => $loc1,
-	),
-	'tax_input'    => array(
-		'event-categories' => array( 'music' ),
-		'event-tags'       => array( 'outdoor', 'family-friendly' ),
-	),
-) );
+// Location 3: Public Library Main Hall.
+$location3 = new \EM_Location();
+$location3->location_name     = 'Public Library Main Hall';
+$location3->location_slug     = 'public-library-main-hall';
+$location3->location_address  = '42 Library Lane';
+$location3->location_town     = 'San Francisco';
+$location3->location_state    = 'CA';
+$location3->location_postcode = '94102';
+$location3->location_country  = 'US';
+$location3->location_region   = '';
+$location3->location_status   = 1;
+$location3->post_content      = '';
+$location3->save();
+$loc3_id = $location3->location_id;
 
-wp_insert_post( array(
-	'post_title'   => 'Community 5K Fun Run',
-	'post_content' => 'Join the annual community fun run around the lakefront. All fitness levels welcome!',
-	'post_type'    => 'event',
-	'post_status'  => 'publish',
-	'meta_input'   => array(
-		'_event_start'    => '2025-08-10 08:00:00',
-		'_event_end'      => '2025-08-10 11:00:00',
-		'_event_timezone' => 'America/Chicago',
-		'_location_id'    => $loc2,
-	),
-	'tax_input'    => array(
-		'event-categories' => array( 'sports' ),
-		'event-tags'       => array( 'outdoor', 'free-entry' ),
-	),
-) );
+/*
+ * Create events using EM_Event.
+ *
+ * EM_Event::save() populates both the `wp_posts` table (as an `event`
+ * post type) and the `wp_em_events` custom table. The event datetimes,
+ * timezone, and location reference are all set as object properties.
+ *
+ * Properties used:
+ * - event_name: Event title (maps to post_title).
+ * - post_content: Event description.
+ * - event_start_date / event_start_time: Start datetime components.
+ * - event_end_date / event_end_time: End datetime components.
+ * - event_timezone: PHP timezone string.
+ * - location_id: References an EM_Location by its location_id
+ *   (from the wp_em_locations table, NOT the post ID).
+ * - event_status: 1 = published.
+ *
+ * @see EM_Event::save() in events-manager/classes/em-event.php
+ * @see EM_Event::get_post() for how properties map to post fields
+ */
 
-wp_insert_post( array(
-	'post_title'   => 'Open Source Book Club Kickoff',
-	'post_content' => 'First meeting of our monthly book club focused on open source culture, history, and innovation.',
-	'post_type'    => 'event',
-	'post_status'  => 'publish',
-	'meta_input'   => array(
-		'_event_start'    => '2025-09-05 19:00:00',
-		'_event_end'      => '2025-09-05 21:00:00',
-		'_event_timezone' => 'America/Los_Angeles',
-		'_location_id'    => $loc3,
-	),
-	'tax_input'    => array(
-		'event-categories' => array( 'education' ),
-		'event-tags'       => array( 'free-entry' ),
-	),
-) );
+// Event 1: Summer Jazz Festival.
+$event1 = new \EM_Event();
+$event1->event_name       = 'Summer Jazz Festival';
+$event1->post_content     = 'An evening of live jazz performances from local and international artists under the stars.';
+$event1->event_start_date = '2025-07-18';
+$event1->event_start_time = '18:00:00';
+$event1->event_end_date   = '2025-07-18';
+$event1->event_end_time   = '23:00:00';
+$event1->event_timezone   = 'America/New_York';
+$event1->location_id      = $loc1_id;
+$event1->event_status     = 1;
+$event1->save();
+
+// Assign taxonomy terms after save (EM_Event::save() creates the post).
+if ( $event1->post_id ) {
+	wp_set_object_terms( $event1->post_id, array( 'music' ), 'event-categories' );
+	wp_set_object_terms( $event1->post_id, array( 'outdoor', 'family-friendly' ), 'event-tags' );
+}
+
+// Event 2: Community 5K Fun Run.
+$event2 = new \EM_Event();
+$event2->event_name       = 'Community 5K Fun Run';
+$event2->post_content     = 'Join the annual community fun run around the lakefront. All fitness levels welcome!';
+$event2->event_start_date = '2025-08-10';
+$event2->event_start_time = '08:00:00';
+$event2->event_end_date   = '2025-08-10';
+$event2->event_end_time   = '11:00:00';
+$event2->event_timezone   = 'America/Chicago';
+$event2->location_id      = $loc2_id;
+$event2->event_status     = 1;
+$event2->save();
+
+if ( $event2->post_id ) {
+	wp_set_object_terms( $event2->post_id, array( 'sports' ), 'event-categories' );
+	wp_set_object_terms( $event2->post_id, array( 'outdoor', 'free-entry' ), 'event-tags' );
+}
+
+// Event 3: Open Source Book Club Kickoff.
+$event3 = new \EM_Event();
+$event3->event_name       = 'Open Source Book Club Kickoff';
+$event3->post_content     = 'First meeting of our monthly book club focused on open source culture, history, and innovation.';
+$event3->event_start_date = '2025-09-05';
+$event3->event_start_time = '19:00:00';
+$event3->event_end_date   = '2025-09-05';
+$event3->event_end_time   = '21:00:00';
+$event3->event_timezone   = 'America/Los_Angeles';
+$event3->location_id      = $loc3_id;
+$event3->event_status     = 1;
+$event3->save();
+
+if ( $event3->post_id ) {
+	wp_set_object_terms( $event3->post_id, array( 'education' ), 'event-categories' );
+	wp_set_object_terms( $event3->post_id, array( 'free-entry' ), 'event-tags' );
+}
 
 flush_rewrite_rules();
