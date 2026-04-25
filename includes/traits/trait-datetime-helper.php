@@ -49,10 +49,6 @@ if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 
 			$event = new \GatherPress\Core\Event( $post_id );
 
-			if ( ! method_exists( $event, 'save_datetimes' ) ) {
-				return false;
-			}
-
 			$params = array(
 				'datetime_start' => $datetime_start,
 				'datetime_end'   => $datetime_end,
@@ -110,7 +106,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 			$term_slug = $this->get_venue_term_slug( $venue_post->post_name );
 			$term      = get_term_by( 'slug', $term_slug, '_gatherpress_venue' );
 
-			if ( $term && ! is_wp_error( $term ) ) {
+			if ( $term instanceof \WP_Term ) {
 				wp_set_object_terms( $post_id, array( $term->term_id ), '_gatherpress_venue', false );
 			}
 		}
@@ -128,6 +124,5 @@ if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 		final protected function get_default_timezone(): string {
 			return wp_timezone_string();
 		}
-
 	}
 }

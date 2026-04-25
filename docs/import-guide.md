@@ -1,6 +1,6 @@
 # Import Guide
 
-This document explains the general architecture and import flow of the GatherPress Event Migration plugin. For adapter-specific details, see the individual adapter documentation (e.g., [`event-organiser.md`](event-organiser.md)).
+This document explains the general architecture and import flow of the GatherPress Event Migration plugin. For adapter-specific details, see the individual source plugin documentation files in `docs/source-*.md`.
 
 ---
 
@@ -129,9 +129,145 @@ class My_Adapter implements Source_Adapter, Hookable_Adapter {
 }
 ```
 
-### Plugins with taxonomy-based venues (e.g., Event Organiser)
+### Plugins with taxonomy-based venues (two-pass import)
 
-For plugins that store venues as taxonomy terms rather than posts, a **two-pass import** is required. This is handled by the shared `Taxonomy_Venue_Handler` trait and `Taxonomy_Venue_Adapter` interface. See the [Event Organiser documentation](event-organiser.md) for a detailed walkthrough.
+Plugins that store venues as taxonomy terms rather than posts require a **two-pass import**. This is handled by the shared `Taxonomy_Venue_Handler` trait and `Taxonomy_Venue_Adapter` interface.
+
+Three adapters currently use this strategy:
+
+| Adapter | Venue Taxonomy | Event CPT |
+|---|---|---|
+| **Event Organiser** | `event-venue` | `event` |
+| **Modern Events Calendar** | `mec_location` | `mec-events` |
+| **EventON** | `event_location` | `ajde_events` |
+
+#### Why two passes?
+
+Because the WordPress Importer processes posts before taxonomy terms in the WXR file, and because GatherPress needs a real `gatherpress_venue` post to exist before its shadow term is available, the import must happen in two passes over the **same WXR file**.
+
+#### Pass 1 — Venue creation
+
+1. Upload the WXR file via **Tools > Import > GatherPress Event Migration**.
+2. The plugin detects venue taxonomy terms attached to event posts (via the `wp_import_post_terms` filter) and in top-level `<wp:term>` entries (via the `pre_insert_term` filter).
+3. For each unique venue term, a new `gatherpress_venue` post is created with the term's name and slug.
+4. GatherPress automatically creates a shadow taxonomy term in `_gatherpress_venue` for each new venue post (slug: `_<post-slug>`).
+5. A temporary post meta key `_gpei_source_venue_term_slug` is stored on each created venue post for fallback lookups.
+6. **Events are silently skipped** — they are redirected to a temporary non-public post type (`_gpei_skip`) so the WordPress Importer does not report errors. These throwaway posts are automatically deleted at `import_end`.
+
+#### Pass 2 — Event import
+
+1. Upload the **same WXR file** again.
+2. The plugin detects that `gatherpress_venue` posts already exist for the venue slugs → switches to event import mode.
+3. Events are imported normally with post type rewriting, datetime conversion, etc.
+4. Venue linking is **deferred** until `import_end` because the WordPress Importer processes per-post taxonomy terms after calling `wp_insert_post()`. The plugin collects event–venue slug mappings during term processing and resolves them all at the end.
+5. For each event, the plugin looks up the matching `gatherpress_venue` post by slug (or by the `_gpei_source_venue_term_slug` meta as a fallback), then assigns the shadow taxonomy term to the event.
+6. After a successful venue link, the temporary `_gpei_source_venue_term_slug` meta is cleaned up.
+
+#### Pass detection logic
+
+The plugin determines which pass it is in by checking the **first venue term encountered** during import:
+
+- If a `gatherpress_venue` post with a matching slug **already exists** → Pass 2 (event import mode)
+- If no matching venue post exists → Pass 1 (venue creation mode)
+
+This detection runs once per import and applies to the entire run. Do not mix venue creation and event import in a single pass.
+
+#### Adding two-pass support to a new adapter
+
+```php
+class My_New_Adapter implements Source_Adapter, Hookable_Adapter, Taxonomy_Venue_Adapter {
+
+    use Datetime_Helper;
+    use Taxonomy_Venue_Handler;
+
+    public function get_venue_taxonomy_slug(): string {
+        return 'my-venue-taxonomy';
+    }
+
+    public function get_skippable_event_post_types(): array {
+        return array( 'my_event' );
+    }
+
+    public function setup_import_hooks(): void {
+        $this->setup_taxonomy_venue_hooks();
+    }
+
+    // ... rest of the Source_Adapter methods ...
+}
+```
+
+The adapter only needs to declare its venue taxonomy slug and skippable post types — all two-pass logic is handled automatically by the trait.
+
+---
+
+## Taxonomy Venue Handler Internals
+
+The `Taxonomy_Venue_Handler` trait encapsulates all two-pass import mechanics. This section documents the hook registration, event skipping, and deferred venue linking strategies shared by every adapter that uses taxonomy-based venues (Event Organiser, MEC, EventON).
+
+### Hook Registration
+
+When an adapter calls `setup_taxonomy_venue_hooks()`, the trait registers the following WordPress hooks:
+
+| Hook | Priority | Callback | Purpose |
+|---|---|---|---|
+| `wp_import_post_data_raw` | 2 | `tvh_capture_current_post_data()` | Records the current post title for context before any other processing |
+| `wp_import_post_data_raw` | 3 | `tvh_maybe_flag_events_on_venue_pass()` | Redirects events to the skip post type during Pass 1 |
+| `pre_insert_term` | 3 | `tvh_intercept_venue_term_creation()` | Intercepts top-level venue term creation from `<wp:term>` entries |
+| `wp_import_post_terms` | 4 | `tvh_filter_venue_terms()` | Intercepts per-post venue terms; creates venues (Pass 1) or records slugs for deferred linking (Pass 2) |
+| `save_post_gatherpress_event` | 1 | `tvh_track_saved_post_id()` | Records the last saved event post ID so terms can be associated |
+| `import_end` | 10 | `tvh_process_deferred_venue_links()` | Links events to venues and cleans up skip posts |
+
+All priorities are chosen to run **before** the main migration class's hooks (which operate at priority 5 and above), ensuring adapter-specific logic takes precedence.
+
+### Event Skipping Mechanism
+
+During Pass 1, events must not be imported because the venue shadow taxonomy terms are not yet ready. The trait handles this by:
+
+1. **Hooking into `wp_import_post_data_raw` at priority 3** — before the main migration class rewrites the post type at priority 5.
+2. **Changing the `post_type`** of the adapter's source event posts (e.g., `event`, `mec-events`, `ajde_events`) to `_gpei_skip`, a registered but non-public post type.
+3. Because `post_type_exists( '_gpei_skip' )` returns `true`, the WordPress Importer does not report "Invalid post type" errors.
+4. **At `import_end`**, all posts of type `_gpei_skip` are permanently deleted via `wp_delete_post( $id, true )`, and their entries are removed from the WordPress Importer's `processed_posts` map so a subsequent pass can re-import them.
+
+### Deferred Venue Linking
+
+Venue linking cannot happen during `save_post_gatherpress_event` because the WordPress Importer processes per-post taxonomy term assignments _after_ calling `wp_insert_post()`. The trait solves this with a deferred linking strategy:
+
+1. `save_post_gatherpress_event` fires → the trait records the post ID, but venue terms have not been processed yet.
+2. `wp_import_post_terms` fires → the trait's `tvh_filter_venue_terms()` intercepts venue taxonomy terms, records the event-to-venue-slug mappings in a deferred queue, and removes venue terms from the assignment list.
+3. **At `import_end`** → `tvh_process_deferred_venue_links()` iterates through all collected event–venue mappings and performs the actual linking by looking up the `gatherpress_venue` post by slug (or by the `_gpei_source_venue_term_slug` meta as a fallback) and assigning the shadow taxonomy term.
+
+### Pass Detection
+
+The trait determines which pass it is in by checking the **first venue term encountered** during import:
+
+- If a `gatherpress_venue` post with a matching slug **already exists** → Pass 2 (event import mode).
+- If no matching venue post exists → Pass 1 (venue creation mode).
+
+An early detection path also checks for the presence of `_gpei_source_venue_term_slug` meta on any `gatherpress_venue` post, which indicates Pass 1 has previously completed.
+
+This detection runs once per import and applies to the entire run. Do not mix venue creation and event import in a single pass.
+
+---
+
+## The `_gpei_source_venue_term_slug` Meta Key
+
+### Purpose
+
+This is a **temporary post meta** stored on `gatherpress_venue` posts created during Pass 1 of a two-pass import. It records the original venue taxonomy term slug that was the source for that venue post.
+
+### Why it exists
+
+During Pass 2, the plugin needs to find which `gatherpress_venue` post corresponds to a given venue term slug. The primary lookup is by `post_name` (slug). However, WordPress may modify the slug during `wp_insert_post()` to avoid collisions (e.g., appending `-2`). The `_gpei_source_venue_term_slug` meta serves as a **fallback lookup mechanism**.
+
+### Lifecycle
+
+| Phase | Action |
+|---|---|
+| **Pass 1** (venue creation) | Meta is **created** via `update_post_meta()` on the new venue post |
+| **Pass 2** (event import) | Meta is **read** during venue lookup as a fallback |
+| **After successful link** | Meta is **deleted** from the venue post — it is no longer needed |
+
+If the meta persists after import, it indicates that the venue was never successfully linked to any event, which may warrant manual review.
 
 ---
 
@@ -164,7 +300,37 @@ The plugin integrates with GatherPress's pseudopostmeta system via the `gatherpr
 4. **Import events** — Upload the events WXR file. Post types, datetimes, and venue links are converted automatically.
 5. **Flush permalinks** — Visit Settings > Permalinks and click Save. Deactivate the source event plugin first if still active.
 
-For plugins that use taxonomy-based venues (e.g., Event Organiser), import the same WXR file twice instead of splitting venues and events. See the adapter-specific documentation for details.
+For plugins that use taxonomy-based venues (e.g., Event Organiser, MEC, EventON), import the same WXR file twice instead of splitting venues and events. See the adapter-specific `docs/source-*.md` files for details.
+
+---
+
+## Troubleshooting Two-Pass Imports
+
+### Events were skipped on both passes
+
+The pass detection checks the first venue term. If the first venue slug coincidentally matches an existing `gatherpress_venue` post from a different source, the plugin may incorrectly enter Pass 2 on the first import. Delete any conflicting venue posts and re-import.
+
+### Venues created but not linked to events
+
+Common causes:
+
+- **GatherPress did not create the shadow taxonomy term.** Verify that GatherPress is active and the `_gatherpress_venue` taxonomy is registered. Try editing and saving the venue post in the admin to trigger shadow term creation.
+- **The venue post slug was modified by WordPress.** The `_gpei_source_venue_term_slug` fallback should handle this. If it does not, check whether the meta key exists on the venue post.
+- **The shadow term slug does not follow the expected convention.** The plugin expects `_<post-slug>`. If GatherPress's convention changes in a future version, the lookup may fail.
+
+### `_gpei_source_venue_term_slug` meta still present after import
+
+This meta is automatically cleaned up after successful venue linking. If it persists, the venue was never linked to an event during Pass 2. Possible reasons:
+
+- Pass 2 was never run (only one import was performed).
+- The event that references this venue was not included in the WXR file.
+- The linking failed due to a missing shadow taxonomy term.
+
+You can safely delete the meta manually, or re-run Pass 2 by importing the same WXR file again.
+
+### "Invalid post type" errors during Pass 1
+
+This should not happen with the current implementation. The `_gpei_skip` post type is registered before the import begins. If you see this error, ensure the plugin is active and that no other code is interfering with post type registration during the import.
 
 ---
 
@@ -189,4 +355,4 @@ $migration->register_adapter( new My_Custom_Adapter() );
 
 If the adapter needs to register its own import hooks, also implement `Hookable_Adapter`. If the source plugin stores venues as taxonomy terms, implement `Taxonomy_Venue_Adapter` and use the `Taxonomy_Venue_Handler` trait.
 
-See the adapter source files and [`event-organiser.md`](event-organiser.md) for implementation examples.
+See the adapter source files and `docs/source-*.md` files for implementation examples.

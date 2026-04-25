@@ -188,10 +188,15 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 				isset( $stash['mec_end_time_ampm'] ) ? $stash['mec_end_time_ampm'] : 'AM'
 			);
 
-			$datetime_start = $start_date . ' ' . $start_time;
-			$datetime_end   = $end_date . ' ' . $end_time;
+			$start    = $start_date . ' ' . $start_time;
+			$end      = $end_date . ' ' . $end_time;
+			$timezone = $this->get_default_timezone();
 
-			$this->save_gatherpress_datetimes( $post_id, $datetime_start, $datetime_end, $this->get_default_timezone() );
+			if ( ! is_string( $start ) || ! is_string( $end ) || ! is_string( $timezone ) ) {
+				return;
+			}
+
+			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
 		}
 
 		/**
@@ -277,11 +282,9 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param int   $post_id    The post ID.
-		 * @param mixed $meta_value The meta value.
 		 * @return void
 		 */
-		public function noop_callback( int $post_id, $meta_value ): void {
+		public function noop_callback(): void {
 			// Intentionally empty; meta is handled via stash mechanism.
 		}
 

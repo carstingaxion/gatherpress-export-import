@@ -266,7 +266,7 @@ class EOAdapterIntegrationTest extends TestCase {
 			$this->markTestSkipped( '_gatherpress_venue taxonomy is not registered.' );
 		}
 
-		$venue_id = $this->create_venue( 'Integration Test Venue', 'integration-test-venue' );
+		$this->create_venue( 'Integration Test Venue', 'integration-test-venue' );
 
 		// GatherPress should have created a shadow term.
 		$expected_slug = '_integration-test-venue';

@@ -213,7 +213,7 @@ class MigrationIntegrationTest extends TestCase {
 			),
 		);
 
-		$migration->filter_post_meta_on_import( $postmeta, $event_id, array() );
+		$migration->filter_post_meta_on_import( $postmeta, $event_id, array( 'post_type' => 'gatherpress_event' ) );
 
 		$pending = get_transient( 'gpei_pending_event_ids' );
 		$this->assertIsArray( $pending );

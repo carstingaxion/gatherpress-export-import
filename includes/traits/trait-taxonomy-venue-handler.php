@@ -249,6 +249,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 			foreach ( $skip_posts as $skip_post_id ) {
 				if (
 					isset( $GLOBALS['wp_import'] )
+					&& $GLOBALS['wp_import'] instanceof \stdClass
 					&& ! empty( $GLOBALS['wp_import']->processed_posts )
 					&& is_array( $GLOBALS['wp_import']->processed_posts )
 				) {
@@ -277,7 +278,8 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 			$skippable_types = $this->get_skippable_event_post_types();
 
 			if ( in_array( $post_type, $skippable_types, true ) ) {
-				$this->tvh_current_post_title = $post_data['post_title'] ?? '(untitled)';
+				$post_title                   = is_string( $post_data['post_title'] ) && ! empty( $post_data['post_title'] ) ? $post_data['post_title'] : '(untitled)';
+				$this->tvh_current_post_title = $post_title;
 			}
 
 			return $post_data;
@@ -368,10 +370,14 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 
 			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
 
-			if ( isset( $GLOBALS['wp_import'] ) && ! empty( $GLOBALS['wp_import']->terms ) ) {
+			if ( isset( $GLOBALS['wp_import'] ) && $GLOBALS['wp_import'] instanceof \stdClass && is_array( $GLOBALS['wp_import']->terms ) ) {
 				foreach ( $GLOBALS['wp_import']->terms as $term_data ) {
+					if ( ! is_array( $term_data ) ) {
+						continue;
+					}
 					if ( isset( $term_data['term_taxonomy'] ) && $venue_taxonomy_slug === $term_data['term_taxonomy'] ) {
-						$venue_slug = sanitize_title( $term_data['slug'] ?? '' );
+						$term_data_slug = is_string( $term_data['slug'] ) ? $term_data['slug'] : '';
+						$venue_slug     = sanitize_title( $term_data_slug );
 						if ( empty( $venue_slug ) ) {
 							continue;
 						}
@@ -436,10 +442,6 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 				return 0;
 			}
 
-			if ( ! $venue_post_id ) {
-				return 0;
-			}
-
 			update_post_meta( $venue_post_id, '_gpei_source_venue_term_slug', $venue_slug );
 
 			return $venue_post_id;
@@ -455,10 +457,15 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 		 *
 		 * In both passes, the venue terms are removed from the assignment list.
 		 *
+		 * When a venue term is encountered in the per-post terms, this also
+		 * updates the WXR taxonomy presence cache so that the event skipping
+		 * logic in `tvh_maybe_flag_events_on_venue_pass()` can correctly
+		 * identify that this adapter's taxonomy is present.
+		 *
 		 * @since 0.1.0
 		 *
-		 * @param array $terms Array of term assignment arrays.
-		 * @return array Filtered term assignments.
+		 * @param array<int, array<string, string>> $terms Array of term assignment arrays.
+		 * @return array<int, array<string, string>> Filtered term assignments.
 		 */
 		final public function tvh_filter_venue_terms( array $terms ): array {
 			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
@@ -473,6 +480,9 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 
 				if ( $venue_taxonomy_slug === $domain ) {
 					$venue_slug = sanitize_title( $slug );
+
+					// Mark that we've seen our venue taxonomy in this WXR file.
+					$this->tvh_wxr_has_our_taxonomy = true;
 
 					$this->tvh_detect_pass( $venue_slug );
 
@@ -513,6 +523,9 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 				return $term;
 			}
 
+			// Mark that we've seen our venue taxonomy in this WXR file.
+			$this->tvh_wxr_has_our_taxonomy = true;
+
 			$term_slug = sanitize_title( $term );
 
 			$this->tvh_detect_pass( $term_slug );
@@ -537,6 +550,13 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 		 * Hooked to `wp_import_post_data_raw` at priority 3, BEFORE the main
 		 * migration class rewrites the post type at priority 5.
 		 *
+		 * Only activates when the current WXR file actually contains venue
+		 * taxonomy terms belonging to this adapter (detected via the importer's
+		 * parsed terms or via existing venue posts from a prior pass). This
+		 * prevents adapters from interfering with each other when multiple
+		 * adapters share the same source event post type slug (e.g., Events
+		 * Manager and Event Organiser both use `event`).
+		 *
 		 * @since 0.1.0
 		 *
 		 * @param array<string, mixed> $post_data Raw post data from the importer.
@@ -549,6 +569,13 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 			$skippable_types = $this->get_skippable_event_post_types();
 
 			if ( ! in_array( $post_type, $skippable_types, true ) ) {
+				return $post_data;
+			}
+
+			// Only activate if this adapter's venue taxonomy is actually present
+			// in the current WXR file. This prevents adapters from interfering
+			// with each other when they share the same event post type slug.
+			if ( ! $this->tvh_wxr_contains_our_venue_taxonomy() ) {
 				return $post_data;
 			}
 
@@ -628,7 +655,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 							$term_slug   = $this->get_venue_term_slug( $venue_post_obj->post_name );
 							$shadow_term = get_term_by( 'slug', $term_slug, '_gatherpress_venue' );
 
-							if ( $shadow_term && ! is_wp_error( $shadow_term ) ) {
+							if ( $shadow_term instanceof \WP_Term ) {
 								$result = wp_set_object_terms( $post_id, array( $shadow_term->term_id ), '_gatherpress_venue', false );
 								$linked = ! is_wp_error( $result );
 							}
@@ -649,6 +676,99 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 			}
 
 			$this->tvh_deferred_venue_links = array();
+		}
+
+		/**
+		 * Whether the WXR file presence check has been performed.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @var bool|null Null = not checked yet, true/false = result cached.
+		 */
+		private ?bool $tvh_wxr_has_our_taxonomy = null;
+
+		/**
+		 * Checks whether the current WXR file contains venue taxonomy terms
+		 * belonging to this adapter.
+		 *
+		 * Inspects three sources:
+		 * 1. The importer's parsed `terms` array for top-level `<wp:term>` entries.
+		 * 2. The importer's parsed `posts` array for per-post `<category>` entries
+		 *    that reference the adapter's venue taxonomy.
+		 * 3. Existing `gatherpress_venue` posts created from this adapter's venue
+		 *    taxonomy (via the `_gpei_source_venue_term_slug` meta), indicating
+		 *    a prior Pass 1 has already run.
+		 *
+		 * The result is cached for the lifetime of the import run.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @return bool True if the WXR file or database contains evidence of this
+		 *              adapter's venue taxonomy.
+		 */
+		private function tvh_wxr_contains_our_venue_taxonomy(): bool {
+			if ( null !== $this->tvh_wxr_has_our_taxonomy ) {
+				return $this->tvh_wxr_has_our_taxonomy;
+			}
+
+			$venue_taxonomy_slug = $this->get_venue_taxonomy_slug();
+
+			// Check 1: Look in the importer's parsed terms array.
+			if (
+				isset( $GLOBALS['wp_import'] )
+				&& $GLOBALS['wp_import'] instanceof \WP_Import
+				&& ! empty( $GLOBALS['wp_import']->terms )
+				&& is_array( $GLOBALS['wp_import']->terms )
+			) {
+				foreach ( $GLOBALS['wp_import']->terms as $term_data ) {
+					if ( ! is_array( $term_data ) ) {
+						continue;
+					}
+					if ( isset( $term_data['term_taxonomy'] ) && $venue_taxonomy_slug === $term_data['term_taxonomy'] ) {
+						$this->tvh_wxr_has_our_taxonomy = true;
+						return true;
+					}
+				}
+			}
+
+			// Check 2: Look in the importer's parsed posts for per-post terms.
+			if (
+				isset( $GLOBALS['wp_import'] )
+				&& $GLOBALS['wp_import'] instanceof \WP_Import
+				&& ! empty( $GLOBALS['wp_import']->posts )
+				&& is_array( $GLOBALS['wp_import']->posts )
+			) {
+				foreach ( $GLOBALS['wp_import']->posts as $post_data ) {
+					if ( ! is_array( $post_data ) || empty( $post_data['terms'] ) || ! is_array( $post_data['terms'] ) ) {
+						continue;
+					}
+					foreach ( $post_data['terms'] as $term_entry ) {
+						if ( isset( $term_entry['domain'] ) && $venue_taxonomy_slug === $term_entry['domain'] ) {
+							$this->tvh_wxr_has_our_taxonomy = true;
+							return true;
+						}
+					}
+				}
+			}
+
+			// Check 3: Look for existing venue posts from a prior Pass 1.
+			$existing_venues = get_posts(
+				array(
+					'post_type'      => 'gatherpress_venue',
+					'meta_key'       => '_gpei_source_venue_term_slug',
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+				)
+			);
+
+			if ( ! empty( $existing_venues ) ) {
+				$this->tvh_wxr_has_our_taxonomy = true;
+				return true;
+			}
+
+			$this->tvh_wxr_has_our_taxonomy = false;
+			return false;
 		}
 
 		/**

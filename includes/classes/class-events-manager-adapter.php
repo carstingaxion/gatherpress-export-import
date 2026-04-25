@@ -39,7 +39,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 	 * @see Datetime_Helper
 	 * @see Venue_Detail_Handler
 	 */
-	class Events_Manager_Adapter implements Source_Adapter, Hookable_Adapter {
+	class Events_Manager_Adapter implements Hookable_Adapter, Source_Adapter {
 
 		use Datetime_Helper;
 		use Venue_Detail_Handler;
@@ -116,6 +116,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 					'_event_start',
 					'_event_end',
 					'_event_timezone',
+					'_location_id',
 				),
 				$this->get_venue_detail_meta_keys()
 			);
@@ -145,6 +146,10 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 					'import_callback' => $callback,
 				),
 				'_event_timezone' => array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				),
+				'_location_id'    => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
@@ -201,21 +206,28 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 				$end = $start;
 			}
 
+			if ( ! is_string( $start ) || ! is_string( $end ) || ! is_string( $timezone ) ) {
+				return;
+			}
+
 			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
 		}
 
 		/**
 		 * Gets the meta key used for venue linking.
 		 *
-		 * Events Manager does not use a meta key for venue references;
-		 * venues are linked via the `location` post type relationship.
+		 * Events Manager stores the venue reference as the `_location_id`
+		 * post meta on event posts, which contains the original `location`
+		 * post ID. During import, this ID is resolved via the WordPress
+		 * Importer's old-to-new ID mapping to link the event to the
+		 * converted `gatherpress_venue` post.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return null Always null for Events Manager.
+		 * @return string The venue meta key '_location_id'.
 		 */
 		public function get_venue_meta_key(): ?string {
-			return null;
+			return '_location_id';
 		}
 
 		/**
@@ -258,11 +270,9 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 		 *
 		 * @since 0.1.0
 		 *
-		 * @param int   $post_id    The post ID.
-		 * @param mixed $meta_value The meta value.
 		 * @return void
 		 */
-		public function noop_callback( int $post_id, $meta_value ): void {
+		public function noop_callback(): void {
 			// Intentionally empty; meta is handled via stash mechanism.
 		}
 	}

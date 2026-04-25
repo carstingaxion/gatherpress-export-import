@@ -102,7 +102,7 @@ class MigrationClassTest extends \WP_UnitTestCase {
 		$this->assertArrayHasKey( 'ai1ec_event', $map );
 
 		// All should map to gatherpress_event.
-		foreach ( $map as $source => $target ) {
+		foreach ( $map as $target ) {
 			$this->assertSame( 'gatherpress_event', $target );
 		}
 	}
@@ -121,7 +121,7 @@ class MigrationClassTest extends \WP_UnitTestCase {
 		$this->assertArrayHasKey( 'tribe_venue', $map );
 		$this->assertArrayHasKey( 'location', $map );
 
-		foreach ( $map as $source => $target ) {
+		foreach ( $map as $target ) {
 			$this->assertSame( 'gatherpress_venue', $target );
 		}
 	}

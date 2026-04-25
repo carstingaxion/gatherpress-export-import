@@ -118,7 +118,7 @@ class EOAdapterTest extends \WP_UnitTestCase {
 		$this->assertArrayHasKey( '_eventorganiser_schedule_last_start', $pseudometas );
 		$this->assertArrayHasKey( '_eventorganiser_schedule_last_finish', $pseudometas );
 
-		foreach ( $pseudometas as $key => $config ) {
+		foreach ( $pseudometas as $config ) {
 			$this->assertSame( 'gatherpress_event', $config['post_type'] );
 			$this->assertIsCallable( $config['import_callback'] );
 		}
