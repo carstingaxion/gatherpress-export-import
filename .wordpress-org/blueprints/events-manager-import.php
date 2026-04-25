@@ -8,7 +8,7 @@
  * @package GatherPressExportImport
  */
 
-require_once 'wordpress/wp-load.php';
+require_once __DIR__ . '/../wordpress/wp-load.php';
 
 // Create event categories (Events Manager uses event-categories taxonomy).
 if ( ! term_exists( 'Music', 'event-categories' ) ) {
