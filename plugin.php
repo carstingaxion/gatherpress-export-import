@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       GatherPress Export Import
  * Description:       Intercepts WordPress XML imports from third-party event plugins and transforms them into GatherPress data using pseudopostmeta callbacks.
- * Version:           0.2.1
+ * Version:           0.2.2
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Carsten Bach
