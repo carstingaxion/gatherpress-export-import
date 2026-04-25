@@ -20,6 +20,64 @@
 
 require_once __DIR__ . '/../wordpress/wp-load.php';
 
+error_log( 'GPEI-EM: wp-load.php loaded' );
+
+if ( ! class_exists( 'EM_Location' ) || ! class_exists( 'EM_Event' ) ) {
+error_log( 'GPEI-EM: EM classes NOT available' );
+return;
+}
+error_log( 'GPEI-EM: EM classes available' );
+
+// Check if EM tables exist.
+global $wpdb;
+$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}em_locations'" );
+error_log( 'GPEI-EM: em_locations table exists: ' . ( $table_exists ? 'YES' : 'NO' ) );
+
+$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}em_events'" );
+error_log( 'GPEI-EM: em_events table exists: ' . ( $table_exists ? 'YES' : 'NO' ) );
+
+// If tables don't exist, try running EM's install routine.
+if ( ! $table_exists && function_exists( 'em_install' ) ) {
+error_log( 'GPEI-EM: Running em_install() to create tables' );
+em_install();
+}
+
+// Then try creating a location and log the result.
+$location1 = new \EM_Location();
+$location1->location_name = 'Central Park Amphitheatre';
+$location1->location_slug = 'central-park-amphitheatre';
+$location1->location_address = '830 5th Ave';
+$location1->location_town = 'New York';
+$location1->location_state = 'NY';
+$location1->location_postcode = '10065';
+$location1->location_country = 'US';
+$location1->location_status = 1;
+$location1->post_content = '';
+$result = $location1->save();
+error_log( 'GPEI-EM: Location save result: ' . var_export( $result, true ) );
+error_log( 'GPEI-EM: Location ID: ' . $location1->location_id );
+error_log( 'GPEI-EM: Location post_id: ' . $location1->post_id );
+
+// Check for EM errors.
+if ( ! empty( $location1->errors ) ) {
+error_log( 'GPEI-EM: Location errors: ' . print_r( $location1->errors, true ) );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Ensure Events Manager classes are available.
 if ( ! class_exists( 'EM_Location' ) || ! class_exists( 'EM_Event' ) ) {
 	echo 'Events Manager plugin is not active or its classes are not available.' . PHP_EOL;
