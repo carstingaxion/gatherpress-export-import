@@ -443,9 +443,9 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 						</tr>
 						<tr>
 							<td><strong><?php esc_html_e( 'Events Manager', 'gatherpress-export-import' ); ?></strong></td>
-							<td style="text-align: center;">✅</td>
-							<td style="text-align: center;">✅</td>
-							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">⚠️</td>
 						</tr>
 						<tr>
 							<td><strong><?php esc_html_e( 'Modern Events Calendar', 'gatherpress-export-import' ); ?></strong> <span class="description">(Webnus)</span></td>
@@ -468,8 +468,8 @@ if ( ! class_exists( __NAMESPACE__ . '\Importer' ) ) {
 						<tr>
 							<td><strong><?php esc_html_e( 'Event Organiser', 'gatherpress-export-import' ); ?></strong> <span class="description">(Stephen Harris)</span></td>
 							<td style="text-align: center;">⚠️</td>
-							<td style="text-align: center;">✅</td>
-							<td style="text-align: center;">✅</td>
+							<td style="text-align: center;">⚠️</td>
+							<td style="text-align: center;">⚠️</td>
 						</tr>
 					</tbody>
 				</table>
