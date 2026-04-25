@@ -20,69 +20,178 @@
 
 require_once __DIR__ . '/../wordpress/wp-load.php';
 
-error_log( 'GPEI-EM: wp-load.php loaded' );
-
-if ( ! class_exists( 'EM_Location' ) || ! class_exists( 'EM_Event' ) ) {
-error_log( 'GPEI-EM: EM classes NOT available' );
-return;
-}
-error_log( 'GPEI-EM: EM classes available' );
-
-// Check if EM tables exist.
-global $wpdb;
-$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}em_locations'" );
-error_log( 'GPEI-EM: em_locations table exists: ' . ( $table_exists ? 'YES' : 'NO' ) );
-
-$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}em_events'" );
-error_log( 'GPEI-EM: em_events table exists: ' . ( $table_exists ? 'YES' : 'NO' ) );
-
-// If tables don't exist, try running EM's install routine.
-if ( ! $table_exists && function_exists( 'em_install' ) ) {
-error_log( 'GPEI-EM: Running em_install() to create tables' );
-em_install();
-}
-
-// Then try creating a location and log the result.
-$location1 = new \EM_Location();
-$location1->location_name = 'Central Park Amphitheatre';
-$location1->location_slug = 'central-park-amphitheatre';
-$location1->location_address = '830 5th Ave';
-$location1->location_town = 'New York';
-$location1->location_state = 'NY';
-$location1->location_postcode = '10065';
-$location1->location_country = 'US';
-$location1->location_status = 1;
-$location1->post_content = '';
-$result = $location1->save();
-error_log( 'GPEI-EM: Location save result: ' . var_export( $result, true ) );
-error_log( 'GPEI-EM: Location ID: ' . $location1->location_id );
-error_log( 'GPEI-EM: Location post_id: ' . $location1->post_id );
-
-// Check for EM errors.
-if ( ! empty( $location1->errors ) ) {
-error_log( 'GPEI-EM: Location errors: ' . print_r( $location1->errors, true ) );
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Ensure Events Manager classes are available.
 if ( ! class_exists( 'EM_Location' ) || ! class_exists( 'EM_Event' ) ) {
-	echo 'Events Manager plugin is not active or its classes are not available.' . PHP_EOL;
+	error_log( 'GPEI-EM: Events Manager plugin is not active or its classes are not available.' );
 	return;
 }
+
+/*
+ * Force-create Events Manager custom tables if they don't exist.
+ *
+ * In WordPress Playground, the plugin is installed via the `plugins` array
+ * which does not always trigger the full activation hook. EM stores event
+ * and location data in custom tables (`wp_em_events`, `wp_em_locations`)
+ * that are normally created during plugin activation via `em_activate()`.
+ *
+ * We load the installer file and call the activation function directly
+ * to ensure the tables exist before creating any demo data.
+ *
+ * @see events-manager/em-install.php  — contains em_activate() / em_install()
+ * @see events-manager/em-actions.php  — EM's action handlers
+ */
+global $wpdb;
+$em_events_table    = $wpdb->prefix . 'em_events';
+$em_locations_table = $wpdb->prefix . 'em_locations';
+
+$events_table_exists    = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $em_events_table ) ) === $em_events_table;
+$locations_table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $em_locations_table ) ) === $em_locations_table;
+
+if ( ! $events_table_exists || ! $locations_table_exists ) {
+	error_log( 'GPEI-EM: Custom tables missing, attempting to create them...' );
+
+	// Try loading the EM installer.
+	$em_install_file = WP_PLUGIN_DIR . '/events-manager/em-install.php';
+	if ( file_exists( $em_install_file ) ) {
+		require_once $em_install_file;
+	}
+
+	// Try the activation function (varies by EM version).
+	if ( function_exists( 'em_activate' ) ) {
+		em_activate();
+		error_log( 'GPEI-EM: Called em_activate()' );
+	} elseif ( function_exists( 'em_install' ) ) {
+		em_install();
+		error_log( 'GPEI-EM: Called em_install()' );
+	} else {
+		/*
+		 * Fallback: Create the tables manually using dbDelta().
+		 *
+		 * These schemas match Events Manager v6.x table structure.
+		 * We only create the minimum columns needed for demo data.
+		 *
+		 * @see events-manager/em-install.php for the full schema
+		 */
+		error_log( 'GPEI-EM: No EM install function found, creating tables manually via dbDelta().' );
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+
+		// Create em_locations table.
+		if ( ! $locations_table_exists ) {
+			$sql_locations = "CREATE TABLE {$em_locations_table} (
+				location_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				post_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				blog_id bigint(20) unsigned DEFAULT NULL,
+				location_slug varchar(200) DEFAULT NULL,
+				location_name text NULL,
+				location_owner bigint(20) unsigned NOT NULL DEFAULT 0,
+				location_address varchar(200) DEFAULT NULL,
+				location_town varchar(200) DEFAULT NULL,
+				location_state varchar(200) DEFAULT NULL,
+				location_postcode varchar(10) DEFAULT NULL,
+				location_region varchar(200) DEFAULT NULL,
+				location_country varchar(2) DEFAULT NULL,
+				location_latitude float(10,6) DEFAULT NULL,
+				location_longitude float(10,6) DEFAULT NULL,
+				location_status int(1) DEFAULT NULL,
+				location_language varchar(14) DEFAULT NULL,
+				location_translation bigint(20) unsigned NOT NULL DEFAULT 0,
+				PRIMARY KEY  (location_id),
+				KEY post_id (post_id),
+				KEY blog_id (blog_id)
+			) {$charset_collate};";
+			dbDelta( $sql_locations );
+		}
+
+		// Create em_events table.
+		if ( ! $events_table_exists ) {
+			$sql_events = "CREATE TABLE {$em_events_table} (
+				event_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				post_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				blog_id bigint(20) unsigned DEFAULT NULL,
+				event_slug varchar(200) DEFAULT NULL,
+				event_owner bigint(20) unsigned NOT NULL DEFAULT 0,
+				event_name text NULL,
+				event_start_time time DEFAULT NULL,
+				event_end_time time DEFAULT NULL,
+				event_start_date date DEFAULT NULL,
+				event_end_date date DEFAULT NULL,
+				event_start datetime DEFAULT NULL,
+				event_end datetime DEFAULT NULL,
+				event_all_day int(1) DEFAULT NULL,
+				event_timezone varchar(100) DEFAULT NULL,
+				post_content longtext NULL,
+				event_rsvp bool NOT NULL DEFAULT 0,
+				event_rsvp_date date DEFAULT NULL,
+				event_rsvp_time time DEFAULT NULL,
+				event_rsvp_spaces int(5) DEFAULT NULL,
+				event_spaces int(5) DEFAULT NULL,
+				event_private bool NOT NULL DEFAULT 0,
+				location_id bigint(20) unsigned DEFAULT NULL,
+				event_status int(1) DEFAULT NULL,
+				event_date_created datetime DEFAULT NULL,
+				event_date_modified datetime DEFAULT NULL,
+				recurrence_id bigint(20) unsigned DEFAULT NULL,
+				recurrence bigint(1) unsigned DEFAULT 0,
+				recurrence_interval int(4) DEFAULT NULL,
+				recurrence_freq tinytext DEFAULT NULL,
+				recurrence_byday tinytext DEFAULT NULL,
+				recurrence_byweekno int(4) DEFAULT NULL,
+				recurrence_days int(3) DEFAULT NULL,
+				recurrence_rsvp_days int(3) DEFAULT NULL,
+				event_language varchar(14) DEFAULT NULL,
+				event_translation bigint(20) unsigned NOT NULL DEFAULT 0,
+				PRIMARY KEY  (event_id),
+				KEY post_id (post_id),
+				KEY blog_id (blog_id),
+				KEY location_id (location_id),
+				KEY event_start (event_start),
+				KEY event_end (event_end),
+				KEY event_status (event_status)
+			) {$charset_collate};";
+			dbDelta( $sql_events );
+		}
+	}
+
+	// Verify tables now exist.
+	$events_table_exists    = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $em_events_table ) ) === $em_events_table;
+	$locations_table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $em_locations_table ) ) === $em_locations_table;
+
+	error_log( 'GPEI-EM: After install — em_events table exists: ' . ( $events_table_exists ? 'YES' : 'NO' ) );
+	error_log( 'GPEI-EM: After install — em_locations table exists: ' . ( $locations_table_exists ? 'YES' : 'NO' ) );
+
+	if ( ! $events_table_exists || ! $locations_table_exists ) {
+		error_log( 'GPEI-EM: FATAL — Could not create EM custom tables. Aborting demo data import.' );
+		return;
+	}
+}
+
+error_log( 'GPEI-EM: Custom tables verified, proceeding with demo data creation.' );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
  * Create event categories.
