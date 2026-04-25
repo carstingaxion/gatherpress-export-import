@@ -116,6 +116,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 					'_event_start',
 					'_event_end',
 					'_event_timezone',
+					'_location_id',
 				),
 				$this->get_venue_detail_meta_keys()
 			);
@@ -145,6 +146,10 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 					'import_callback' => $callback,
 				),
 				'_event_timezone' => array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				),
+				'_location_id'    => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
@@ -211,15 +216,18 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 		/**
 		 * Gets the meta key used for venue linking.
 		 *
-		 * Events Manager does not use a meta key for venue references;
-		 * venues are linked via the `location` post type relationship.
+		 * Events Manager stores the venue reference as the `_location_id`
+		 * post meta on event posts, which contains the original `location`
+		 * post ID. During import, this ID is resolved via the WordPress
+		 * Importer's old-to-new ID mapping to link the event to the
+		 * converted `gatherpress_venue` post.
 		 *
 		 * @since 0.1.0
 		 *
-		 * @return null Always null for Events Manager.
+		 * @return string The venue meta key '_location_id'.
 		 */
 		public function get_venue_meta_key(): ?string {
-			return null;
+			return '_location_id';
 		}
 
 		/**

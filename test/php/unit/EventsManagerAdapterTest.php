@@ -95,7 +95,7 @@ class EventsManagerAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that stash meta keys include event and venue detail keys.
+	 * Tests that stash meta keys include event, venue link, and venue detail keys.
 	 *
 	 * @since 0.1.0
 	 *
@@ -109,6 +109,9 @@ class EventsManagerAdapterTest extends \WP_UnitTestCase {
 		$this->assertContains( '_event_start', $keys );
 		$this->assertContains( '_event_end', $keys );
 		$this->assertContains( '_event_timezone', $keys );
+
+		// Venue link key.
+		$this->assertContains( '_location_id', $keys );
 
 		// Venue detail keys.
 		$this->assertContains( '_location_address', $keys );
@@ -132,7 +135,9 @@ class EventsManagerAdapterTest extends \WP_UnitTestCase {
 		// Event keys.
 		$this->assertArrayHasKey( '_event_start', $pseudometas );
 		$this->assertArrayHasKey( '_event_end', $pseudometas );
+		$this->assertArrayHasKey( '_location_id', $pseudometas );
 		$this->assertSame( 'gatherpress_event', $pseudometas['_event_start']['post_type'] );
+		$this->assertSame( 'gatherpress_event', $pseudometas['_location_id']['post_type'] );
 
 		// Venue detail keys.
 		$this->assertArrayHasKey( '_location_address', $pseudometas );
@@ -170,15 +175,18 @@ class EventsManagerAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that the venue meta key is null (EM uses location CPT, not meta key).
+	 * Tests that the venue meta key is _location_id.
+	 *
+	 * Events Manager stores the venue reference as `_location_id` post meta
+	 * on event posts, containing the original location post ID.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @covers ::get_venue_meta_key
 	 * @return void
 	 */
-	public function test_get_venue_meta_key_is_null(): void {
-		$this->assertNull( $this->adapter->get_venue_meta_key() );
+	public function test_get_venue_meta_key(): void {
+		$this->assertSame( '_location_id', $this->adapter->get_venue_meta_key() );
 	}
 
 	/**

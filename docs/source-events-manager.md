@@ -21,7 +21,7 @@ Events Manager stores venues as a dedicated custom post type (`location`). Durin
 
 **Venue details** (`_location_address`, `_location_town`, `_location_state`, `_location_postcode`, `_location_country`) are automatically assembled into GatherPress's `gatherpress_venue_information` JSON format during import via the shared `Venue_Detail_Handler` trait.
 
-> **Note:** Events Manager uses `_location_id` on event posts for the venue reference, which requires ID mapping resolution during import.
+Events reference their venue via `_location_id` post meta, which contains the original `location` post ID. During import, this ID is resolved via the WordPress Importer's old-to-new ID mapping and linked via `link_venue()`.
 
 ## Taxonomy Mapping
 
@@ -41,7 +41,7 @@ Events Manager stores venues as a dedicated custom post type (`location`). Durin
 | Venue name | ✅ | |
 | Venue address/details | ✅ | Assembled into `gatherpress_venue_information` JSON |
 | Venue coordinates | ⚠️ | May require additional mapping |
-| Venue–event link | ⚠️ | Uses `_location_id` which requires ID mapping |
+| Venue–event link | ✅ | Via `_location_id` + ID mapping |
 | Event categories | ✅ | |
 | Event tags | ✅ | |
 | Organizer | ⚠️ | Partially available but not mapped |
