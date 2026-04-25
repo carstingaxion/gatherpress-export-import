@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.1...HEAD)
+## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.2...HEAD)
+
+## [0.2.2](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.1...0.2.2) - 2026-04-25
+
+- Make php maintainable for blueprint demo imports ([#19](https://github.com/carstingaxion/gatherpress-export-import/pull/19))
+- Fix Events-Manager imports ([#18](https://github.com/carstingaxion/gatherpress-export-import/pull/18))
 
 ## [0.2.1](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.0...0.2.1) - 2026-04-23
 
