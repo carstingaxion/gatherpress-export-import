@@ -378,27 +378,54 @@ foreach ( $events as $event ) {
 		/*
 		 * Use MEC's internal API to create events.
 		 *
-		 * `$main->save_event( $data )` accepts an associative array with:
-		 * - 'post'  => array of wp_insert_post() compatible fields
-		 * - 'meta'  => array of MEC post meta keys
-		 * - 'terms' => array of taxonomy => term_id[] assignments
+		 * MEC_main::save_event() expects a flat data array with specific
+		 * top-level keys. The method internally reads:
+		 * - 'title'          — Event title (used if no post_id).
+		 * - 'content'        — Event content/description.
+		 * - 'start'          — Start date as 'Y-m-d'.
+		 * - 'end'            — End date as 'Y-m-d'.
+		 * - 'repeat_status'  — 0 for non-recurring.
+		 * - 'repeat_type'    — Empty for non-recurring.
+		 * - 'interval'       — Empty for non-recurring.
+		 * - 'meta'           — Array of post meta keys (time components, etc.).
 		 *
-		 * This populates:
-		 * - The `mec-events` CPT post in wp_posts.
-		 * - The `mec_events` custom table (if it exists).
-		 * - All MEC-internal meta keys.
-		 * - Taxonomy term assignments.
+		 * The method first creates the post via wp_insert_post(), then
+		 * populates the mec_events custom table and assigns taxonomy terms.
 		 *
 		 * @see MEC_main::save_event() in modern-events-calendar-lite/app/libraries/main.php
 		 */
+
+		// Convert 12h time to seconds-since-midnight for MEC's time_start/time_end.
+		$start_h = intval( $event['start_hour'] );
+		$start_m = intval( $event['start_minutes'] );
+		if ( strtoupper( $event['start_ampm'] ) === 'PM' && $start_h < 12 ) {
+			$start_h += 12;
+		} elseif ( strtoupper( $event['start_ampm'] ) === 'AM' && 12 === $start_h ) {
+			$start_h = 0;
+		}
+		$start_seconds = ( $start_h * 3600 ) + ( $start_m * 60 );
+
+		$end_h = intval( $event['end_hour'] );
+		$end_m = intval( $event['end_minutes'] );
+		if ( strtoupper( $event['end_ampm'] ) === 'PM' && $end_h < 12 ) {
+			$end_h += 12;
+		} elseif ( strtoupper( $event['end_ampm'] ) === 'AM' && 12 === $end_h ) {
+			$end_h = 0;
+		}
+		$end_seconds = ( $end_h * 3600 ) + ( $end_m * 60 );
+
 		$mec_data = array(
-			'post'  => array(
-				'post_title'   => $event['title'],
-				'post_content' => $event['content'],
-				'post_status'  => 'publish',
-				'post_type'    => 'mec-events',
-			),
-			'meta'  => array(
+			'title'         => $event['title'],
+			'content'       => $event['content'],
+			'status'        => 'publish',
+			'start'         => $event['start_date'],
+			'end'           => $event['end_date'],
+			'repeat_status' => 0,
+			'repeat_type'   => '',
+			'interval'      => '',
+			'time_start'    => $start_seconds,
+			'time_end'      => $end_seconds,
+			'meta'          => array(
 				'mec_start_date'         => $event['start_date'],
 				'mec_end_date'           => $event['end_date'],
 				'mec_start_time_hour'    => $event['start_hour'],
@@ -407,35 +434,52 @@ foreach ( $events as $event ) {
 				'mec_end_time_hour'      => $event['end_hour'],
 				'mec_end_time_minutes'   => $event['end_minutes'],
 				'mec_end_time_ampm'      => $event['end_ampm'],
+				'mec_allday'             => 0,
+				'mec_in_days'            => '',
+				'mec_not_in_days'        => '',
 			),
-			'terms' => array(),
+			'tax_input'     => array(),
 		);
 
 		if ( $loc_term_id > 0 ) {
-			$mec_data['terms']['mec_location'] = array( $loc_term_id );
+			$mec_data['tax_input']['mec_location'] = array( $loc_term_id );
 		}
 		if ( $org_term_id > 0 ) {
-			$mec_data['terms']['mec_organizer'] = array( $org_term_id );
+			$mec_data['tax_input']['mec_organizer'] = array( $org_term_id );
 		}
 		if ( ! empty( $cat_term_ids ) ) {
-			$mec_data['terms']['mec_category'] = $cat_term_ids;
+			$mec_data['tax_input']['mec_category'] = $cat_term_ids;
 		}
 		if ( ! empty( $label_term_ids ) ) {
-			$mec_data['terms']['mec_label'] = $label_term_ids;
+			$mec_data['tax_input']['mec_label'] = $label_term_ids;
 		}
 
 		$event_id = $mec_main->save_event( $mec_data );
 
-		if ( $event_id && ! is_wp_error( $event_id ) ) {
+		if ( $event_id && ! is_wp_error( $event_id ) && $event_id > 0 ) {
 			error_log( 'GPEI-MEC: Created event via MEC API: "' . $event['title'] . '" (ID: ' . $event_id . ')' );
+
+			// Assign taxonomy terms via wp_set_object_terms as a safety net,
+			// since save_event() may not always handle tax_input correctly.
+			if ( ! empty( $cat_term_ids ) ) {
+				wp_set_object_terms( $event_id, $cat_term_ids, 'mec_category' );
+			}
+			if ( ! empty( $label_term_ids ) ) {
+				wp_set_object_terms( $event_id, $label_term_ids, 'mec_label' );
+			}
+			if ( $loc_term_id > 0 ) {
+				wp_set_object_terms( $event_id, array( $loc_term_id ), 'mec_location' );
+			}
+			if ( $org_term_id > 0 ) {
+				wp_set_object_terms( $event_id, array( $org_term_id ), 'mec_organizer' );
+			}
 		} else {
-			error_log( 'GPEI-MEC: MEC API save_event failed for "' . $event['title'] . '", falling back to wp_insert_post.' );
-			// Fall through to the wp_insert_post fallback below.
-			$use_mec_api_for_this = false;
+			error_log( 'GPEI-MEC: MEC API save_event failed for "' . $event['title'] . '" (returned: ' . var_export( $event_id, true ) . '), falling back to wp_insert_post.' );
+			$event_id = 0; // Reset so the fallback runs.
 		}
 
 		// Skip the fallback if API succeeded.
-		if ( $event_id && ! is_wp_error( $event_id ) ) {
+		if ( $event_id > 0 ) {
 			continue;
 		}
 	}
