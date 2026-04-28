@@ -153,6 +153,7 @@ npm run test:integration -- --group=migration
 | `TaxonomyVenueHandlerTraitTest.php` | `Taxonomy_Venue_Handler` trait | Default venue pass, post data capture, event flagging, term filtering (single, multiple, empty), venue term creation interception (single, successive), skip post type registration, hook idempotency |
 | `VenueDetailHandlerTraitTest.php` | `Venue_Detail_Handler` trait | Full address building (all parts, partial, empty, single, whitespace), meta key extraction, venue info saving (success, empty fields, non-venue post, nonexistent post), meta stashing (intercept, pass-through, accumulation, pending ID tracking), hook idempotency |
 | `MigrationClassTest.php` | `Migration` | Singleton pattern, adapter registration, merged type maps, taxonomy maps, stash meta keys, post type rewriting, taxonomy rewriting |
+| `ICSImporterParserTest.php` | `ICS_Importer` (parser) | Fixture parsing (3 events), SUMMARY, DESCRIPTION, X-ALT-DESC, DTSTART/DTEND (UTC), LOCATION, GEO, URL, CATEGORIES, empty/missing fields, line folding, CRLF, text unescaping, datetime parsing (UTC/local/all-day), timezone extraction (Z suffix, TZID, fallback) |
 
 ### Integration Tests
 
@@ -166,6 +167,15 @@ npm run test:integration -- --group=migration
 | `WXRImportEOTest.php` | EO adapter end-to-end WXR import | Full two-pass strategy: Pass 1 venue creation, event skipping, skip post cleanup, source meta tracking; Pass 2 event creation, venue linking, meta cleanup |
 | `WXRImportTECTest.php` | TEC adapter end-to-end WXR import | Venue/event post type rewrites, datetime conversion, venue linking via ID mapping, taxonomy term rewriting, venue detail meta conversion, partial venue details, meta key blocking |
 | `WXRImportEMTest.php` | EM adapter end-to-end WXR import | Location/event post type rewrites, datetime conversion, venue detail meta conversion, taxonomy rewriting (event-categories, event-tags), venue shadow terms, meta key blocking, transient cleanup, content preservation |
+| `ICSImporterIntegrationTest.php` | ICS Importer end-to-end | Event creation (3 drafts), titles, HTML description, datetime conversion, category assignment (gatherpress_topic), venue creation from LOCATION, GEO coordinates in venue info, venue linking via shadow taxonomy, duplicate location reuse, online event link logic (URL only when no LOCATION), double-import venue deduplication |
+
+### ICS Fixture Files
+
+ICS calendar files are stored in `tests/fixtures/ics/` and used by the ICS importer tests:
+
+| File | Source Plugin | Contents |
+|---|---|---|
+| `EO-export.ics` | Event Organiser | 3 events with LOCATION, GEO, CATEGORIES, URL, and X-ALT-DESC |
 
 ### WXR Fixture Files
 
@@ -196,19 +206,21 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │   ├── traits/
 │   │   ├── trait-datetime-helper.php
 │   │   ├── trait-taxonomy-venue-handler.php
-│   │   └── trait-venue-detail-handler.php
+│   │   ├── trait-venue-detail-handler.php
+│   │   └── trait-template-block-handler.php
 │   └── classes/
+│       ├── adapters/
+│       │   ├── class-tec-adapter.php
+│       │   ├── class-events-manager-adapter.php
+│       │   ├── class-mec-adapter.php
+│       │   ├── class-eventon-adapter.php
+│       │   ├── class-aioec-adapter.php
+│       │   └── class-event-organiser-adapter.php
 │       ├── class-adapter-registry.php     # Adapter registration + merged maps
 │       ├── class-post-type-rewriter.php   # Post type rewriting on import
 │       ├── class-taxonomy-rewriter.php    # Taxonomy rewriting on import
 │       ├── class-meta-stasher.php         # Meta interception + transient stashing
 │       ├── class-stash-processor.php      # Stash processing at import_end
-│       ├── class-tec-adapter.php
-│       ├── class-events-manager-adapter.php
-│       ├── class-mec-adapter.php
-│       ├── class-eventon-adapter.php
-│       ├── class-aioec-adapter.php
-│       ├── class-event-organiser-adapter.php
 │       ├── class-migration.php            # Thin orchestrator (singleton)
 │       └── class-importer.php
 ├── assets/css/importer.css
@@ -218,6 +230,8 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 ├── phpunit.xml.dist                   # PHPUnit config (unit + integration suites)
 ├── tests/
 │   ├── fixtures/
+│   │   ├── ics/
+│   │   │   └── EO-export.ics            # ICS fixture (3 events with venues)
 │   │   └── wxr/
 │   │       ├── event-organiser.xml    # EO WXR fixture (3 events, 3 venues)
 │   │       ├── tec.xml                # TEC WXR fixture (2 venues, 2 events)
@@ -233,14 +247,16 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │       │   ├── EOAdapterTest.php
 │       │   ├── DatetimeHelperTraitTest.php
 │       │   ├── TaxonomyVenueHandlerTraitTest.php
-│       │   └── MigrationClassTest.php
+│       │   ├── MigrationClassTest.php
+│       │   └── ICSImporterParserTest.php
 │       └── integration/
 │           ├── TestCase.php           # Base test case with helpers
 │           ├── EOAdapterIntegrationTest.php
 │           ├── MigrationIntegrationTest.php
 │           ├── WXRImportEOTest.php    # EO two-pass WXR import tests
 │           ├── WXRImportTECTest.php   # TEC WXR import tests
-│           └── WXRImportEMTest.php    # EM WXR import tests
+│           ├── WXRImportEMTest.php    # EM WXR import tests
+│           └── ICSImporterIntegrationTest.php  # ICS import tests
 ├── docs/
 │   ├── developer/
 │   │   └── README.md                 # This file

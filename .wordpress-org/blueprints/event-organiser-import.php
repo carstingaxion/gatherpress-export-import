@@ -48,34 +48,49 @@ if ( $eo_active ) {
 	error_log( 'GPEI-EO: Event Organiser not fully active. Registering post type and taxonomies manually.' );
 
 	if ( ! post_type_exists( 'event' ) ) {
-		register_post_type( 'event', array(
-			'label'    => 'Events',
-			'public'   => true,
-			'show_ui'  => true,
-			'supports' => array( 'title', 'editor', 'custom-fields' ),
-		) );
+		register_post_type(
+			'event',
+			array(
+				'label'    => 'Events',
+				'public'   => true,
+				'show_ui'  => true,
+				'supports' => array( 'title', 'editor', 'custom-fields' ),
+			) 
+		);
 	}
 
 	if ( ! taxonomy_exists( 'event-category' ) ) {
-		register_taxonomy( 'event-category', 'event', array(
-			'label'        => 'Event Categories',
-			'public'       => true,
-			'hierarchical' => true,
-		) );
+		register_taxonomy(
+			'event-category',
+			'event',
+			array(
+				'label'        => 'Event Categories',
+				'public'       => true,
+				'hierarchical' => true,
+			) 
+		);
 	}
 
 	if ( ! taxonomy_exists( 'event-tag' ) ) {
-		register_taxonomy( 'event-tag', 'event', array(
-			'label'  => 'Event Tags',
-			'public' => true,
-		) );
+		register_taxonomy(
+			'event-tag',
+			'event',
+			array(
+				'label'  => 'Event Tags',
+				'public' => true,
+			) 
+		);
 	}
 
 	if ( ! taxonomy_exists( 'event-venue' ) ) {
-		register_taxonomy( 'event-venue', 'event', array(
-			'label'  => 'Event Venues',
-			'public' => true,
-		) );
+		register_taxonomy(
+			'event-venue',
+			'event',
+			array(
+				'label'  => 'Event Venues',
+				'public' => true,
+			) 
+		);
 	}
 }
 
@@ -85,10 +100,14 @@ if ( $eo_active ) {
 // AND
 // - apply_filters( 'eventorganiser_register_taxonomy_event-tag', ...)
 if ( ! taxonomy_exists( 'event-tag' ) ) {
-	register_taxonomy( 'event-tag', 'event', array(
-		'label'  => 'Event Tags',
-		'public' => true,
-	) );
+	register_taxonomy(
+		'event-tag',
+		'event',
+		array(
+			'label'  => 'Event Tags',
+			'public' => true,
+		) 
+	);
 }
 
 /*
@@ -234,17 +253,20 @@ foreach ( $venues as $venue ) {
 		 * @see eo_insert_venue() in event-organiser/includes/event-organiser-venue-functions.php
 		 * @since Event Organiser 1.4.0
 		 */
-		$result = eo_insert_venue( $venue['name'], array(
-			'slug'        => $venue['slug'],
-			'description' => $venue['description'],
-			'address'     => $venue['address'],
-			'city'        => $venue['city'],
-			'state'       => $venue['state'],
-			'postcode'    => $venue['postcode'],
-			'country'     => $venue['country'],
-			'latitude'    => $venue['latitude'],
-			'longitude'   => $venue['longitude'],
-		) );
+		$result = eo_insert_venue(
+			$venue['name'],
+			array(
+				'slug'        => $venue['slug'],
+				'description' => $venue['description'],
+				'address'     => $venue['address'],
+				'city'        => $venue['city'],
+				'state'       => $venue['state'],
+				'postcode'    => $venue['postcode'],
+				'country'     => $venue['country'],
+				'latitude'    => $venue['latitude'],
+				'longitude'   => $venue['longitude'],
+			) 
+		);
 
 		if ( is_wp_error( $result ) ) {
 			error_log( 'GPEI-EO: Failed to create venue via eo_insert_venue "' . $venue['name'] . '": ' . $result->get_error_message() );
@@ -252,8 +274,7 @@ foreach ( $venues as $venue ) {
 		} else {
 			$venue_term_ids[ $venue['slug'] ] = intval( $result['term_id'] );
 			error_log( 'GPEI-EO: Created venue via eo_insert_venue: "' . $venue['name'] . '" (term ID: ' . $result['term_id'] . ')' );
-		}
-
+		}   
 	} else {
 		/*
 		 * Fallback: Create venue via wp_insert_term() without address meta.
@@ -264,10 +285,14 @@ foreach ( $venues as $venue ) {
 		 *
 		 * The description is set to the full address string for reference.
 		 */
-		$result = wp_insert_term( $venue['name'], 'event-venue', array(
-			'slug'        => $venue['slug'],
-			'description' => $venue['description'],
-		) );
+		$result = wp_insert_term(
+			$venue['name'],
+			'event-venue',
+			array(
+				'slug'        => $venue['slug'],
+				'description' => $venue['description'],
+			) 
+		);
 
 		if ( is_wp_error( $result ) ) {
 			error_log( 'GPEI-EO: Failed to create venue via wp_insert_term "' . $venue['name'] . '": ' . $result->get_error_message() );
@@ -389,19 +414,21 @@ foreach ( $events as $event ) {
 		 * This ensures the events appear correctly in a standard WXR export
 		 * even when Event Organiser's internal API is not available.
 		 */
-		$event_id = wp_insert_post( array(
-			'post_title'   => $event['title'],
-			'post_content' => $event['content'],
-			'post_type'    => 'event',
-			'post_status'  => 'publish',
-			'meta_input'   => array(
-				'_eventorganiser_schedule_start_datetime' => $event['start'],
-				'_eventorganiser_schedule_end_datetime'   => $event['end'],
-				'_eventorganiser_schedule_start_finish'   => $event['end'],
-				'_eventorganiser_schedule_last_start'     => $event['start'],
-				'_eventorganiser_schedule_last_finish'    => $event['end'],
-			),
-		) );
+		$event_id = wp_insert_post(
+			array(
+				'post_title'   => $event['title'],
+				'post_content' => $event['content'],
+				'post_type'    => 'event',
+				'post_status'  => 'publish',
+				'meta_input'   => array(
+					'_eventorganiser_schedule_start_datetime' => $event['start'],
+					'_eventorganiser_schedule_end_datetime' => $event['end'],
+					'_eventorganiser_schedule_start_finish' => $event['end'],
+					'_eventorganiser_schedule_last_start'  => $event['start'],
+					'_eventorganiser_schedule_last_finish' => $event['end'],
+				),
+			) 
+		);
 
 		if ( is_wp_error( $event_id ) || 0 === $event_id ) {
 			error_log( 'GPEI-EO: Failed to create event via wp_insert_post: "' . $event['title'] . '"' );
