@@ -42,7 +42,7 @@ Remove a built-in mapping to prevent automatic conversion:
 
 ## Files
 
-- [includes/classes/class-migration.php:267](https://github.com/carstingaxion/gatherpress-export-import/blob/main/includes/classes/class-migration.php#L267)
+- [includes/classes/class-adapter-registry.php:154](https://github.com/carstingaxion/gatherpress-export-import/blob/main/includes/classes/class-adapter-registry.php#L154)
 ```php
 apply_filters( 'gpei_event_post_type_map', $this->event_type_map )
 ```
