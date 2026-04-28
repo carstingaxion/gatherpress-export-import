@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.2...HEAD)
+## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.3.0...HEAD)
+
+## [0.3.0](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.2...0.3.0) - 2026-04-28
+
+- Fix/dry out adapters ([#25](https://github.com/carstingaxion/gatherpress-export-import/pull/25))
+- Feature/gatherpress postmeta compatibility ([#24](https://github.com/carstingaxion/gatherpress-export-import/pull/24))
+- Update tec tests from real wxr fixture ([#20](https://github.com/carstingaxion/gatherpress-export-import/pull/20))
 
 ## [0.2.2](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.1...0.2.2) - 2026-04-25
 
