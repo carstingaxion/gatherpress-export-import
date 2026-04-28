@@ -43,7 +43,7 @@ Remove the Events Manager location mapping if you handle it differently:
 
 ## Files
 
-- [includes/classes/class-migration.php:322](https://github.com/carstingaxion/gatherpress-export-import/blob/main/includes/classes/class-migration.php#L322)
+- [includes/classes/class-adapter-registry.php:205](https://github.com/carstingaxion/gatherpress-export-import/blob/main/includes/classes/class-adapter-registry.php#L205)
 ```php
 apply_filters( 'gpei_venue_post_type_map', $this->venue_type_map )
 ```
