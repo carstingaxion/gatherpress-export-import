@@ -169,19 +169,6 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 		}
 
 		/**
-		 * Gets the source event post type slug(s) that should be skipped during Pass 1.
-		 *
-		 * EventON uses the `ajde_events` post type.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @return string[] Array of source event post type slugs.
-		 */
-		public function get_skippable_event_post_types(): array {
-			return array( 'ajde_events' );
-		}
-
-		/**
 		 * Gets the meta key used for venue linking.
 		 *
 		 * EventON does not use a meta key for venue references.

@@ -213,19 +213,6 @@ if ( ! class_exists( __NAMESPACE__ . '\MEC_Adapter' ) ) {
 		}
 
 		/**
-		 * Gets the source event post type slug(s) that should be skipped during Pass 1.
-		 *
-		 * MEC uses the `mec-events` post type.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @return string[] Array of source event post type slugs.
-		 */
-		public function get_skippable_event_post_types(): array {
-			return array( 'mec-events' );
-		}
-
-		/**
 		 * Gets the meta key used for venue linking.
 		 *
 		 * MEC uses taxonomy terms for venues, not a meta key reference.

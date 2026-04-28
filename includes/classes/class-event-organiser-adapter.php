@@ -81,19 +81,6 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 		}
 
 		/**
-		 * Gets the source event post type slug(s) that should be skipped during Pass 1.
-		 *
-		 * Event Organiser uses the `event` post type.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @return string[] Array of source event post type slugs.
-		 */
-		public function get_skippable_event_post_types(): array {
-			return array( 'event' );
-		}
-
-		/**
 		 * Gets the event post type mapping.
 		 *
 		 * Event Organiser uses the `event` post type. Because Events Manager
