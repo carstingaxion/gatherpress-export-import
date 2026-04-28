@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.3.0...HEAD)
+## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.0...HEAD)
+
+## [0.4.0](https://github.com/carstingaxion/gatherpress-export-import/compare/0.3.0...0.4.0) - 2026-04-28
+
+- Update hook docs automatically ([#42](https://github.com/carstingaxion/gatherpress-export-import/pull/42))
+- Update mec blueprint importer to match adapter-guide ([#37](https://github.com/carstingaxion/gatherpress-export-import/pull/37))
+- Feature/new ics importer ([#31](https://github.com/carstingaxion/gatherpress-export-import/pull/31))
 
 ## [0.3.0](https://github.com/carstingaxion/gatherpress-export-import/compare/0.2.2...0.3.0) - 2026-04-28
 
