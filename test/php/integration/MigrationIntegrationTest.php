@@ -1,9 +1,9 @@
 <?php
 /**
- * Integration tests for the main Migration class.
+ * Integration tests for the SOC migration classes.
  *
- * Tests the migration orchestrator against a real WordPress environment
- * with GatherPress active.
+ * Tests the migration orchestrator and its composed classes against
+ * a real WordPress environment with GatherPress active.
  *
  * @package GatherPressExportImport\Tests\Integration
  * @since   0.1.0
@@ -57,9 +57,9 @@ class MigrationIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_event_post_type_rewriting( string $source_type ): void {
-		$migration = $this->get_migration_instance();
-		$data      = array( 'post_type' => $source_type );
-		$result    = $migration->rewrite_post_type_on_import( $data );
+		$rewriter = $this->get_migration_instance()->get_post_type_rewriter();
+		$data     = array( 'post_type' => $source_type );
+		$result   = $rewriter->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_event', $result['post_type'] );
 		$this->assertSame( $source_type, $result['_gpei_source_type'] );
@@ -93,9 +93,9 @@ class MigrationIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_venue_post_type_rewriting( string $source_type ): void {
-		$migration = $this->get_migration_instance();
-		$data      = array( 'post_type' => $source_type );
-		$result    = $migration->rewrite_post_type_on_import( $data );
+		$rewriter = $this->get_migration_instance()->get_post_type_rewriter();
+		$data     = array( 'post_type' => $source_type );
+		$result   = $rewriter->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_venue', $result['post_type'] );
 	}
@@ -122,13 +122,13 @@ class MigrationIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function test_standard_post_types_not_rewritten(): void {
-		$migration = $this->get_migration_instance();
+		$rewriter = $this->get_migration_instance()->get_post_type_rewriter();
 
 		$types_to_test = array( 'post', 'page', 'attachment', 'nav_menu_item', 'wp_template' );
 
 		foreach ( $types_to_test as $type ) {
 			$data   = array( 'post_type' => $type );
-			$result = $migration->rewrite_post_type_on_import( $data );
+			$result = $rewriter->rewrite_post_type_on_import( $data );
 			$this->assertSame( $type, $result['post_type'], "Post type '{$type}' should not be rewritten." );
 		}
 	}
@@ -143,10 +143,10 @@ class MigrationIntegrationTest extends TestCase {
 	public function test_meta_stashing_for_event(): void {
 		$event_id = $this->create_event( 'Meta Stash Integration Test' );
 
-		$migration = $this->get_migration_instance();
+		$stasher = $this->get_migration_instance()->get_meta_stasher();
 
 		// Stash TEC start date.
-		$result = $migration->stash_meta_on_import(
+		$result = $stasher->stash_meta_on_import(
 			null,
 			$event_id,
 			'_EventStartDate',
@@ -156,7 +156,7 @@ class MigrationIntegrationTest extends TestCase {
 		$this->assertTrue( $result );
 
 		// Stash TEC end date.
-		$result = $migration->stash_meta_on_import(
+		$result = $stasher->stash_meta_on_import(
 			null,
 			$event_id,
 			'_EventEndDate',
@@ -204,7 +204,7 @@ class MigrationIntegrationTest extends TestCase {
 	public function test_filter_post_meta_records_pending_event(): void {
 		$event_id = $this->create_event( 'Pending Event Test' );
 
-		$migration = $this->get_migration_instance();
+		$stasher = $this->get_migration_instance()->get_meta_stasher();
 
 		$postmeta = array(
 			array(
@@ -213,7 +213,7 @@ class MigrationIntegrationTest extends TestCase {
 			),
 		);
 
-		$migration->filter_post_meta_on_import( $postmeta, $event_id, array( 'post_type' => 'gatherpress_event' ) );
+		$stasher->filter_post_meta_on_import( $postmeta, $event_id, array( 'post_type' => 'gatherpress_event' ) );
 
 		$pending = get_transient( 'gpei_pending_event_ids' );
 		$this->assertIsArray( $pending );
@@ -221,5 +221,26 @@ class MigrationIntegrationTest extends TestCase {
 
 		// Clean up.
 		delete_transient( 'gpei_pending_event_ids' );
+	}
+
+	/**
+	 * Tests taxonomy rewriting for per-post term assignments.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_rewriting(): void {
+		$rewriter = $this->get_migration_instance()->get_taxonomy_rewriter();
+		$terms    = array(
+			array(
+				'domain' => 'tribe_events_cat',
+				'slug'   => 'conference',
+				'name'   => 'Conference',
+			),
+		);
+
+		$result = $rewriter->rewrite_post_terms_taxonomy( $terms );
+		$this->assertSame( 'gatherpress_topic', $result[0]['domain'] );
 	}
 }

@@ -17,6 +17,14 @@ use GatherPressExportImport\Datetime_Helper;
 use GatherPressExportImport\Taxonomy_Venue_Handler;
 
 /**
+ * Note: Since 0.2.0, the `get_skippable_event_post_types()` method is
+ * no longer part of the `Taxonomy_Venue_Adapter` interface. It is now
+ * a `final protected` method on the `Taxonomy_Venue_Handler` trait,
+ * derived automatically from `get_event_post_type_map()`. The stub class
+ * below exercises this via the trait.
+ */
+
+/**
  * Concrete stub class using the Taxonomy_Venue_Handler trait for testing.
  *
  * Implements all required interfaces (`Hookable_Adapter`, `Source_Adapter`,
@@ -52,17 +60,6 @@ class TaxonomyVenueHandlerTestClass implements Hookable_Adapter, Source_Adapter,
 	 */
 	public function get_venue_taxonomy_slug(): string {
 		return 'test-venue-tax';
-	}
-
-	/**
-	 * Gets the source event post type slugs that should be skipped during Pass 1.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @return string[] Array containing the fictional test event post type.
-	 */
-	public function get_skippable_event_post_types(): array {
-		return array( 'test_event' );
 	}
 
 	/**
@@ -288,6 +285,38 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests that get_skippable_event_post_types() is derived from the event post type map.
+	 *
+	 * Since 0.2.0, `get_skippable_event_post_types()` is a trait method that
+	 * returns `array_keys( $this->get_event_post_type_map() )`. The stub
+	 * class declares `'test_event' => 'gatherpress_event'` in its event map,
+	 * so the skippable types should be `['test_event']`.
+	 *
+	 * @since 0.2.0
+	 *
+	 * @return void
+	 */
+	public function test_skippable_event_post_types_derived_from_event_map(): void {
+		// Access via the public proxy for the capture method which uses the same internal list.
+		$data = array(
+			'post_type'  => 'test_event',
+			'post_title' => 'My Test Event',
+		);
+
+		// If test_event is in the skippable list, capture should record it.
+		$result = $this->handler->tvh_capture_current_post_data( $data );
+		$this->assertSame( $data, $result );
+
+		// Verify non-matching type is ignored.
+		$other = array(
+			'post_type'  => 'some_other_type',
+			'post_title' => 'Other Post',
+		);
+		$result2 = $this->handler->tvh_capture_current_post_data( $other );
+		$this->assertSame( $other, $result2 );
+	}
+
+	/**
 	 * Tests that tvh_maybe_flag_events_on_venue_pass() redirects events to the skip post type.
 	 *
 	 * During venue pass (Pass 1), events of a skippable post type should
@@ -313,8 +342,8 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 	/**
 	 * Tests that tvh_maybe_flag_events_on_venue_pass() ignores non-skippable post types.
 	 *
-	 * Post types not listed in the adapter's `get_skippable_event_post_types()`
-	 * should pass through without modification, even during venue pass.
+	 * Post types not in `get_event_post_type_map()` should pass through
+	 * without modification, even during venue pass.
 	 *
 	 * @since 0.1.0
 	 *

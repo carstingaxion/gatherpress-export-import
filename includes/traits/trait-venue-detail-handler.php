@@ -227,7 +227,7 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 				return $check;
 			}
 
-			return Migration::stash_meta(
+			return Meta_Stasher::stash_meta(
 				$object_id,
 				$meta_key,
 				$meta_value,

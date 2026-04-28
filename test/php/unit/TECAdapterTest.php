@@ -371,15 +371,14 @@ class TECAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that the noop callback does nothing without errors.
+	 * Tests that the noop callback is available via the Datetime_Helper trait.
 	 *
-	 * @since 0.1.0
+	 * @since 0.2.0
 	 *
-	 * @covers ::noop_callback
 	 * @return void
 	 */
-	public function test_noop_callback_does_nothing(): void {
+	public function test_noop_callback_available_and_does_nothing(): void {
 		$this->adapter->noop_callback();
-		$this->assertTrue( true ); // If we get here, no error occurred.
+		$this->assertTrue( true );
 	}
 }

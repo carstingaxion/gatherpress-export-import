@@ -208,20 +208,6 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests the skippable event post types.
-	 *
-	 * @since 0.1.0
-	 *
-	 * @covers ::get_skippable_event_post_types
-	 * @return void
-	 */
-	public function test_get_skippable_event_post_types(): void {
-		$types = $this->adapter->get_skippable_event_post_types();
-		$this->assertContains( 'event', $types );
-		$this->assertCount( 1, $types );
-	}
-
-	/**
 	 * Tests that the adapter implements all required interfaces.
 	 *
 	 * @since 0.1.0
@@ -235,16 +221,18 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that the noop callback does nothing without errors.
+	 * Tests that the noop callback is available via the Datetime_Helper trait.
 	 *
-	 * @since 0.1.0
+	 * The noop_callback() method is provided by the Datetime_Helper trait
+	 * and shared across all adapters. It should be callable without errors.
 	 *
-	 * @covers ::noop_callback
+	 * @since 0.2.0
+	 *
 	 * @return void
 	 */
-	public function test_noop_callback_does_nothing(): void {
+	public function test_noop_callback_available_and_does_nothing(): void {
 		// Should not throw or produce side effects.
-		$this->adapter->noop_callback( 123, 'some_value' );
+		$this->adapter->noop_callback();
 		$this->assertTrue( true ); // If we get here, no error occurred.
 	}
 }
