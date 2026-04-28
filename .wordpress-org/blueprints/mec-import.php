@@ -75,17 +75,45 @@ error_log( 'GPEI-MEC: Starting Modern Events Calendar demo data import.' );
 $use_mec_api = false;
 $mec_main    = null;
 
-if ( class_exists( 'MEC' ) && method_exists( 'MEC', 'getInstance' ) ) {
+if ( class_exists( 'MEC' ) ) {
 	try {
-		$mec_instance = MEC::getInstance();
-		if ( method_exists( $mec_instance, 'getMain' ) ) {
-			$mec_main = $mec_instance->getMain();
+		/*
+		 * MEC::getInstance() requires a file path and class name as arguments.
+		 * The main library class is MEC_main, located at app/libraries/main.php.
+		 * Passing 'app/libraries/main.php' and 'MEC_main' returns the singleton
+		 * of MEC_main which has the save_event() method.
+		 *
+		 * Some MEC versions use a global $MEC_Main or the factory pattern.
+		 * We try multiple approaches.
+		 */
+		if ( method_exists( 'MEC', 'getInstance' ) ) {
+			// MEC Lite: getInstance( $file, $class ) returns a singleton of $class.
+			$reflection = new \ReflectionMethod( 'MEC', 'getInstance' );
+			$param_count = $reflection->getNumberOfRequiredParameters();
+
+			if ( $param_count >= 1 ) {
+				// MEC Lite pattern: getInstance requires file + class arguments.
+				$mec_main = MEC::getInstance( 'app/libraries/main.php', 'MEC_main' );
+			} else {
+				// Some MEC versions: no-arg singleton.
+				$mec_instance = MEC::getInstance();
+				if ( method_exists( $mec_instance, 'getMain' ) ) {
+					$mec_main = $mec_instance->getMain();
+				}
+			}
+
 			if ( $mec_main && method_exists( $mec_main, 'save_event' ) ) {
 				$use_mec_api = true;
 			}
 		}
-	} catch ( \Exception $e ) {
-		error_log( 'GPEI-MEC: Exception while initialising MEC API: ' . $e->getMessage() );
+
+		// Fallback: check for a global MEC_main instance.
+		if ( ! $use_mec_api && isset( $GLOBALS['MEC_main'] ) && method_exists( $GLOBALS['MEC_main'], 'save_event' ) ) {
+			$mec_main    = $GLOBALS['MEC_main'];
+			$use_mec_api = true;
+		}
+	} catch ( \Throwable $e ) {
+		error_log( 'GPEI-MEC: Error while initialising MEC API: ' . $e->getMessage() );
 	}
 }
 
