@@ -3,7 +3,7 @@
 **Contributors:** carstenbach & WordPress Telex  
 **Tags:** data-liberation, import, migration, events  
 **Tested up to:** 6.9  
-**Stable tag:** 0.3.0  
+**Stable tag:** 0.4.0  
 **Requires Plugins:**  gatherpress  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
