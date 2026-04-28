@@ -206,7 +206,8 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │   ├── traits/
 │   │   ├── trait-datetime-helper.php
 │   │   ├── trait-taxonomy-venue-handler.php
-│   │   └── trait-venue-detail-handler.php
+│   │   ├── trait-venue-detail-handler.php
+│   │   └── trait-template-block-handler.php
 │   └── classes/
 │       ├── class-adapter-registry.php     # Adapter registration + merged maps
 │       ├── class-post-type-rewriter.php   # Post type rewriting on import

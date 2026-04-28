@@ -29,6 +29,7 @@ require_once __DIR__ . '/includes/interfaces/interface-taxonomy-venue-adapter.ph
 require_once __DIR__ . '/includes/traits/trait-datetime-helper.php';
 require_once __DIR__ . '/includes/traits/trait-taxonomy-venue-handler.php';
 require_once __DIR__ . '/includes/traits/trait-venue-detail-handler.php';
+require_once __DIR__ . '/includes/traits/trait-template-block-handler.php';
 
 // Load classes.
 require_once __DIR__ . '/includes/classes/class-tec-adapter.php';

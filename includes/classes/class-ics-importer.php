@@ -29,6 +29,8 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 	 */
 	class ICS_Importer {
 
+		use Template_Block_Handler;
+
 		/**
 		 * Singleton instance.
 		 *
@@ -128,6 +130,24 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					<p class="description" style="margin-top: 0; font-size: 12px; color: #a7aaad;">
 						<?php esc_html_e( 'Accepted format: .ics (iCalendar). Exports from Google Calendar, Outlook, Apple Calendar, and Event Organiser are supported.', 'gatherpress-export-import' ); ?>
 					</p>
+					<fieldset style="margin: 16px 0; padding: 12px 16px; border: 1px solid #dcdcde; border-radius: 4px; background: #f6f7f7;">
+						<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+							<input type="checkbox" name="gpei_ics_include_template" id="gpei-ics-include-template" value="1" />
+							<span><?php esc_html_e( 'Include registered template blocks for events and venues', 'gatherpress-export-import' ); ?></span>
+						</label>
+						<p class="description" style="margin: 4px 0 0 28px; font-size: 12px; color: #a7aaad;">
+							<?php esc_html_e( 'Inserts the default block template registered for gatherpress_event and gatherpress_venue post types into the created posts.', 'gatherpress-export-import' ); ?>
+						</p>
+						<div id="gpei-ics-template-position" style="margin: 12px 0 0 28px; display: none;">
+							<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+								<input type="checkbox" name="gpei_ics_template_before" id="gpei-ics-template-before" value="1" />
+								<span><?php esc_html_e( 'Insert template blocks before imported content', 'gatherpress-export-import' ); ?></span>
+							</label>
+							<p class="description" style="margin: 4px 0 0 28px; font-size: 12px; color: #a7aaad;">
+								<?php esc_html_e( 'When enabled, template blocks appear before the imported description. When disabled, they appear after.', 'gatherpress-export-import' ); ?>
+							</p>
+						</div>
+					</fieldset>
 					<p>
 						<input type="submit" name="gpei_ics_submit" id="gpei-ics-submit" class="button button-primary" value="<?php esc_attr_e( 'Import Events', 'gatherpress-export-import' ); ?>" disabled />
 					</p>
@@ -139,9 +159,17 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				var fileInput = document.getElementById( 'gpei_ics_file' );
 				var filenameEl = document.getElementById( 'gpei-ics-filename' );
 				var submitBtn = document.getElementById( 'gpei-ics-submit' );
+				var includeTemplateCheckbox = document.getElementById( 'gpei-ics-include-template' );
+				var templatePositionDiv = document.getElementById( 'gpei-ics-template-position' );
 
 				if ( ! dropzone || ! fileInput || ! filenameEl || ! submitBtn ) {
 					return;
+				}
+
+				if ( includeTemplateCheckbox && templatePositionDiv ) {
+					includeTemplateCheckbox.addEventListener( 'change', function() {
+						templatePositionDiv.style.display = includeTemplateCheckbox.checked ? 'block' : 'none';
+					} );
 				}
 
 				function showFile( file ) {
@@ -250,7 +278,10 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				return;
 			}
 
-			$created_ids = $this->create_events( $events );
+			$include_template = ! empty( $_POST['gpei_ics_include_template'] );
+			$template_before  = ! empty( $_POST['gpei_ics_template_before'] );
+
+			$created_ids = $this->create_events( $events, $include_template, $template_before );
 
 			if ( empty( $created_ids ) ) {
 				add_action(
@@ -413,12 +444,21 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 		 *
 		 * @since 0.3.0
 		 *
-		 * @param array<int, array<string, string>> $events Parsed events.
+		 * @param array<int, array<string, string>> $events           Parsed events.
+		 * @param bool                              $include_template Whether to include registered template blocks.
+		 * @param bool                              $template_before  Whether template blocks go before imported content.
 		 * @return int[] Array of created post IDs.
 		 */
-		private function create_events( array $events ): array {
-			$created_ids = array();
-			$venue_cache = array();
+		private function create_events( array $events, bool $include_template = false, bool $template_before = false ): array {
+			$created_ids    = array();
+			$venue_cache    = array();
+			$event_template = '';
+			$venue_template = '';
+
+			if ( $include_template ) {
+				$event_template = $this->get_post_type_template_content( 'gatherpress_event' );
+				$venue_template = $this->get_post_type_template_content( 'gatherpress_venue' );
+			}
 
 			foreach ( $events as $event_data ) {
 				// Prefer HTML description if available, otherwise plain text.
@@ -439,10 +479,16 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					$description = wp_kses_post( nl2br( $text ) );
 				}
 
+				// Merge template blocks with imported content if enabled.
+				$final_content = $description;
+				if ( $include_template && ! empty( $event_template ) ) {
+					$final_content = $this->merge_template_with_content( $description, $event_template, $template_before );
+				}
+
 				$post_id = wp_insert_post(
 					array(
 						'post_title'   => sanitize_text_field( $event_data['summary'] ),
-						'post_content' => $description,
+						'post_content' => $final_content,
 						'post_type'    => 'gatherpress_event',
 						'post_status'  => 'draft',
 					),
@@ -511,7 +557,10 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					} else {
 						$venue_post_id = $this->find_or_create_venue(
 							$location_name,
-							$event_data['geo']
+							$event_data['geo'],
+							$include_template,
+							$template_before,
+							$venue_template
 						);
 						$venue_cache[ $cache_key ] = $venue_post_id;
 					}
@@ -531,15 +580,19 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 		 * Finds an existing gatherpress_venue post by title or creates a new one.
 		 *
 		 * When creating a new venue, saves the GEO coordinates and location
-		 * name as gatherpress_venue_information JSON.
+		 * name as gatherpress_venue_information JSON. Optionally includes
+		 * registered template blocks in the venue post content.
 		 *
 		 * @since 0.3.0
 		 *
-		 * @param string $location_name The LOCATION property value.
-		 * @param string $geo           The GEO property value (latitude;longitude) or empty.
+		 * @param string $location_name    The LOCATION property value.
+		 * @param string $geo              The GEO property value (latitude;longitude) or empty.
+		 * @param bool   $include_template Whether to include registered template blocks.
+		 * @param bool   $template_before  Whether template blocks go before content.
+		 * @param string $venue_template   Serialized venue template block content.
 		 * @return int The venue post ID, or 0 on failure.
 		 */
-		private function find_or_create_venue( string $location_name, string $geo ): int {
+		private function find_or_create_venue( string $location_name, string $geo, bool $include_template = false, bool $template_before = false, string $venue_template = '' ): int {
 			if ( empty( $location_name ) ) {
 				return 0;
 			}
@@ -559,12 +612,19 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				return $existing[0];
 			}
 
+			// Build venue post content with optional template blocks.
+			$venue_content = '';
+			if ( $include_template && ! empty( $venue_template ) ) {
+				$venue_content = $venue_template;
+			}
+
 			// Create a new venue post.
 			$venue_id = wp_insert_post(
 				array(
-					'post_title'  => $location_name,
-					'post_type'   => 'gatherpress_venue',
-					'post_status' => 'publish',
+					'post_title'   => $location_name,
+					'post_content' => $venue_content,
+					'post_type'    => 'gatherpress_venue',
+					'post_status'  => 'publish',
 				),
 				true
 			);
