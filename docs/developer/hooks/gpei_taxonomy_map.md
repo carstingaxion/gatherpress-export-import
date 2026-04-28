@@ -7,12 +7,10 @@ This filter controls how source plugin taxonomy slugs are rewritten
 to GatherPress or WordPress taxonomy slugs during the import process.
 It is applied in two places:
 
-1. In `rewrite_post_terms_taxonomy()` — rewrites the `domain` field
-in per-post term assignments so terms are assigned to the correct
-target taxonomy on the imported post.
-2. In `intercept_term_creation()` — intercepts top-level `<wp:term>`
-entries in the WXR file, creates the term in the target taxonomy,
-and blocks creation in the source taxonomy.
+1. In `Taxonomy_Rewriter::rewrite_post_terms_taxonomy()` — rewrites
+the `domain` field in per-post term assignments.
+2. In `Taxonomy_Rewriter::intercept_term_creation()` — intercepts
+top-level `<wp:term>` entries in the WXR file.
 
 Note: Taxonomy-based venue slugs (e.g., `event-venue` for Event
 Organiser) should NOT be added here if they require special two-pass
@@ -50,7 +48,7 @@ Redirect a source tag taxonomy to WordPress core `post_tag`:
 
 ## Files
 
-- [includes/classes/class-migration.php:412](https://github.com/carstingaxion/gatherpress-export-import/blob/main/includes/classes/class-migration.php#L412)
+- [includes/classes/class-adapter-registry.php:285](https://github.com/carstingaxion/gatherpress-export-import/blob/main/includes/classes/class-adapter-registry.php#L285)
 ```php
 apply_filters( 'gpei_taxonomy_map', $this->taxonomy_map )
 ```
