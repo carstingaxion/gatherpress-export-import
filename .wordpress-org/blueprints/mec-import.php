@@ -47,72 +47,78 @@ $get_term_id = function ( $result ) {
 };
 
 // Create events.
-wp_insert_post( array(
-	'post_title'   => 'Introduction to Full Site Editing',
-	'post_content' => 'Learn the fundamentals of WordPress Full Site Editing, including template editing, global styles, and block patterns.',
-	'post_type'    => 'mec-events',
-	'post_status'  => 'publish',
-	'meta_input'   => array(
-		'mec_start_date'         => '2025-08-20',
-		'mec_end_date'           => '2025-08-20',
-		'mec_start_time_hour'    => '2',
-		'mec_start_time_minutes' => '00',
-		'mec_start_time_ampm'    => 'PM',
-		'mec_end_time_hour'      => '4',
-		'mec_end_time_minutes'   => '00',
-		'mec_end_time_ampm'      => 'PM',
-	),
-	'tax_input'    => array(
-		'mec_category'  => array( 'webinar' ),
-		'mec_label'     => array( 'featured' ),
-		'mec_location'  => $get_term_id( $loc3_term ),
-		'mec_organizer' => $get_term_id( $org1_term ),
-	),
-) );
+wp_insert_post(
+	array(
+		'post_title'   => 'Introduction to Full Site Editing',
+		'post_content' => 'Learn the fundamentals of WordPress Full Site Editing, including template editing, global styles, and block patterns.',
+		'post_type'    => 'mec-events',
+		'post_status'  => 'publish',
+		'meta_input'   => array(
+			'mec_start_date'         => '2025-08-20',
+			'mec_end_date'           => '2025-08-20',
+			'mec_start_time_hour'    => '2',
+			'mec_start_time_minutes' => '00',
+			'mec_start_time_ampm'    => 'PM',
+			'mec_end_time_hour'      => '4',
+			'mec_end_time_minutes'   => '00',
+			'mec_end_time_ampm'      => 'PM',
+		),
+		'tax_input'    => array(
+			'mec_category'  => array( 'webinar' ),
+			'mec_label'     => array( 'featured' ),
+			'mec_location'  => $get_term_id( $loc3_term ),
+			'mec_organizer' => $get_term_id( $org1_term ),
+		),
+	) 
+);
 
-wp_insert_post( array(
-	'post_title'   => 'Advanced Custom Blocks Seminar',
-	'post_content' => 'Deep dive into creating custom blocks with React, PHP rendering, and the WordPress Interactivity API.',
-	'post_type'    => 'mec-events',
-	'post_status'  => 'publish',
-	'meta_input'   => array(
-		'mec_start_date'         => '2025-09-12',
-		'mec_end_date'           => '2025-09-12',
-		'mec_start_time_hour'    => '10',
-		'mec_start_time_minutes' => '00',
-		'mec_start_time_ampm'    => 'AM',
-		'mec_end_time_hour'      => '1',
-		'mec_end_time_minutes'   => '00',
-		'mec_end_time_ampm'      => 'PM',
-	),
-	'tax_input'    => array(
-		'mec_category'  => array( 'seminar' ),
-		'mec_label'     => array( 'new' ),
-		'mec_location'  => $get_term_id( $loc1_term ),
-		'mec_organizer' => $get_term_id( $org2_term ),
-	),
-) );
+wp_insert_post(
+	array(
+		'post_title'   => 'Advanced Custom Blocks Seminar',
+		'post_content' => 'Deep dive into creating custom blocks with React, PHP rendering, and the WordPress Interactivity API.',
+		'post_type'    => 'mec-events',
+		'post_status'  => 'publish',
+		'meta_input'   => array(
+			'mec_start_date'         => '2025-09-12',
+			'mec_end_date'           => '2025-09-12',
+			'mec_start_time_hour'    => '10',
+			'mec_start_time_minutes' => '00',
+			'mec_start_time_ampm'    => 'AM',
+			'mec_end_time_hour'      => '1',
+			'mec_end_time_minutes'   => '00',
+			'mec_end_time_ampm'      => 'PM',
+		),
+		'tax_input'    => array(
+			'mec_category'  => array( 'seminar' ),
+			'mec_label'     => array( 'new' ),
+			'mec_location'  => $get_term_id( $loc1_term ),
+			'mec_organizer' => $get_term_id( $org2_term ),
+		),
+	) 
+);
 
-wp_insert_post( array(
-	'post_title'   => 'WP Community Social Dinner',
-	'post_content' => 'An informal dinner for WordPress enthusiasts to connect, share stories, and enjoy great food together.',
-	'post_type'    => 'mec-events',
-	'post_status'  => 'publish',
-	'meta_input'   => array(
-		'mec_start_date'         => '2025-10-08',
-		'mec_end_date'           => '2025-10-08',
-		'mec_start_time_hour'    => '7',
-		'mec_start_time_minutes' => '30',
-		'mec_start_time_ampm'    => 'PM',
-		'mec_end_time_hour'      => '10',
-		'mec_end_time_minutes'   => '00',
-		'mec_end_time_ampm'      => 'PM',
-	),
-	'tax_input'    => array(
-		'mec_category'  => array( 'social' ),
-		'mec_location'  => $get_term_id( $loc2_term ),
-		'mec_organizer' => $get_term_id( $org1_term ),
-	),
-) );
+wp_insert_post(
+	array(
+		'post_title'   => 'WP Community Social Dinner',
+		'post_content' => 'An informal dinner for WordPress enthusiasts to connect, share stories, and enjoy great food together.',
+		'post_type'    => 'mec-events',
+		'post_status'  => 'publish',
+		'meta_input'   => array(
+			'mec_start_date'         => '2025-10-08',
+			'mec_end_date'           => '2025-10-08',
+			'mec_start_time_hour'    => '7',
+			'mec_start_time_minutes' => '30',
+			'mec_start_time_ampm'    => 'PM',
+			'mec_end_time_hour'      => '10',
+			'mec_end_time_minutes'   => '00',
+			'mec_end_time_ampm'      => 'PM',
+		),
+		'tax_input'    => array(
+			'mec_category'  => array( 'social' ),
+			'mec_location'  => $get_term_id( $loc2_term ),
+			'mec_organizer' => $get_term_id( $org1_term ),
+		),
+	) 
+);
 
 flush_rewrite_rules();
