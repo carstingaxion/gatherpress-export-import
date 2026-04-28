@@ -78,33 +78,22 @@ $mec_main    = null;
 if ( class_exists( 'MEC' ) ) {
 	try {
 		/*
-		 * MEC::getInstance() requires a file path and class name as arguments.
-		 * The main library class is MEC_main, located at app/libraries/main.php.
-		 * Passing 'app/libraries/main.php' and 'MEC_main' returns the singleton
-		 * of MEC_main which has the save_event() method.
+		 * MEC::getInstance() is a factory/singleton accessor that expects
+		 * a dot-separated file path and the class name to instantiate.
+		 * For the main library class (MEC_main), the canonical call is:
 		 *
-		 * Some MEC versions use a global $MEC_Main or the factory pattern.
-		 * We try multiple approaches.
+		 *   MEC::getInstance( 'app/libraries/main.php', 'MEC_main' )
+		 *
+		 * or equivalently with dot notation:
+		 *
+		 *   MEC::getInstance( 'app.libraries.main' )
+		 *
+		 * The returned object has the save_event() method we need.
 		 */
-		if ( method_exists( 'MEC', 'getInstance' ) ) {
-			// MEC Lite: getInstance( $file, $class ) returns a singleton of $class.
-			$reflection = new \ReflectionMethod( 'MEC', 'getInstance' );
-			$param_count = $reflection->getNumberOfRequiredParameters();
+		$mec_main = MEC::getInstance( 'app.libraries.main' );
 
-			if ( $param_count >= 1 ) {
-				// MEC Lite pattern: getInstance requires file + class arguments.
-				$mec_main = MEC::getInstance( 'app/libraries/main.php', 'MEC_main' );
-			} else {
-				// Some MEC versions: no-arg singleton.
-				$mec_instance = MEC::getInstance();
-				if ( method_exists( $mec_instance, 'getMain' ) ) {
-					$mec_main = $mec_instance->getMain();
-				}
-			}
-
-			if ( $mec_main && method_exists( $mec_main, 'save_event' ) ) {
-				$use_mec_api = true;
-			}
+		if ( $mec_main && method_exists( $mec_main, 'save_event' ) ) {
+			$use_mec_api = true;
 		}
 
 		// Fallback: check for a global MEC_main instance.
