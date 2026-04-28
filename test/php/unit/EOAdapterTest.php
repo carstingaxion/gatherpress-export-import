@@ -154,7 +154,7 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	public function test_can_handle_with_real_eo_meta(): void {
 		$stash = array(
 			'_eventorganiser_schedule_start_start'  => '2025-08-28 18:30:00',
-			'_eventorganiser_schedule_start_finish'  => '2025-08-28 20:30:00',
+			'_eventorganiser_schedule_start_finish' => '2025-08-28 20:30:00',
 		);
 
 		$this->assertTrue( $this->adapter->can_handle( $stash ) );

@@ -189,7 +189,7 @@ class EOAdapterIntegrationTest extends TestCase {
 		// Real WXR keys from EO 3.x+.
 		$stash = array(
 			'_eventorganiser_schedule_start_start'  => '2025-08-28 18:30:00',
-			'_eventorganiser_schedule_start_finish'  => '2025-08-28 20:30:00',
+			'_eventorganiser_schedule_start_finish' => '2025-08-28 20:30:00',
 		);
 
 		$adapter->convert_datetimes( $event_id, $stash );
@@ -368,7 +368,7 @@ class EOAdapterIntegrationTest extends TestCase {
 			'gpei_meta_stash_' . $event_id,
 			array(
 				'_eventorganiser_schedule_start_start'  => '2025-08-28 18:30:00',
-				'_eventorganiser_schedule_start_finish'  => '2025-08-28 20:30:00',
+				'_eventorganiser_schedule_start_finish' => '2025-08-28 20:30:00',
 			),
 			HOUR_IN_SECONDS
 		);

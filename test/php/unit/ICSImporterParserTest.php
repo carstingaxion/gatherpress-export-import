@@ -244,7 +244,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_no_events_returns_empty_array(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertSame( array(), $events );
 	}
@@ -257,7 +257,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_skips_event_without_summary(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 0, $events );
 	}
@@ -270,7 +270,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_skips_event_without_dtstart(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:No Start Date\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:No Start Date\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 0, $events );
 	}
@@ -283,7 +283,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_handles_crlf_line_endings(): void {
-		$ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:CRLF Test\r\nDTSTART:20250915T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:CRLF Test\r\nDTSTART:20250915T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 1, $events );
 		$this->assertSame( 'CRLF Test', $events[0]['summary'] );
@@ -297,7 +297,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_handles_line_folding(): void {
-		$ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:A Very Long Event\r\n  Title That Wraps\r\nDTSTART:20250915T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:A Very Long Event\r\n  Title That Wraps\r\nDTSTART:20250915T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 1, $events );
 		$this->assertSame( 'A Very Long Event Title That Wraps', $events[0]['summary'] );
@@ -311,7 +311,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_accumulates_multiple_categories(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Multi Cat\nDTSTART:20250915T090000Z\nCATEGORIES:Lecture\nCATEGORIES:Workshop\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Multi Cat\nDTSTART:20250915T090000Z\nCATEGORIES:Lecture\nCATEGORIES:Workshop\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 1, $events );
 		$this->assertSame( 'Lecture,Workshop', $events[0]['categories'] );
@@ -325,7 +325,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_unescapes_text_values(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Test\\, with comma\nDESCRIPTION:Line one\\nLine two\\;end\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Test\\, with comma\nDESCRIPTION:Line one\\nLine two\\;end\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertSame( 'Test, with comma', $events[0]['summary'] );
 		$this->assertStringContainsString( "Line one\nLine two;end", $events[0]['description'] );
@@ -343,7 +343,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_preserves_newlines_in_description(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Multiline Event\nDESCRIPTION:Paragraph one\\nParagraph two\\nParagraph three\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Multiline Event\nDESCRIPTION:Paragraph one\\nParagraph two\\nParagraph three\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 1, $events );
 		// Raw parsed description should have single newlines.
@@ -418,7 +418,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 			'dtstart'        => '20250828T183000Z',
 			'dtstart_params' => '',
 		);
-		$result = $this->invoke_private( 'extract_timezone', array( $event_data ) );
+		$result     = $this->invoke_private( 'extract_timezone', array( $event_data ) );
 		$this->assertSame( 'UTC', $result );
 	}
 
@@ -434,7 +434,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 			'dtstart'        => '20250828T183000',
 			'dtstart_params' => 'TZID=America/New_York',
 		);
-		$result = $this->invoke_private( 'extract_timezone', array( $event_data ) );
+		$result     = $this->invoke_private( 'extract_timezone', array( $event_data ) );
 		$this->assertSame( 'America/New_York', $result );
 	}
 
@@ -450,7 +450,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 			'dtstart'        => '20250828T183000',
 			'dtstart_params' => 'TZID="Europe/Berlin"',
 		);
-		$result = $this->invoke_private( 'extract_timezone', array( $event_data ) );
+		$result     = $this->invoke_private( 'extract_timezone', array( $event_data ) );
 		$this->assertSame( 'Europe/Berlin', $result );
 	}
 
@@ -466,7 +466,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 			'dtstart'        => '20250828T183000',
 			'dtstart_params' => '',
 		);
-		$result = $this->invoke_private( 'extract_timezone', array( $event_data ) );
+		$result     = $this->invoke_private( 'extract_timezone', array( $event_data ) );
 		$this->assertSame( wp_timezone_string(), $result );
 	}
 
@@ -501,7 +501,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_event_without_dtend(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:No End Time\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:No End Time\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 1, $events );
 		$this->assertEmpty( $events[0]['dtend'] );
@@ -515,7 +515,7 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_parse_ics_event_without_location(): void {
-		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Online Only\nDTSTART:20250915T090000Z\nURL:https://example.com/meet\nEND:VEVENT\nEND:VCALENDAR";
+		$ics    = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Online Only\nDTSTART:20250915T090000Z\nURL:https://example.com/meet\nEND:VEVENT\nEND:VCALENDAR";
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->assertCount( 1, $events );
 		$this->assertEmpty( $events[0]['location'] );

@@ -448,7 +448,7 @@ class ICSImporterIntegrationTest extends TestCase {
 		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\n"
 			. "BEGIN:VEVENT\nSUMMARY:Event A\nDTSTART:20250915T090000Z\nLOCATION:Same Venue\nEND:VEVENT\n"
 			. "BEGIN:VEVENT\nSUMMARY:Event B\nDTSTART:20250916T090000Z\nLOCATION:Same Venue\nEND:VEVENT\n"
-			. "END:VCALENDAR";
+			. 'END:VCALENDAR';
 
 		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
 		$this->invoke_private( 'create_events', array( $events ) );
@@ -508,8 +508,8 @@ class ICSImporterIntegrationTest extends TestCase {
 
 		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Online Meetup\nDTSTART:20250915T090000Z\nURL:https://meet.example.com/join\nEND:VEVENT\nEND:VCALENDAR";
 
-		$events     = $this->invoke_private( 'parse_ics', array( $ics ) );
-		$created    = $this->invoke_private( 'create_events', array( $events ) );
+		$events  = $this->invoke_private( 'parse_ics', array( $ics ) );
+		$created = $this->invoke_private( 'create_events', array( $events ) );
 
 		$this->assertCount( 1, $created );
 
@@ -555,8 +555,11 @@ class ICSImporterIntegrationTest extends TestCase {
 		// so that block conversion produces separate paragraphs.
 		// nl2br converts \n\n to <br />\n<br />\n which creates paragraph breaks.
 		$br_count = substr_count( $content, '<br' );
-		$this->assertGreaterThanOrEqual( 4, $br_count,
-			'Doubled newlines should produce at least 4 <br> tags for 3 paragraphs.' );
+		$this->assertGreaterThanOrEqual(
+			4,
+			$br_count,
+			'Doubled newlines should produce at least 4 <br> tags for 3 paragraphs.' 
+		);
 	}
 
 	/**
@@ -622,7 +625,7 @@ class ICSImporterIntegrationTest extends TestCase {
 		);
 
 		// Venues should not be duplicated (found by title).
-		$venue_titles = wp_list_pluck( $venues, 'post_title' );
+		$venue_titles  = wp_list_pluck( $venues, 'post_title' );
 		$unique_titles = array_unique( $venue_titles );
 		$this->assertCount(
 			count( $unique_titles ),

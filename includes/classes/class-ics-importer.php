@@ -342,15 +342,15 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				if ( 'BEGIN:VEVENT' === strtoupper( $line ) ) {
 					$in_event = true;
 					$current  = array(
-						'summary'      => '',
-						'description'  => '',
-						'html_desc'    => '',
-						'dtstart'      => '',
-						'dtend'        => '',
-						'location'     => '',
-						'geo'          => '',
-						'url'          => '',
-						'categories'   => '',
+						'summary'        => '',
+						'description'    => '',
+						'html_desc'      => '',
+						'dtstart'        => '',
+						'dtend'          => '',
+						'location'       => '',
+						'geo'            => '',
+						'url'            => '',
+						'categories'     => '',
 						'dtstart_params' => '',
 						'dtend_params'   => '',
 					);
@@ -473,9 +473,9 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					// Double single newlines to create paragraph breaks.
 					// First collapse any existing double+ newlines to a marker,
 					// then double remaining single newlines, then restore markers.
-					$text = preg_replace( '/\n{2,}/', '{{GPEI_PARA}}', $text );
-					$text = str_replace( "\n", "\n\n", $text );
-					$text = str_replace( '{{GPEI_PARA}}', "\n\n", $text );
+					$text        = preg_replace( '/\n{2,}/', '{{GPEI_PARA}}', $text );
+					$text        = str_replace( "\n", "\n\n", $text );
+					$text        = str_replace( '{{GPEI_PARA}}', "\n\n", $text );
 					$description = wp_kses_post( nl2br( $text ) );
 				}
 
@@ -555,7 +555,7 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					if ( isset( $venue_cache[ $cache_key ] ) ) {
 						$venue_post_id = $venue_cache[ $cache_key ];
 					} else {
-						$venue_post_id = $this->find_or_create_venue(
+						$venue_post_id             = $this->find_or_create_venue(
 							$location_name,
 							$event_data['geo'],
 							$include_template,
