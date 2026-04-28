@@ -1,0 +1,47 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Event Organiser Demo for GatherPress Migration//NONSGML Events//EN
+CALSCALE:GREGORIAN
+X-WR-CALNAME:Event Organiser Demo for GatherPress Migration - Events
+X-ORIGINAL-URL:https://playground.wordpress.net/scope:brave-classic-school/events/event/
+X-WR-CALDESC:Event Organiser Demo for GatherPress Migration - Events
+BEGIN:VEVENT
+UID:20260428T1249Z-1777380596.354-EO-4-1@unknown
+STATUS:CONFIRMED
+DTSTART:20250828T183000Z
+DTEND:20250828T203000Z
+SUMMARY:The History of Open Source Software
+DESCRIPTION:A fascinating lecture tracing the origins and evolution of open source software from the 1970s to today.
+X-ALT-DESC;FMTTYPE=text/html:<p>A fascinating lecture tracing the origins and evolution of open source software from the 1970s to today.</p>
+CATEGORIES:Lecture
+LOCATION:University Lecture Theatre
+GEO:51.522600;-0.130800
+URL:https://playground.wordpress.net/scope:brave-classic-school/events/event/the-history-of-open-source-software/
+END:VEVENT
+BEGIN:VEVENT
+UID:20260428T1249Z-1777380596.354-EO-5-1@unknown
+STATUS:CONFIRMED
+DTSTART:20250905T200000Z
+DTEND:20250905T230000Z
+SUMMARY:Friday Night Live Jazz Session
+DESCRIPTION:Live jazz performances every Friday night. This week featuring the Django Reinhardt Tribute Quartet.
+X-ALT-DESC;FMTTYPE=text/html:<p>Live jazz performances every Friday night. This week featuring the Django Reinhardt Tribute Quartet.</p>
+CATEGORIES:Performance
+LOCATION:The Jazz Cellar
+GEO:51.513800;-0.131800
+URL:https://playground.wordpress.net/scope:brave-classic-school/events/event/friday-night-live-jazz-session/
+END:VEVENT
+BEGIN:VEVENT
+UID:20260428T1249Z-1777380596.354-EO-6-1@unknown
+STATUS:CONFIRMED
+DTSTART:20250920T100000Z
+DTEND:20250920T170000Z
+SUMMARY:WordPress Translation Sprint
+DESCRIPTION:A collaborative day-long sprint to translate WordPress core and popular plugins into underrepresented languages.
+X-ALT-DESC;FMTTYPE=text/html:<p>A collaborative day-long sprint to translate WordPress core and popular plugins into underrepresented languages.</p>
+CATEGORIES:Sprint
+LOCATION:Community Hackerspace
+GEO:51.520300;-0.071600
+URL:https://playground.wordpress.net/scope:brave-classic-school/events/event/wordpress-translation-sprint/
+END:VEVENT
+END:VCALENDAR

@@ -44,9 +44,11 @@ require_once __DIR__ . '/includes/classes/class-taxonomy-rewriter.php';
 require_once __DIR__ . '/includes/classes/class-meta-stasher.php';
 require_once __DIR__ . '/includes/classes/class-stash-processor.php';
 require_once __DIR__ . '/includes/classes/class-importer.php';
+require_once __DIR__ . '/includes/classes/class-ics-importer.php';
 require_once __DIR__ . '/includes/classes/class-migration.php';
 
 
 // Boot the plugin.
 Migration::get_instance();
 Importer::get_instance();
+ICS_Importer::get_instance();
