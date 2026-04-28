@@ -96,6 +96,49 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 		private array $processed_posts = array();
 
 		/**
+		 * Stashes a meta key/value pair into a per-post transient.
+		 *
+		 * Shared helper used by both the main migration class (for event meta)
+		 * and the `Venue_Detail_Handler` trait (for venue detail meta). Stores
+		 * the value in a transient keyed by `$prefix . $object_id` and tracks
+		 * the post ID in a pending list transient keyed by `$pending_key`.
+		 *
+		 * Returns `true` to short-circuit `add_post_metadata`, preventing the
+		 * meta from being saved to `wp_postmeta`.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @param int    $object_id   The post ID receiving the meta.
+		 * @param string $meta_key    The meta key to stash.
+		 * @param mixed  $meta_value  The meta value to stash.
+		 * @param string $prefix      Transient key prefix (e.g., 'gpei_meta_stash_').
+		 * @param string $pending_key Transient key for the pending ID list
+		 *                            (e.g., 'gpei_pending_event_ids').
+		 * @return true Always returns true to block normal meta saving.
+		 */
+		public static function stash_meta( int $object_id, string $meta_key, $meta_value, string $prefix, string $pending_key ): bool {
+			$transient_key = $prefix . $object_id;
+			$stash         = get_transient( $transient_key );
+			if ( ! is_array( $stash ) ) {
+				$stash = array();
+			}
+			$stash[ $meta_key ] = $meta_value;
+			set_transient( $transient_key, $stash, HOUR_IN_SECONDS );
+
+			// Track this post ID for deferred processing at import_end.
+			$pending = get_transient( $pending_key );
+			if ( ! is_array( $pending ) ) {
+				$pending = array();
+			}
+			if ( ! in_array( $object_id, $pending, true ) ) {
+				$pending[] = $object_id;
+				set_transient( $pending_key, $pending, HOUR_IN_SECONDS );
+			}
+
+			return true;
+		}
+
+		/**
 		 * Gets the singleton instance.
 		 *
 		 * @since 0.1.0
@@ -546,6 +589,10 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 		 * database while collecting all values needed for datetime conversion
 		 * and venue information assembly.
 		 *
+		 * Delegates to the shared `stash_meta()` helper to avoid duplicating
+		 * the transient storage and pending ID tracking logic that is also
+		 * used by the `Venue_Detail_Handler` trait.
+		 *
 		 * @since 0.1.0
 		 *
 		 * @param mixed  $check      Current check value (null to proceed with normal save).
@@ -569,22 +616,13 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 			}
 
 			// Venue meta stashing is handled by adapter-specific hooks
-			// (e.g., TEC_Adapter::stash_venue_meta_on_import at priority 4).
+			// (e.g., Venue_Detail_Handler::vdh_stash_venue_meta_on_import at priority 4).
 			// If we reach here for a venue post, let the adapter handle it.
 			if ( 'gatherpress_venue' === $post_type ) {
 				return $check;
 			}
 
-			$transient_key = 'gpei_meta_stash_' . $object_id;
-			$stash         = get_transient( $transient_key );
-			if ( ! is_array( $stash ) ) {
-				$stash = array();
-			}
-			$stash[ $meta_key ] = $meta_value;
-			set_transient( $transient_key, $stash, HOUR_IN_SECONDS );
-
-			// Return true to prevent saving to wp_postmeta.
-			return true;
+			return self::stash_meta( $object_id, $meta_key, $meta_value, 'gpei_meta_stash_', 'gpei_pending_event_ids' );
 		}
 
 		/**
@@ -608,17 +646,22 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 		}
 
 		/**
-		 * Filters post meta during WordPress import and records the expected meta count.
+		 * Filters post meta during WordPress import and records the post for deferred processing.
 		 *
 		 * Hooked to `wp_import_post_meta` at priority 20. The WordPress Importer
 		 * calls this filter with the full array of post meta BEFORE calling
-		 * `add_post_meta()` for each individual key. We use this to record
-		 * the post ID so `import_end` can process it.
+		 * `add_post_meta()` for each individual key. We use this to ensure the
+		 * post ID is tracked in the pending list so `import_end` can process it.
 		 *
 		 * Note: We do NOT process the stash here because the individual
 		 * `add_post_meta()` calls (which trigger `stash_meta_on_import()`)
 		 * happen AFTER this filter returns. Processing is deferred to
 		 * `import_end` via `process_all_remaining_stashes()`.
+		 *
+		 * The actual pending ID tracking is now handled by `stash_meta()` inside
+		 * `stash_meta_on_import()`, so this method serves as a safety net for
+		 * events that might have stash-eligible meta but where the individual
+		 * `add_post_meta` calls haven't yet fired.
 		 *
 		 * @since 0.1.0
 		 *
@@ -633,14 +676,17 @@ if ( ! class_exists( __NAMESPACE__ . '\Migration' ) ) {
 				return $postmeta;
 			}
 
-			// Record this post ID so import_end knows to process it.
-			// We use a transient list to track all event post IDs that need processing.
+			// Ensure this post ID is in the pending list. The stash_meta() helper
+			// also adds it, but this covers the case where filter_post_meta_on_import
+			// fires before any individual add_post_meta calls.
 			$pending = get_transient( 'gpei_pending_event_ids' );
 			if ( ! is_array( $pending ) ) {
 				$pending = array();
 			}
-			$pending[] = $post_id;
-			set_transient( 'gpei_pending_event_ids', array_unique( $pending ), HOUR_IN_SECONDS );
+			if ( ! in_array( $post_id, $pending, true ) ) {
+				$pending[] = $post_id;
+				set_transient( 'gpei_pending_event_ids', $pending, HOUR_IN_SECONDS );
+			}
 
 			return $postmeta;
 		}
