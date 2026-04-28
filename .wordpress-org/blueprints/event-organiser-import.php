@@ -79,6 +79,18 @@ if ( $eo_active ) {
 	}
 }
 
+// Prevent "invalid taxonomy" errors during term assignment later in the script.
+// because EO uses some special 
+// - eventorganiser_get_option( 'eventtag' )
+// AND
+// - apply_filters( 'eventorganiser_register_taxonomy_event-tag', ...)
+if ( ! taxonomy_exists( 'event-tag' ) ) {
+	register_taxonomy( 'event-tag', 'event', array(
+		'label'  => 'Event Tags',
+		'public' => true,
+	) );
+}
+
 /*
  * -------------------------------------------------------------------------
  * 2. Create event categories (event-category taxonomy).
