@@ -76,6 +76,35 @@ Import the same WXR file twice.
 
 [![Launch](https://img.shields.io/badge/Launch-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/refs/heads/main/.wordpress-org/blueprints/blueprint-mec.json)
 
+## MEC Internal API
+
+MEC provides an internal API for event creation that populates custom tables and all required meta in one call. This is used by the blueprint import script when MEC is active:
+
+```php
+$mec  = MEC::getInstance();
+$main = $mec->getMain();
+$data = array(
+    'post' => array(
+        'post_title'  => 'My Event',
+        'post_status' => 'publish',
+    ),
+    'meta' => array(
+        'mec_start_date'         => '2026-05-01',
+        'mec_end_date'           => '2026-05-01',
+        'mec_start_time_hour'    => '10',
+        'mec_start_time_minutes' => '00',
+        'mec_end_time_hour'      => '12',
+        'mec_end_time_minutes'   => '00',
+    ),
+    'terms' => array(
+        'mec_location' => array( $term_id ),
+    ),
+);
+$event_id = $main->save_event( $data );
+```
+
+This is **not used by the adapter** (which handles WXR import via meta stashing), but is documented for reference when creating demo data or programmatic integrations.
+
 ## Known Limitations
 
 - Venue address, phone, website, and coordinates are stored as taxonomy term meta. WordPress core WXR exports do **not** include term meta, so this data must be re-entered manually after import.

@@ -3,8 +3,43 @@
  * Modern Events Calendar demo data import script for WordPress Playground.
  *
  * Creates sample events, locations, categories, labels, and organizers
- * for MEC migration testing. Uses wp_insert_post() with explicit meta
- * keys and wp_set_object_terms() for taxonomy assignments.
+ * for MEC migration testing. Uses MEC's own internal API when available
+ * (`MEC::getInstance()` → `$main->save_event()`), falling back to
+ * wp_insert_post() with explicit meta keys and wp_set_object_terms()
+ * for taxonomy assignments.
+ *
+ * ## MEC's Internal Save Pattern
+ *
+ * MEC provides an internal API for event creation that populates custom
+ * tables, internal caches, and all required meta in one call:
+ *
+ * ```php
+ * $mec  = MEC::getInstance();
+ * $main = $mec->getMain();
+ * $data = array(
+ *     'post' => array(
+ *         'post_title'  => 'My Event',
+ *         'post_status' => 'publish',
+ *     ),
+ *     'meta' => array(
+ *         'mec_start_date'         => '2026-05-01',
+ *         'mec_end_date'           => '2026-05-01',
+ *         'mec_start_time_hour'    => '10',
+ *         'mec_start_time_minutes' => '00',
+ *         'mec_end_time_hour'      => '12',
+ *         'mec_end_time_minutes'   => '00',
+ *     ),
+ *     'terms' => array(
+ *         'mec_location' => array( $term_id ),
+ *     ),
+ * );
+ * $event_id = $main->save_event( $data );
+ * ```
+ *
+ * This ensures the MEC admin UI, shortcodes, and REST endpoints
+ * function correctly. When MEC's API is not available (e.g., the
+ * plugin failed to activate), we fall back to wp_insert_post() with
+ * all required meta keys — sufficient for WXR export testing.
  *
  * MEC stores:
  * - Events as `mec-events` CPT posts with date/time meta keys.
@@ -27,19 +62,39 @@ error_log( 'GPEI-MEC: Starting Modern Events Calendar demo data import.' );
 
 /*
  * -------------------------------------------------------------------------
- * 1. Verify MEC is available and register post type / taxonomies if needed.
+ * 1. Detect MEC API availability.
  * -------------------------------------------------------------------------
  *
- * MEC registers its post type (`mec-events`) and taxonomies during `init`.
- * In WordPress Playground, the plugin may not fully activate. We check and
- * register manually as a fallback — same pattern used by the EO and EventON
- * import scripts.
+ * MEC provides `MEC::getInstance()` which returns the main plugin instance.
+ * From there, `$mec->getMain()` returns an `MEC_main` object that has the
+ * `save_event()` method for creating events with full internal state.
+ *
+ * We check for this API first. If unavailable, we fall back to manual
+ * post creation — same pattern used by the TEC and EM import scripts.
  */
+$use_mec_api = false;
+$mec_main    = null;
+
+if ( class_exists( 'MEC' ) && method_exists( 'MEC', 'getInstance' ) ) {
+	try {
+		$mec_instance = MEC::getInstance();
+		if ( method_exists( $mec_instance, 'getMain' ) ) {
+			$mec_main = $mec_instance->getMain();
+			if ( $mec_main && method_exists( $mec_main, 'save_event' ) ) {
+				$use_mec_api = true;
+			}
+		}
+	} catch ( \Exception $e ) {
+		error_log( 'GPEI-MEC: Exception while initialising MEC API: ' . $e->getMessage() );
+	}
+}
+
 $mec_active = post_type_exists( 'mec-events' );
 
-if ( $mec_active ) {
-	error_log( 'GPEI-MEC: Modern Events Calendar detected as active.' );
-} else {
+error_log( 'GPEI-MEC: MEC API available: ' . ( $use_mec_api ? 'YES' : 'NO' ) );
+error_log( 'GPEI-MEC: mec-events post type exists: ' . ( $mec_active ? 'YES' : 'NO' ) );
+
+if ( ! $mec_active ) {
 	error_log( 'GPEI-MEC: MEC not fully active. Registering post type and taxonomies manually.' );
 
 	if ( ! post_type_exists( 'mec-events' ) ) {
@@ -211,17 +266,15 @@ foreach ( $organizers as $org ) {
  * 6. Create events.
  * -------------------------------------------------------------------------
  *
- * MEC stores event dates as 'Y-m-d' strings and times as separate
- * hour, minute, and AM/PM fields in post meta:
- * - mec_start_date / mec_end_date          — 'Y-m-d' format.
- * - mec_start_time_hour                     — Hour (1-12).
- * - mec_start_time_minutes                  — Minutes (00-59).
- * - mec_start_time_ampm                     — 'AM' or 'PM'.
- * - mec_end_time_hour / _minutes / _ampm    — Same for end time.
+ * When MEC's API is available, we use `$main->save_event()` which handles:
+ * - Creating the `mec-events` CPT post.
+ * - Populating MEC's custom `mec_events` table.
+ * - Setting all required internal meta keys.
+ * - Assigning taxonomy terms.
+ * - Firing MEC's internal hooks for caching and scheduling.
  *
- * Taxonomy terms are assigned AFTER wp_insert_post() using
- * wp_set_object_terms() to ensure reliable assignment regardless of
- * user capabilities — same pattern used by the EO import script.
+ * When MEC's API is NOT available, we fall back to wp_insert_post() with
+ * explicit meta keys — sufficient for WXR export testing.
  */
 $events = array(
 	array(
@@ -275,6 +328,112 @@ $events = array(
 );
 
 foreach ( $events as $event ) {
+	// Resolve taxonomy term IDs for the current event.
+	$loc_term_id = 0;
+	if ( ! empty( $event['location_slug'] ) && ! empty( $location_term_ids[ $event['location_slug'] ] ) ) {
+		$loc_term_id = $location_term_ids[ $event['location_slug'] ];
+	}
+
+	$org_term_id = 0;
+	if ( ! empty( $event['organizer_slug'] ) && ! empty( $organizer_term_ids[ $event['organizer_slug'] ] ) ) {
+		$org_term_id = $organizer_term_ids[ $event['organizer_slug'] ];
+	}
+
+	// Resolve category term IDs by slug.
+	$cat_term_ids = array();
+	foreach ( $event['categories'] as $cat_slug ) {
+		$cat_term = term_exists( $cat_slug, 'mec_category' );
+		if ( $cat_term ) {
+			$cat_term_ids[] = is_array( $cat_term ) ? intval( $cat_term['term_id'] ) : intval( $cat_term );
+		}
+	}
+
+	// Resolve label term IDs by slug.
+	$label_term_ids = array();
+	foreach ( $event['labels'] as $label_slug ) {
+		$label_term = term_exists( $label_slug, 'mec_label' );
+		if ( $label_term ) {
+			$label_term_ids[] = is_array( $label_term ) ? intval( $label_term['term_id'] ) : intval( $label_term );
+		}
+	}
+
+	if ( $use_mec_api && $mec_main ) {
+		/*
+		 * Use MEC's internal API to create events.
+		 *
+		 * `$main->save_event( $data )` accepts an associative array with:
+		 * - 'post'  => array of wp_insert_post() compatible fields
+		 * - 'meta'  => array of MEC post meta keys
+		 * - 'terms' => array of taxonomy => term_id[] assignments
+		 *
+		 * This populates:
+		 * - The `mec-events` CPT post in wp_posts.
+		 * - The `mec_events` custom table (if it exists).
+		 * - All MEC-internal meta keys.
+		 * - Taxonomy term assignments.
+		 *
+		 * @see MEC_main::save_event() in modern-events-calendar-lite/app/libraries/main.php
+		 */
+		$mec_data = array(
+			'post'  => array(
+				'post_title'   => $event['title'],
+				'post_content' => $event['content'],
+				'post_status'  => 'publish',
+				'post_type'    => 'mec-events',
+			),
+			'meta'  => array(
+				'mec_start_date'         => $event['start_date'],
+				'mec_end_date'           => $event['end_date'],
+				'mec_start_time_hour'    => $event['start_hour'],
+				'mec_start_time_minutes' => $event['start_minutes'],
+				'mec_start_time_ampm'    => $event['start_ampm'],
+				'mec_end_time_hour'      => $event['end_hour'],
+				'mec_end_time_minutes'   => $event['end_minutes'],
+				'mec_end_time_ampm'      => $event['end_ampm'],
+			),
+			'terms' => array(),
+		);
+
+		if ( $loc_term_id > 0 ) {
+			$mec_data['terms']['mec_location'] = array( $loc_term_id );
+		}
+		if ( $org_term_id > 0 ) {
+			$mec_data['terms']['mec_organizer'] = array( $org_term_id );
+		}
+		if ( ! empty( $cat_term_ids ) ) {
+			$mec_data['terms']['mec_category'] = $cat_term_ids;
+		}
+		if ( ! empty( $label_term_ids ) ) {
+			$mec_data['terms']['mec_label'] = $label_term_ids;
+		}
+
+		$event_id = $mec_main->save_event( $mec_data );
+
+		if ( $event_id && ! is_wp_error( $event_id ) ) {
+			error_log( 'GPEI-MEC: Created event via MEC API: "' . $event['title'] . '" (ID: ' . $event_id . ')' );
+		} else {
+			error_log( 'GPEI-MEC: MEC API save_event failed for "' . $event['title'] . '", falling back to wp_insert_post.' );
+			// Fall through to the wp_insert_post fallback below.
+			$use_mec_api_for_this = false;
+		}
+
+		// Skip the fallback if API succeeded.
+		if ( $event_id && ! is_wp_error( $event_id ) ) {
+			continue;
+		}
+	}
+
+	/*
+	 * Fallback: Create event via wp_insert_post() with explicit meta keys.
+	 *
+	 * This approach is sufficient for creating posts that export correctly
+	 * via WordPress's Tools > Export. The resulting WXR file will contain
+	 * all the meta keys needed by the GatherPress migration adapter.
+	 *
+	 * However, MEC's admin UI may not fully recognise these events because
+	 * MEC's custom table (`mec_events`) is not populated. This is acceptable
+	 * for export/migration testing purposes.
+	 */
 	$event_id = wp_insert_post( array(
 		'post_title'   => $event['title'],
 		'post_content' => $event['content'],
@@ -297,7 +456,7 @@ foreach ( $events as $event ) {
 		continue;
 	}
 
-	error_log( 'GPEI-MEC: Created event "' . $event['title'] . '" (ID: ' . $event_id . ')' );
+	error_log( 'GPEI-MEC: Created event via wp_insert_post: "' . $event['title'] . '" (ID: ' . $event_id . ')' );
 
 	/*
 	 * Assign taxonomy terms AFTER post creation using wp_set_object_terms().
@@ -309,30 +468,27 @@ foreach ( $events as $event ) {
 	 *
 	 * In WordPress Playground, both conditions may not always be met.
 	 * wp_set_object_terms() bypasses capability checks and works reliably.
-	 *
-	 * @see Event Organiser import script for the same pattern and rationale.
 	 */
 
 	// Assign categories.
-	if ( ! empty( $event['categories'] ) ) {
-		$result = wp_set_object_terms( $event_id, $event['categories'], 'mec_category' );
+	if ( ! empty( $cat_term_ids ) ) {
+		$result = wp_set_object_terms( $event_id, $cat_term_ids, 'mec_category' );
 		if ( is_wp_error( $result ) ) {
 			error_log( 'GPEI-MEC: Failed to assign categories to event ' . $event_id . ': ' . $result->get_error_message() );
 		}
 	}
 
 	// Assign labels.
-	if ( ! empty( $event['labels'] ) ) {
-		$result = wp_set_object_terms( $event_id, $event['labels'], 'mec_label' );
+	if ( ! empty( $label_term_ids ) ) {
+		$result = wp_set_object_terms( $event_id, $label_term_ids, 'mec_label' );
 		if ( is_wp_error( $result ) ) {
 			error_log( 'GPEI-MEC: Failed to assign labels to event ' . $event_id . ': ' . $result->get_error_message() );
 		}
 	}
 
 	// Assign location.
-	if ( ! empty( $event['location_slug'] ) && ! empty( $location_term_ids[ $event['location_slug'] ] ) ) {
-		$loc_term_id = $location_term_ids[ $event['location_slug'] ];
-		$result      = wp_set_object_terms( $event_id, array( $loc_term_id ), 'mec_location' );
+	if ( $loc_term_id > 0 ) {
+		$result = wp_set_object_terms( $event_id, array( $loc_term_id ), 'mec_location' );
 		if ( is_wp_error( $result ) ) {
 			error_log( 'GPEI-MEC: Failed to assign location to event ' . $event_id . ': ' . $result->get_error_message() );
 		} else {
@@ -341,9 +497,8 @@ foreach ( $events as $event ) {
 	}
 
 	// Assign organizer.
-	if ( ! empty( $event['organizer_slug'] ) && ! empty( $organizer_term_ids[ $event['organizer_slug'] ] ) ) {
-		$org_term_id = $organizer_term_ids[ $event['organizer_slug'] ];
-		$result      = wp_set_object_terms( $event_id, array( $org_term_id ), 'mec_organizer' );
+	if ( $org_term_id > 0 ) {
+		$result = wp_set_object_terms( $event_id, array( $org_term_id ), 'mec_organizer' );
 		if ( is_wp_error( $result ) ) {
 			error_log( 'GPEI-MEC: Failed to assign organizer to event ' . $event_id . ': ' . $result->get_error_message() );
 		} else {
