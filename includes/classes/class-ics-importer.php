@@ -89,20 +89,103 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				return;
 			}
 			?>
-			<div class="card">
+			<div class="card" style="max-width: 520px;">
 				<h2 class="title"><?php esc_html_e( 'Import Events from ICS File', 'gatherpress-export-import' ); ?></h2>
-				<p><?php esc_html_e( 'Upload an ICS calendar file to import events into GatherPress. All imported events will be created as drafts for review.', 'gatherpress-export-import' ); ?></p>
-				<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'tools.php' ) ); ?>">
+				<p class="description"><?php esc_html_e( 'Upload an ICS calendar file to import events into GatherPress. All imported events will be created as drafts for review.', 'gatherpress-export-import' ); ?></p>
+				<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'tools.php' ) ); ?>" id="gpei-ics-form">
 					<?php wp_nonce_field( 'gpei_ics_import', 'gpei_ics_nonce' ); ?>
-					<p>
-						<label for="gpei_ics_file"><?php esc_html_e( 'Choose an ICS file:', 'gatherpress-export-import' ); ?></label><br>
-						<input type="file" id="gpei_ics_file" name="gpei_ics_file" accept=".ics,text/calendar" />
+					<div id="gpei-ics-dropzone" style="
+						border: 2px dashed #c3c4c7;
+						border-radius: 8px;
+						padding: 32px 24px;
+						text-align: center;
+						cursor: pointer;
+						transition: border-color 0.2s ease, background-color 0.2s ease;
+						background: #f6f7f7;
+						margin: 16px 0;
+						position: relative;
+					">
+						<div style="margin-bottom: 8px;">
+							<span class="dashicons dashicons-calendar-alt" style="font-size: 36px; width: 36px; height: 36px; color: #8c8f94;"></span>
+						</div>
+						<p style="margin: 0 0 4px; font-size: 14px; font-weight: 500; color: #1d2327;">
+							<?php esc_html_e( 'Drag & drop your .ics file here', 'gatherpress-export-import' ); ?>
+						</p>
+						<p style="margin: 0; color: #8c8f94; font-size: 13px;">
+							<?php esc_html_e( 'or click to browse', 'gatherpress-export-import' ); ?>
+						</p>
+						<p id="gpei-ics-filename" style="margin: 12px 0 0; font-size: 13px; color: #2271b1; font-weight: 500; display: none;"></p>
+						<input type="file" id="gpei_ics_file" name="gpei_ics_file" accept=".ics,text/calendar" style="
+							position: absolute;
+							top: 0;
+							left: 0;
+							width: 100%;
+							height: 100%;
+							opacity: 0;
+							cursor: pointer;
+						" />
+					</div>
+					<p class="description" style="margin-top: 0; font-size: 12px; color: #a7aaad;">
+						<?php esc_html_e( 'Accepted format: .ics (iCalendar). Exports from Google Calendar, Outlook, Apple Calendar, and Event Organiser are supported.', 'gatherpress-export-import' ); ?>
 					</p>
 					<p>
-						<input type="submit" name="gpei_ics_submit" class="button button-primary" value="<?php esc_attr_e( 'Import ICS', 'gatherpress-export-import' ); ?>" />
+						<input type="submit" name="gpei_ics_submit" id="gpei-ics-submit" class="button button-primary" value="<?php esc_attr_e( 'Import Events', 'gatherpress-export-import' ); ?>" disabled />
 					</p>
 				</form>
 			</div>
+			<script>
+			( function() {
+				var dropzone = document.getElementById( 'gpei-ics-dropzone' );
+				var fileInput = document.getElementById( 'gpei_ics_file' );
+				var filenameEl = document.getElementById( 'gpei-ics-filename' );
+				var submitBtn = document.getElementById( 'gpei-ics-submit' );
+
+				if ( ! dropzone || ! fileInput || ! filenameEl || ! submitBtn ) {
+					return;
+				}
+
+				function showFile( file ) {
+					if ( file ) {
+						filenameEl.textContent = file.name;
+						filenameEl.style.display = 'block';
+						submitBtn.disabled = false;
+						dropzone.style.borderColor = '#2271b1';
+						dropzone.style.backgroundColor = '#f0f6fc';
+					}
+				}
+
+				fileInput.addEventListener( 'change', function() {
+					if ( fileInput.files.length > 0 ) {
+						showFile( fileInput.files[0] );
+					}
+				} );
+
+				dropzone.addEventListener( 'dragover', function( e ) {
+					e.preventDefault();
+					e.stopPropagation();
+					dropzone.style.borderColor = '#2271b1';
+					dropzone.style.backgroundColor = '#f0f6fc';
+				} );
+
+				dropzone.addEventListener( 'dragleave', function( e ) {
+					e.preventDefault();
+					e.stopPropagation();
+					if ( ! fileInput.files.length ) {
+						dropzone.style.borderColor = '#c3c4c7';
+						dropzone.style.backgroundColor = '#f6f7f7';
+					}
+				} );
+
+				dropzone.addEventListener( 'drop', function( e ) {
+					e.preventDefault();
+					e.stopPropagation();
+					if ( e.dataTransfer.files.length > 0 ) {
+						fileInput.files = e.dataTransfer.files;
+						showFile( e.dataTransfer.files[0] );
+					}
+				} );
+			} )();
+			</script>
 			<?php
 		}
 
