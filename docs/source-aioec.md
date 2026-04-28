@@ -2,6 +2,18 @@
 
 Adapter class: `AIOEC_Adapter`
 
+### Adapter Completeness
+
+| Step | Description | Status |
+|:---:|---|:---:|
+| 1 | Source documentation (`source-aioec.md`) | ✅ |
+| 2 | Blueprint import script (`aioec-import.php`) | ✅ |
+| 3 | WXR fixture from real export (`aioec.xml`) | ❌ Empty placeholder |
+| 4 | Adapter unit tests | ❌ Not yet |
+| 5 | WXR import integration tests | ❌ Not yet |
+
+**Progress: 2/5** — Adapter class and docs exist; needs fixture, unit tests, and import tests.
+
 ---
 
 ## Post Type Mapping
@@ -31,17 +43,17 @@ AIOEC does not use a standard venue post type or taxonomy. Venue data is stored 
 |---|:---:|---|
 | Event title & content | ✅ | |
 | Featured image | ✅ | |
-| Start/end datetimes | ❌ | Stored in custom table, not in post meta |
-| Timezone | ❌ | Stored in custom table |
-| Venue name | ❌ | Stored in custom table |
-| Venue address/details | ❌ | Stored in custom table |
-| Venue coordinates | ❌ | Stored in custom table |
-| Venue–event link | ❌ | Stored in custom table |
+| Start/end datetimes | 🚫 | Stored in custom table, not in post meta |
+| Timezone | 🚫 | Stored in custom table |
+| Venue name | 🚫 | Stored in custom table |
+| Venue address/details | 🚫 | Stored in custom table |
+| Venue coordinates | 🚫 | Stored in custom table |
+| Venue–event link | 🚫 | Stored in custom table |
 | Event categories | ✅ | |
 | Event tags | ✅ | |
-| Organizer | ❌ | Stored in custom table |
-| Recurrence rules | ❌ | Stored in custom table |
-| RSVP / Tickets | ❌ | Not convertible via WXR |
+| Organizer | 🚫 | Stored in custom table |
+| Recurrence rules | 🚫 | Stored in custom table |
+| RSVP / Tickets | 🚫 | Not convertible via WXR |
 
 ## Import Sequence
 

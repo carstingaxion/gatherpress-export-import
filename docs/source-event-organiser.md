@@ -2,6 +2,18 @@
 
 Adapter class: `Event_Organiser_Adapter`
 
+### Adapter Completeness
+
+| Step | Description | Status |
+|:---:|---|:---:|
+| 1 | Source documentation (`source-event-organiser.md`) | ✅ |
+| 2 | Blueprint import script (`event-organiser-import.php`) | ✅ |
+| 3 | WXR fixture from real export (`event-organiser.xml`) | ✅ |
+| 4 | Adapter unit tests (`EOAdapterTest.php`) | ✅ |
+| 5 | WXR import integration tests (`WXRImportEOTest.php`) | ✅ |
+
+**Progress: 5/5** — Fully implemented and tested.
+
 For a detailed walkthrough of the two-pass import architecture and troubleshooting, see the [Import Guide](import-guide.md#plugins-with-taxonomy-based-venues-two-pass-import).
 
 ---
@@ -43,10 +55,10 @@ Import the same WXR file twice.
 | Event title & content | ✅ | |
 | Featured image | ✅ | |
 | Start/end datetimes | ✅ | |
-| Timezone | ❌ | Stored in site-local time; site timezone used during conversion |
+| Timezone | 🚫 | Stored in site-local time; site timezone used during conversion |
 | Venue name | ✅ | From taxonomy term names via two-pass import |
-| Venue address/details | ❌ | Stored as taxonomy term meta; not included in WXR exports |
-| Venue coordinates | ❌ | Stored as taxonomy term meta |
+| Venue address/details | 🚫 | Stored as taxonomy term meta; not included in WXR exports |
+| Venue coordinates | 🚫 | Stored as taxonomy term meta |
 | Venue–event link | ✅ | Via two-pass taxonomy import |
 | Event categories | ✅ | |
 | Event tags | ✅ | |

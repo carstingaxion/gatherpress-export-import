@@ -765,6 +765,43 @@ class WXRImportTECTest extends TestCase {
 	}
 
 	/**
+	 * Tests that _EventURL is not saved as raw post meta (it should be
+	 * mapped to gatherpress_online_event_link instead).
+	 *
+	 * The TEC fixture events have empty _EventURL values, so the online
+	 * link meta should not be created. This test verifies the raw TEC key
+	 * does not leak.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return void
+	 */
+	public function test_event_url_not_in_raw_postmeta(): void {
+		if ( ! $this->is_gatherpress_active() ) {
+			$this->markTestSkipped( 'GatherPress is not active.' );
+		}
+
+		$wxr_file = $this->get_wxr_fixture_path( 'tec.xml' );
+		$this->import_wxr( $wxr_file );
+
+		$events = get_posts(
+			array(
+				'post_type'      => 'gatherpress_event',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+			)
+		);
+
+		foreach ( $events as $event_post ) {
+			$raw_url = get_post_meta( $event_post->ID, '_EventURL', true );
+			$this->assertEmpty(
+				$raw_url,
+				sprintf( '_EventURL should not be saved as raw meta on event %d (%s).', $event_post->ID, $event_post->post_title )
+			);
+		}
+	}
+
+	/**
 	 * Tests that imported events preserve their original content.
 	 *
 	 * @since 0.2.0

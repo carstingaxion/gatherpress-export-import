@@ -1,18 +1,21 @@
 <?php
 /**
- * Unit tests for the main Migration class.
+ * Unit tests for the SOC migration classes.
  *
  * Tests adapter registration, type map aggregation, taxonomy map
- * merging, and post type rewriting in isolation.
- *
- * Note: The singleton pattern prevents full isolated testing of
- * the constructor. These tests focus on public methods.
+ * merging, post type rewriting, taxonomy rewriting, and meta stashing
+ * via the focused SOC classes accessed through the Migration orchestrator.
  *
  * @package GatherPressExportImport\Tests\Unit
  * @since   0.1.0
  */
 
 use GatherPressExportImport\Migration;
+use GatherPressExportImport\Adapter_Registry;
+use GatherPressExportImport\Post_Type_Rewriter;
+use GatherPressExportImport\Taxonomy_Rewriter;
+use GatherPressExportImport\Meta_Stasher;
+use GatherPressExportImport\Stash_Processor;
 
 /**
  * Class MigrationClassTest.
@@ -85,15 +88,29 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests that SOC class accessors return the correct types.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return void
+	 */
+	public function test_soc_class_accessors(): void {
+		$this->assertInstanceOf( Adapter_Registry::class, $this->migration->get_registry() );
+		$this->assertInstanceOf( Post_Type_Rewriter::class, $this->migration->get_post_type_rewriter() );
+		$this->assertInstanceOf( Taxonomy_Rewriter::class, $this->migration->get_taxonomy_rewriter() );
+		$this->assertInstanceOf( Meta_Stasher::class, $this->migration->get_meta_stasher() );
+		$this->assertInstanceOf( Stash_Processor::class, $this->migration->get_stash_processor() );
+	}
+
+	/**
 	 * Tests that the event post type map contains expected source types.
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::get_event_post_type_map
 	 * @return void
 	 */
 	public function test_event_post_type_map_contains_expected_types(): void {
-		$map = $this->migration->get_event_post_type_map();
+		$map = $this->migration->get_registry()->get_event_post_type_map();
 
 		$this->assertArrayHasKey( 'tribe_events', $map );
 		$this->assertArrayHasKey( 'event', $map );
@@ -112,11 +129,10 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::get_venue_post_type_map
 	 * @return void
 	 */
 	public function test_venue_post_type_map_contains_expected_types(): void {
-		$map = $this->migration->get_venue_post_type_map();
+		$map = $this->migration->get_registry()->get_venue_post_type_map();
 
 		$this->assertArrayHasKey( 'tribe_venue', $map );
 		$this->assertArrayHasKey( 'location', $map );
@@ -131,11 +147,10 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::get_taxonomy_map
 	 * @return void
 	 */
 	public function test_taxonomy_map_contains_expected_mappings(): void {
-		$map = $this->migration->get_taxonomy_map();
+		$map = $this->migration->get_registry()->get_taxonomy_map();
 
 		$this->assertArrayHasKey( 'tribe_events_cat', $map );
 		$this->assertSame( 'gatherpress_topic', $map['tribe_events_cat'] );
@@ -152,11 +167,10 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::get_stash_meta_keys
 	 * @return void
 	 */
 	public function test_stash_meta_keys_include_all_adapters(): void {
-		$keys = $this->migration->get_stash_meta_keys();
+		$keys = $this->migration->get_registry()->get_stash_meta_keys();
 
 		// TEC keys.
 		$this->assertContains( '_EventStartDate', $keys );
@@ -184,12 +198,12 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::rewrite_post_type_on_import
 	 * @return void
 	 */
 	public function test_rewrite_event_post_type(): void {
-		$data   = array( 'post_type' => 'tribe_events' );
-		$result = $this->migration->rewrite_post_type_on_import( $data );
+		$rewriter = $this->migration->get_post_type_rewriter();
+		$data     = array( 'post_type' => 'tribe_events' );
+		$result   = $rewriter->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_event', $result['post_type'] );
 		$this->assertSame( 'tribe_events', $result['_gpei_source_type'] );
@@ -200,12 +214,12 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::rewrite_post_type_on_import
 	 * @return void
 	 */
 	public function test_rewrite_venue_post_type(): void {
-		$data   = array( 'post_type' => 'tribe_venue' );
-		$result = $this->migration->rewrite_post_type_on_import( $data );
+		$rewriter = $this->migration->get_post_type_rewriter();
+		$data     = array( 'post_type' => 'tribe_venue' );
+		$result   = $rewriter->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_venue', $result['post_type'] );
 		$this->assertSame( 'tribe_venue', $result['_gpei_source_type'] );
@@ -216,12 +230,12 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::rewrite_post_type_on_import
 	 * @return void
 	 */
 	public function test_rewrite_does_not_modify_unknown_types(): void {
-		$data   = array( 'post_type' => 'post' );
-		$result = $this->migration->rewrite_post_type_on_import( $data );
+		$rewriter = $this->migration->get_post_type_rewriter();
+		$data     = array( 'post_type' => 'post' );
+		$result   = $rewriter->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'post', $result['post_type'] );
 		$this->assertArrayNotHasKey( '_gpei_source_type', $result );
@@ -232,11 +246,11 @@ class MigrationClassTest extends \WP_UnitTestCase {
 	 *
 	 * @since 0.1.0
 	 *
-	 * @covers ::rewrite_post_terms_taxonomy
 	 * @return void
 	 */
 	public function test_rewrite_post_terms_taxonomy(): void {
-		$terms = array(
+		$rewriter = $this->migration->get_taxonomy_rewriter();
+		$terms    = array(
 			array(
 				'domain' => 'tribe_events_cat',
 				'slug'   => 'conference',
@@ -249,7 +263,7 @@ class MigrationClassTest extends \WP_UnitTestCase {
 			),
 		);
 
-		$result = $this->migration->rewrite_post_terms_taxonomy( $terms );
+		$result = $rewriter->rewrite_post_terms_taxonomy( $terms );
 
 		$this->assertSame( 'gatherpress_topic', $result[0]['domain'] );
 		$this->assertSame( 'post_tag', $result[1]['domain'] );

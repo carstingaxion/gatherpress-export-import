@@ -371,15 +371,110 @@ class TECAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that the noop callback does nothing without errors.
+	 * Tests that the noop callback is available via the Datetime_Helper trait.
 	 *
-	 * @since 0.1.0
+	 * @since 0.2.0
 	 *
-	 * @covers ::noop_callback
 	 * @return void
 	 */
-	public function test_noop_callback_does_nothing(): void {
+	public function test_noop_callback_available_and_does_nothing(): void {
 		$this->adapter->noop_callback();
-		$this->assertTrue( true ); // If we get here, no error occurred.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Tests that convert_datetimes() saves the online event link from _EventURL.
+	 *
+	 * When `_EventURL` is present and non-empty in the stash, the adapter
+	 * should save it as `gatherpress_online_event_link` post meta on the
+	 * converted `gatherpress_event` post.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @covers ::convert_datetimes
+	 * @return void
+	 */
+	public function test_convert_datetimes_saves_event_url_as_online_link(): void {
+		$event_id = $this->factory()->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'URL Mapping Test',
+				'post_status' => 'publish',
+			)
+		);
+
+		$stash = array(
+			'_EventStartDate' => '2025-09-15 09:00:00',
+			'_EventEndDate'   => '2025-09-15 17:00:00',
+			'_EventTimezone'  => 'America/Los_Angeles',
+			'_EventURL'       => 'https://example.com/my-event',
+		);
+
+		$this->adapter->convert_datetimes( $event_id, $stash );
+
+		$online_link = get_post_meta( $event_id, 'gatherpress_online_event_link', true );
+		$this->assertSame( 'https://example.com/my-event', $online_link );
+	}
+
+	/**
+	 * Tests that convert_datetimes() does not save an empty _EventURL.
+	 *
+	 * When `_EventURL` is empty or not set, no `gatherpress_online_event_link`
+	 * meta should be created.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @covers ::convert_datetimes
+	 * @return void
+	 */
+	public function test_convert_datetimes_skips_empty_event_url(): void {
+		$event_id = $this->factory()->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'Empty URL Test',
+				'post_status' => 'publish',
+			)
+		);
+
+		$stash = array(
+			'_EventStartDate' => '2025-09-15 09:00:00',
+			'_EventEndDate'   => '2025-09-15 17:00:00',
+			'_EventTimezone'  => 'America/Los_Angeles',
+			'_EventURL'       => '',
+		);
+
+		$this->adapter->convert_datetimes( $event_id, $stash );
+
+		$online_link = get_post_meta( $event_id, 'gatherpress_online_event_link', true );
+		$this->assertEmpty( $online_link, 'Empty _EventURL should not create gatherpress_online_event_link meta.' );
+	}
+
+	/**
+	 * Tests that convert_datetimes() does not set online link when _EventURL is absent.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @covers ::convert_datetimes
+	 * @return void
+	 */
+	public function test_convert_datetimes_no_online_link_without_event_url(): void {
+		$event_id = $this->factory()->post->create(
+			array(
+				'post_type'   => 'gatherpress_event',
+				'post_title'  => 'No URL Test',
+				'post_status' => 'publish',
+			)
+		);
+
+		$stash = array(
+			'_EventStartDate' => '2025-09-15 09:00:00',
+			'_EventEndDate'   => '2025-09-15 17:00:00',
+			'_EventTimezone'  => 'America/Los_Angeles',
+		);
+
+		$this->adapter->convert_datetimes( $event_id, $stash );
+
+		$online_link = get_post_meta( $event_id, 'gatherpress_online_event_link', true );
+		$this->assertEmpty( $online_link, 'Missing _EventURL should not create gatherpress_online_event_link meta.' );
 	}
 }

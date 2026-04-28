@@ -161,18 +161,24 @@ npm run test:integration -- --group=migration
 | `EOAdapterIntegrationTest.php` | EO adapter + GatherPress | Adapter registration, post type rewriting, taxonomy rewriting, meta stashing, datetime conversion, venue shadow term creation, venue linking via `link_venue()`, skip post type registration |
 | `VenueDetailHandlerIntegrationTest.php` | Venue detail handler + TEC/EM adapters | TEC venue detail stash-and-process, EM venue detail stash-and-process, partial venue details, multiple venues in single import, non-venue-detail meta pass-through, venue detail meta ignored on event posts, transient cleanup, meta key blocking from postmeta |
 | `GatherPressCompatibilityTest.php` | GatherPress API | `Event` class existence, `save_datetimes()` method, `get_datetime()` method, shadow taxonomy, post type registration, parameter format |
+| `GatherPressPostMetaTest.php` | GatherPress registered post meta | Event meta keys (existence, types, REST exposure, count), venue meta keys (existence, types, REST exposure, count), JSON structure validation |
 | `MigrationIntegrationTest.php` | Main migration class | All event/venue type rewrites (data provider), standard type passthrough, meta stashing for events, pseudopostmeta registration, pending event tracking |
 | `WXRImportEOTest.php` | EO adapter end-to-end WXR import | Full two-pass strategy: Pass 1 venue creation, event skipping, skip post cleanup, source meta tracking; Pass 2 event creation, venue linking, meta cleanup |
 | `WXRImportTECTest.php` | TEC adapter end-to-end WXR import | Venue/event post type rewrites, datetime conversion, venue linking via ID mapping, taxonomy term rewriting, venue detail meta conversion, partial venue details, meta key blocking |
+| `WXRImportEMTest.php` | EM adapter end-to-end WXR import | Location/event post type rewrites, datetime conversion, venue detail meta conversion, taxonomy rewriting (event-categories, event-tags), venue shadow terms, meta key blocking, transient cleanup, content preservation |
 
 ### WXR Fixture Files
 
-Real WXR export files are stored in `tests/fixtures/wxr/` and used by the WXR import integration tests:
+WXR export files are stored in `tests/fixtures/wxr/` and used by the WXR import integration tests. Some are pre-populated with demo data; others are empty placeholders ready for real export data:
 
 | File | Source Plugin | Contents |
 |---|---|---|
 | `event-organiser.xml` | Event Organiser | 3 events, 3 venue terms, category and tag terms |
-| `tec.xml` | The Events Calendar | 2 venues, 2 events with venue references, category terms |
+| `tec.xml` | The Events Calendar | 3 venues (Downtown Convention Center, Riverside Community Hall, Innovation Hub Berlin), 4 events with venue references, 3 category terms (Conference, Workshop, Meetup), 3 tag terms (tech, networking, community) |
+| `events-manager.xml` | Events Manager | Locations and events with datetime and venue detail meta (populate with real export data) |
+| `mec.xml` | Modern Events Calendar | Empty — populate with real export data |
+| `eventon.xml` | EventON | Empty — populate with real export data |
+| `aioec.xml` | All-in-One Event Calendar | Empty — populate with real export data |
 
 The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides reusable methods for programmatically running the WordPress Importer against these fixtures within test methods.
 
@@ -181,7 +187,7 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 ## Project Architecture
 
 ```
-├── plugin.php   # Main plugin file (boot)
+├── telex-gatherpress-migration.php   # Main plugin file (boot)
 ├── includes/
 │   ├── interfaces/
 │   │   ├── interface-source-adapter.php
@@ -192,13 +198,18 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │   │   ├── trait-taxonomy-venue-handler.php
 │   │   └── trait-venue-detail-handler.php
 │   └── classes/
+│       ├── class-adapter-registry.php     # Adapter registration + merged maps
+│       ├── class-post-type-rewriter.php   # Post type rewriting on import
+│       ├── class-taxonomy-rewriter.php    # Taxonomy rewriting on import
+│       ├── class-meta-stasher.php         # Meta interception + transient stashing
+│       ├── class-stash-processor.php      # Stash processing at import_end
 │       ├── class-tec-adapter.php
 │       ├── class-events-manager-adapter.php
 │       ├── class-mec-adapter.php
 │       ├── class-eventon-adapter.php
 │       ├── class-aioec-adapter.php
 │       ├── class-event-organiser-adapter.php
-│       ├── class-migration.php
+│       ├── class-migration.php            # Thin orchestrator (singleton)
 │       └── class-importer.php
 ├── assets/css/importer.css
 ├── .wp-env.json                       # wp-env configuration
@@ -209,7 +220,11 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │   ├── fixtures/
 │   │   └── wxr/
 │   │       ├── event-organiser.xml    # EO WXR fixture (3 events, 3 venues)
-│   │       └── tec.xml                # TEC WXR fixture (2 venues, 2 events)
+│   │       ├── tec.xml                # TEC WXR fixture (2 venues, 2 events)
+│   │       ├── events-manager.xml     # EM WXR fixture (empty placeholder)
+│   │       ├── mec.xml                # MEC WXR fixture (empty placeholder)
+│   │       ├── eventon.xml            # EventON WXR fixture (empty placeholder)
+│   │       └── aioec.xml              # AIOEC WXR fixture (empty placeholder)
 │   └── php/
 │       ├── bootstrap.php              # Unified bootstrap (WP test suite loader)
 │       ├── traits/
@@ -224,23 +239,29 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │           ├── EOAdapterIntegrationTest.php
 │           ├── MigrationIntegrationTest.php
 │           ├── WXRImportEOTest.php    # EO two-pass WXR import tests
-│           └── WXRImportTECTest.php   # TEC WXR import tests
+│           ├── WXRImportTECTest.php   # TEC WXR import tests
+│           └── WXRImportEMTest.php    # EM WXR import tests
 ├── docs/
 │   ├── developer/
 │   │   └── README.md                 # This file
-│   ├── source-*.md                   # Info about each Source plugin
+│   ├── gatherpress-post-meta.md      # Registered post meta per GatherPress post type
 │   └── import-guide.md               # Import guide (architecture, two-pass strategy, troubleshooting)
 └── .wordpress-org/
     └── blueprints/                    # Playground blueprints
 ```
 
-### Adding Tests for a New Adapter
+### Adding a New Adapter
 
-When adding tests for another adapter (e.g., TEC):
+For a comprehensive step-by-step guide covering source documentation, blueprint scripts, WXR fixtures, adapter implementation, and testing, see the [Add a New Adapter Guide](../add-adapter-guide.md).
 
-1. **Unit test**: Create `tests/php/unit/TECAdapterTest.php` following the pattern in `EOAdapterTest.php`
-2. **Integration test**: Create `tests/php/integration/TECAdapterIntegrationTest.php` following the pattern in `EOAdapterIntegrationTest.php`
-3. The adapter's class file is already loaded by the unit bootstrap (all adapters are loaded there)
+The short version:
+
+1. **Source docs**: Create `docs/source-<plugin>.md` documenting the plugin's data model
+2. **Blueprint script**: Create `.wordpress-org/blueprints/<plugin>-import.php` with demo data
+3. **WXR fixture**: Export from the blueprint and save to `tests/fixtures/wxr/<plugin>.xml`
+4. **Adapter class**: Create `includes/classes/class-<plugin>-adapter.php` and register it
+5. **Unit tests**: Create `tests/php/unit/<Plugin>AdapterTest.php`
+6. **Integration tests**: Create `tests/php/integration/WXRImport<Plugin>Test.php`
 
 ### Gotchas
 

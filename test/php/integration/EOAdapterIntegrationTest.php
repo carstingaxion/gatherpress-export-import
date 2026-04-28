@@ -36,30 +36,30 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that the migration class rewrites 'event' post type to 'gatherpress_event'.
+	 * Tests that the post type rewriter rewrites 'event' to 'gatherpress_event'.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return void
 	 */
 	public function test_event_post_type_rewrite(): void {
-		$migration = $this->get_migration_instance();
-		$data      = array( 'post_type' => 'event' );
-		$result    = $migration->rewrite_post_type_on_import( $data );
+		$rewriter = $this->get_migration_instance()->get_post_type_rewriter();
+		$data     = array( 'post_type' => 'event' );
+		$result   = $rewriter->rewrite_post_type_on_import( $data );
 
 		$this->assertSame( 'gatherpress_event', $result['post_type'] );
 	}
 
 	/**
-	 * Tests that the taxonomy map rewrites event-category to gatherpress_topic.
+	 * Tests that the taxonomy rewriter rewrites event-category to gatherpress_topic.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return void
 	 */
 	public function test_taxonomy_rewrite_event_category(): void {
-		$migration = $this->get_migration_instance();
-		$terms     = array(
+		$rewriter = $this->get_migration_instance()->get_taxonomy_rewriter();
+		$terms    = array(
 			array(
 				'domain' => 'event-category',
 				'slug'   => 'lecture',
@@ -67,20 +67,20 @@ class EOAdapterIntegrationTest extends TestCase {
 			),
 		);
 
-		$result = $migration->rewrite_post_terms_taxonomy( $terms );
+		$result = $rewriter->rewrite_post_terms_taxonomy( $terms );
 		$this->assertSame( 'gatherpress_topic', $result[0]['domain'] );
 	}
 
 	/**
-	 * Tests that the taxonomy map rewrites event-tag to post_tag.
+	 * Tests that the taxonomy rewriter rewrites event-tag to post_tag.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return void
 	 */
 	public function test_taxonomy_rewrite_event_tag(): void {
-		$migration = $this->get_migration_instance();
-		$terms     = array(
+		$rewriter = $this->get_migration_instance()->get_taxonomy_rewriter();
+		$terms    = array(
 			array(
 				'domain' => 'event-tag',
 				'slug'   => 'evening',
@@ -88,12 +88,12 @@ class EOAdapterIntegrationTest extends TestCase {
 			),
 		);
 
-		$result = $migration->rewrite_post_terms_taxonomy( $terms );
+		$result = $rewriter->rewrite_post_terms_taxonomy( $terms );
 		$this->assertSame( 'post_tag', $result[0]['domain'] );
 	}
 
 	/**
-	 * Tests that stash_meta_on_import() intercepts EO schedule meta keys.
+	 * Tests that the meta stasher intercepts EO schedule meta keys.
 	 *
 	 * @since 0.1.0
 	 *
@@ -102,10 +102,10 @@ class EOAdapterIntegrationTest extends TestCase {
 	public function test_stash_meta_intercepts_eo_keys(): void {
 		$event_id = $this->create_event( 'Test Event for Meta Stash' );
 
-		$migration = $this->get_migration_instance();
+		$stasher = $this->get_migration_instance()->get_meta_stasher();
 
 		// The stash_meta_on_import() filter returns true to block the meta from saving.
-		$result = $migration->stash_meta_on_import(
+		$result = $stasher->stash_meta_on_import(
 			null,
 			$event_id,
 			'_eventorganiser_schedule_start_datetime',
@@ -126,7 +126,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that stash_meta_on_import() ignores non-event post types.
+	 * Tests that the meta stasher ignores non-event post types.
 	 *
 	 * @since 0.1.0
 	 *
@@ -135,9 +135,9 @@ class EOAdapterIntegrationTest extends TestCase {
 	public function test_stash_meta_ignores_non_event_post_types(): void {
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post' ) );
 
-		$migration = $this->get_migration_instance();
+		$stasher = $this->get_migration_instance()->get_meta_stasher();
 
-		$result = $migration->stash_meta_on_import(
+		$result = $stasher->stash_meta_on_import(
 			null,
 			$post_id,
 			'_eventorganiser_schedule_start_datetime',
@@ -149,7 +149,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that stash_meta_on_import() ignores non-stash meta keys.
+	 * Tests that the meta stasher ignores non-stash meta keys.
 	 *
 	 * @since 0.1.0
 	 *
@@ -158,9 +158,9 @@ class EOAdapterIntegrationTest extends TestCase {
 	public function test_stash_meta_ignores_non_stash_keys(): void {
 		$event_id = $this->create_event( 'Test Event for Non-Stash Key' );
 
-		$migration = $this->get_migration_instance();
+		$stasher = $this->get_migration_instance()->get_meta_stasher();
 
-		$result = $migration->stash_meta_on_import(
+		$result = $stasher->stash_meta_on_import(
 			null,
 			$event_id,
 			'_some_random_meta_key',
@@ -348,7 +348,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that process_stashed_meta correctly identifies the EO adapter.
+	 * Tests that the stash processor correctly identifies the EO adapter.
 	 *
 	 * @since 0.1.0
 	 *
@@ -371,8 +371,8 @@ class EOAdapterIntegrationTest extends TestCase {
 			HOUR_IN_SECONDS
 		);
 
-		$migration = $this->get_migration_instance();
-		$migration->process_stashed_meta( $event_id );
+		$processor = $this->get_migration_instance()->get_stash_processor();
+		$processor->process_stashed_meta( $event_id );
 
 		// The transient should be consumed (deleted).
 		$stash = get_transient( 'gpei_meta_stash_' . $event_id );

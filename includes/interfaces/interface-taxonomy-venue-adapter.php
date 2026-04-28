@@ -38,17 +38,5 @@ if ( ! interface_exists( __NAMESPACE__ . '\Taxonomy_Venue_Adapter' ) ) {
 		 * @return string The source venue taxonomy slug.
 		 */
 		public function get_venue_taxonomy_slug(): string;
-
-		/**
-		 * Gets the source event post type slug(s) that should be skipped during Pass 1.
-		 *
-		 * Returns the original (pre-rewrite) post type slugs. During Pass 1,
-		 * posts of these types are redirected to the temporary skip post type.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @return string[] Array of source event post type slugs.
-		 */
-		public function get_skippable_event_post_types(): array;
 	}
 }

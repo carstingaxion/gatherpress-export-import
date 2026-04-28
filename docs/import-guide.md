@@ -180,12 +180,12 @@ class My_New_Adapter implements Source_Adapter, Hookable_Adapter, Taxonomy_Venue
     use Datetime_Helper;
     use Taxonomy_Venue_Handler;
 
-    public function get_venue_taxonomy_slug(): string {
-        return 'my-venue-taxonomy';
+    public function get_event_post_type_map(): array {
+        return array( 'my_event' => 'gatherpress_event' );
     }
 
-    public function get_skippable_event_post_types(): array {
-        return array( 'my_event' );
+    public function get_venue_taxonomy_slug(): string {
+        return 'my-venue-taxonomy';
     }
 
     public function setup_import_hooks(): void {
@@ -196,7 +196,7 @@ class My_New_Adapter implements Source_Adapter, Hookable_Adapter, Taxonomy_Venue
 }
 ```
 
-The adapter only needs to declare its venue taxonomy slug and skippable post types — all two-pass logic is handled automatically by the trait.
+The adapter only needs to declare its venue taxonomy slug and event post type map — the skippable post types are derived automatically from `get_event_post_type_map()` by the trait, and all two-pass logic is handled automatically.
 
 ---
 

@@ -38,6 +38,25 @@ if ( ! trait_exists( __NAMESPACE__ . '\Taxonomy_Venue_Handler' ) ) {
 	trait Taxonomy_Venue_Handler {
 
 		/**
+		 * Gets the source event post type slugs that should be skipped during Pass 1.
+		 *
+		 * Derived automatically from the adapter's `get_event_post_type_map()`
+		 * method (provided by the `Source_Adapter` interface). Returns the
+		 * map keys — i.e., the original source post type slugs before rewriting.
+		 *
+		 * This replaces the former `Taxonomy_Venue_Adapter::get_skippable_event_post_types()`
+		 * interface method, which was always implemented as
+		 * `array_keys( $this->get_event_post_type_map() )` across all adapters.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @return string[] Array of source event post type slugs.
+		 */
+		final protected function get_skippable_event_post_types(): array {
+			return array_keys( $this->get_event_post_type_map() );
+		}
+
+		/**
 		 * The temporary post type used to silently skip events during pass 1.
 		 *
 		 * Registered as a non-public post type so `post_type_exists()` returns

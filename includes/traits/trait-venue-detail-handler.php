@@ -202,6 +202,10 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 		 * meta keys declared in `get_venue_detail_meta_map()` on
 		 * `gatherpress_venue` posts.
 		 *
+		 * Delegates to the shared `Migration::stash_meta()` helper to
+		 * avoid duplicating the transient storage and pending ID tracking
+		 * logic that is also used by the main migration class for event meta.
+		 *
 		 * @since 0.1.0
 		 *
 		 * @param mixed  $check      Current check value (null to proceed).
@@ -223,26 +227,13 @@ if ( ! trait_exists( __NAMESPACE__ . '\Venue_Detail_Handler' ) ) {
 				return $check;
 			}
 
-			$transient_key = 'gpei_venue_meta_stash_' . $object_id;
-			$stash         = get_transient( $transient_key );
-			if ( ! is_array( $stash ) ) {
-				$stash = array();
-			}
-			$stash[ $meta_key ] = $meta_value;
-			set_transient( $transient_key, $stash, HOUR_IN_SECONDS );
-
-			// Track this venue post ID for processing at import_end.
-			$pending = get_transient( 'gpei_pending_venue_ids' );
-			if ( ! is_array( $pending ) ) {
-				$pending = array();
-			}
-			if ( ! in_array( $object_id, $pending, true ) ) {
-				$pending[] = $object_id;
-				set_transient( 'gpei_pending_venue_ids', $pending, HOUR_IN_SECONDS );
-			}
-
-			// Return true to prevent saving to wp_postmeta.
-			return true;
+			return Meta_Stasher::stash_meta(
+				$object_id,
+				$meta_key,
+				$meta_value,
+				'gpei_venue_meta_stash_',
+				'gpei_pending_venue_ids'
+			);
 		}
 
 		/**

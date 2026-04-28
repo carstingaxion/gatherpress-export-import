@@ -2,6 +2,18 @@
 
 Adapter class: `EventON_Adapter`
 
+### Adapter Completeness
+
+| Step | Description | Status |
+|:---:|---|:---:|
+| 1 | Source documentation (`source-eventon.md`) | ✅ |
+| 2 | Blueprint import script (`eventon-import.php`) | ✅ |
+| 3 | WXR fixture from real export (`eventon.xml`) | ❌ Empty placeholder |
+| 4 | Adapter unit tests | ❌ Not yet |
+| 5 | WXR import integration tests | ❌ Not yet |
+
+**Progress: 2/5** — Adapter class and docs exist; needs fixture, unit tests, and import tests.
+
 ---
 
 ## Post Type Mapping
@@ -38,16 +50,16 @@ Import the same WXR file twice.
 | Event title & content | ✅ | |
 | Featured image | ✅ | |
 | Start/end datetimes | ✅ | Via Unix timestamps in `evcal_srow` / `evcal_erow` |
-| Timezone | ❌ | Not stored per-event; site timezone used as fallback |
+| Timezone | 🚫 | Not stored per-event; site timezone used as fallback |
 | Venue name | ✅ | From taxonomy term names via two-pass import |
-| Venue address/details | ❌ | Stored as taxonomy term meta; not included in WXR exports |
-| Venue coordinates | ❌ | Stored as taxonomy term meta |
+| Venue address/details | 🚫 | Stored as taxonomy term meta; not included in WXR exports |
+| Venue coordinates | 🚫 | Stored as taxonomy term meta |
 | Venue–event link | ✅ | Via two-pass taxonomy import |
 | Event categories | ✅ | Via `event_type` taxonomy |
-| Event tags | ❌ | EventON does not use a tag taxonomy |
+| Event tags | 🚫 | EventON does not use a tag taxonomy |
 | Organizer | ⚠️ | `event_organizer` taxonomy available but not mapped |
-| Recurrence rules | ❌ | Not available via WXR |
-| RSVP / Tickets | ❌ | Not convertible via WXR |
+| Recurrence rules | 🚫 | Not available via WXR |
+| RSVP / Tickets | 🚫 | Not convertible via WXR |
 
 ## Import Sequence
 

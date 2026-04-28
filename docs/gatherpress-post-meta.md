@@ -57,15 +57,15 @@ All fields are strings. Empty values are stored as empty strings (`""`), not `nu
 
 ## Import Mapping Summary
 
-| Source Data | GatherPress Target | Storage |
-|---|---|---|
-| Start/end datetimes | `gp_event_extended` table | `Event::save_datetimes()` |
-| Timezone | `gp_event_extended` table | `Event::save_datetimes()` |
-| Online event URL | `gatherpress_online_event_link` post meta | `register_post_meta()` |
-| RSVP settings | `gatherpress_enable_*` / `gatherpress_max_*` post meta | `register_post_meta()` |
-| Venue address/phone/website/coords | `gatherpress_venue_information` post meta (JSON) | `register_post_meta()` |
-| Venue–event link | `_gatherpress_venue` shadow taxonomy | `wp_set_object_terms()` |
-| Event categories | `gatherpress_topic` taxonomy | `wp_set_object_terms()` |
+| Source Data | GatherPress Target | Storage | Currently Mapped |
+|---|---|---|:---:|
+| Start/end datetimes | `gp_event_extended` table + `gatherpress_datetime_*` meta | `Event::save_datetimes()` | ✅ All adapters |
+| Timezone | `gp_event_extended` table + `gatherpress_timezone` meta | `Event::save_datetimes()` | ✅ All adapters |
+| Online event URL | `gatherpress_online_event_link` post meta | `update_post_meta()` | ✅ TEC (`_EventURL`) |
+| RSVP settings | `gatherpress_enable_*` / `gatherpress_max_*` post meta | `register_post_meta()` | 🚫 No source equivalent in WXR |
+| Venue address/phone/website/coords | `gatherpress_venue_information` post meta (JSON) | `register_post_meta()` | ✅ TEC, EM |
+| Venue–event link | `_gatherpress_venue` shadow taxonomy | `wp_set_object_terms()` | ✅ All adapters |
+| Event categories | `gatherpress_topic` taxonomy | `wp_set_object_terms()` | ✅ All adapters |
 
 ---
 
