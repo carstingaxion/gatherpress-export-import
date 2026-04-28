@@ -49,7 +49,7 @@ A real TEC WXR export includes significantly more meta keys than just the primar
 | `_EventCurrencySymbol` | Currency symbol (e.g., "$") | 🚫 Stashed & discarded |
 | `_EventCurrencyCode` | Currency code (e.g., "USD") | 🚫 Stashed & discarded |
 | `_EventCurrencyPosition` | Symbol position ("prefix"/"suffix") | 🚫 Stashed & discarded |
-| `_EventURL` | External event URL | 🚫 Stashed & discarded |
+| `_EventURL` | External event URL | ✅ → `gatherpress_online_event_link` |
 | `_EventOrganizerID` | Organizer post ID | 🚫 Stashed & discarded |
 | `_EventAllDay` | All-day flag | 🚫 Stashed & discarded |
 | `_EventHideFromUpcoming` | Hide from upcoming list | 🚫 Stashed & discarded |
@@ -112,6 +112,19 @@ TEC stores venues as a dedicated custom post type (`tribe_venue`). During import
 | Recurrence rules | 🚫 | Not available in standard WXR; each occurrence must be exported individually |
 | RSVP / Tickets | 🚫 | Not convertible via WXR |
 
+## GatherPress Post Meta Mapping
+
+The adapter maps TEC data to GatherPress's registered post meta keys as follows:
+
+| TEC Source | GatherPress Target | Method |
+|---|---|---|
+| `_EventStartDate` + `_EventEndDate` + `_EventTimezone` | `gatherpress_datetime_start`, `gatherpress_datetime_end`, `gatherpress_timezone` (+ `gp_event_extended` table) | `Event::save_datetimes()` handles both custom table and registered meta |
+| `_EventURL` | `gatherpress_online_event_link` | Direct `update_post_meta()` when non-empty |
+| `_VenueAddress` + `_VenueCity` + ... | `gatherpress_venue_information` (JSON) | `Venue_Detail_Handler` trait |
+| `_EventVenueID` | `_gatherpress_venue` shadow taxonomy | ID mapping + `wp_set_object_terms()` |
+
+> **Note:** GatherPress's `Event::save_datetimes()` internally populates both the `gp_event_extended` custom table and the registered post meta keys (`gatherpress_datetime_start`, `gatherpress_datetime_start_gmt`, `gatherpress_datetime_end`, `gatherpress_datetime_end_gmt`, `gatherpress_timezone`, `gatherpress_datetime`). The adapter does not need to write these meta values separately.
+
 ## Import Sequence
 
 1. Export and import **venues first** (`tribe_venue`).
@@ -144,4 +157,5 @@ The Playground blueprint creates 3 venues and 4 events with full taxonomy term a
 - **Recurring events** must be exported as individual occurrences. TEC Pro's recurrence rules are not converted.
 - **Venue coordinates** are not part of TEC's standard venue meta. They may be available via TEC Pro's `_VenueLat` / `_VenueLng` keys, which are not currently mapped.
 - **Event cost/currency** data (`_EventCost`, `_EventCurrencySymbol`, `_EventCurrencyCode`) is available in the WXR but has no GatherPress equivalent and is discarded.
+- **Event URL** (`_EventURL`) is mapped to `gatherpress_online_event_link` when non-empty. This is TEC's "Event Website" field, which semantically maps to GatherPress's online event link — though the TEC field is more general (any URL) while GatherPress uses it specifically for virtual/online event access links.
 - **Map display toggles** (`_EventShowMap`, `_EventShowMapLink`, `_VenueShowMap`, `_VenueShowMapLink`) are TEC-specific UI settings that have no GatherPress equivalent.

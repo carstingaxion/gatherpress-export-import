@@ -281,7 +281,16 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 		 * Converts the stashed TEC meta data into GatherPress datetimes.
 		 *
 		 * Reads `_EventStartDate`, `_EventEndDate`, and `_EventTimezone` from
-		 * the stash and saves them via the GatherPress Event class.
+		 * the stash and saves them via the GatherPress Event class. Also maps
+		 * `_EventURL` to the `gatherpress_online_event_link` registered post
+		 * meta when a non-empty value is present — this is the closest
+		 * semantic match in GatherPress for TEC's external event URL.
+		 *
+		 * GatherPress's `Event::save_datetimes()` internally populates both
+		 * the `gp_event_extended` custom table and the registered post meta
+		 * keys (`gatherpress_datetime_start`, `gatherpress_datetime_end`,
+		 * `gatherpress_timezone`, etc.), so no additional meta writes are
+		 * needed for datetimes.
 		 *
 		 * @since 0.1.0
 		 *
@@ -307,6 +316,14 @@ if ( ! class_exists( __NAMESPACE__ . '\TEC_Adapter' ) ) {
 			}
 
 			$this->save_gatherpress_datetimes( $post_id, $start, $end, $timezone );
+
+			// Map _EventURL to gatherpress_online_event_link if non-empty.
+			// This is the closest semantic equivalent in GatherPress for TEC's
+			// external event URL field.
+			$event_url = isset( $stash['_EventURL'] ) ? trim( (string) $stash['_EventURL'] ) : '';
+			if ( ! empty( $event_url ) ) {
+				update_post_meta( $post_id, 'gatherpress_online_event_link', esc_url_raw( $event_url ) );
+			}
 		}
 
 		/**
