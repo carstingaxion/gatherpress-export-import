@@ -124,5 +124,21 @@ if ( ! trait_exists( __NAMESPACE__ . '\Datetime_Helper' ) ) {
 		final protected function get_default_timezone(): string {
 			return wp_timezone_string();
 		}
+
+		/**
+		 * No-op callback for pseudopostmeta registration.
+		 *
+		 * This callback is registered with pseudopostmeta definitions but
+		 * intentionally does nothing. The actual meta processing is handled
+		 * by the stash mechanism in the main migration class. Shared across
+		 * all adapters that use the `Datetime_Helper` trait.
+		 *
+		 * @since 0.2.0
+		 *
+		 * @return void
+		 */
+		final public function noop_callback(): void {
+			// Intentionally empty; meta is handled via stash mechanism.
+		}
 	}
 }

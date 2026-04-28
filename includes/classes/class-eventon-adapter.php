@@ -213,19 +213,5 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 			$this->setup_taxonomy_venue_hooks();
 		}
 
-		/**
-		 * No-op callback for pseudopostmeta registration.
-		 *
-		 * This callback is registered with pseudopostmeta definitions but
-		 * intentionally does nothing. The actual meta processing is handled
-		 * by the stash mechanism in the main migration class.
-		 *
-		 * @since 0.1.0
-		 *
-		 * @return void
-		 */
-		public function noop_callback(): void {
-			// Intentionally empty; meta is handled via stash mechanism.
-		}
 	}
 }
