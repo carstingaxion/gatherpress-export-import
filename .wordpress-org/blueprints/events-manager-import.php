@@ -234,7 +234,7 @@ if ( ! term_exists( 'free-entry', 'event-tags' ) ) {
  */
 
 // Location 1: Central Park Amphitheatre.
-$location1 = new \EM_Location();
+$location1                    = new \EM_Location();
 $location1->location_name     = 'Central Park Amphitheatre';
 $location1->location_slug     = 'central-park-amphitheatre';
 $location1->location_address  = '830 5th Ave';
@@ -249,7 +249,7 @@ $location1->save();
 $loc1_id = $location1->location_id;
 
 // Location 2: Lakeside Sports Complex.
-$location2 = new \EM_Location();
+$location2                    = new \EM_Location();
 $location2->location_name     = 'Lakeside Sports Complex';
 $location2->location_slug     = 'lakeside-sports-complex';
 $location2->location_address  = '200 Lake Shore Blvd';
@@ -264,7 +264,7 @@ $location2->save();
 $loc2_id = $location2->location_id;
 
 // Location 3: Public Library Main Hall.
-$location3 = new \EM_Location();
+$location3                    = new \EM_Location();
 $location3->location_name     = 'Public Library Main Hall';
 $location3->location_slug     = 'public-library-main-hall';
 $location3->location_address  = '42 Library Lane';
@@ -310,7 +310,7 @@ $loc3_id = $location3->location_id;
  *
  * @see EM_Event::__set() in events-manager/classes/em-event.php
  */
-$event1 = new \EM_Event();
+$event1               = new \EM_Event();
 $event1->event_name   = 'Summer Jazz Festival';
 $event1->post_content = 'An evening of live jazz performances from local and international artists under the stars.';
 $event1->__set( 'event_start_date', '2025-07-18' );
@@ -332,7 +332,7 @@ if ( $event1->post_id ) {
 }
 
 // Event 2: Community 5K Fun Run.
-$event2 = new \EM_Event();
+$event2               = new \EM_Event();
 $event2->event_name   = 'Community 5K Fun Run';
 $event2->post_content = 'Join the annual community fun run around the lakefront. All fitness levels welcome!';
 $event2->__set( 'event_start_date', '2025-08-10' );
@@ -353,7 +353,7 @@ if ( $event2->post_id ) {
 }
 
 // Event 3: Open Source Book Club Kickoff.
-$event3 = new \EM_Event();
+$event3               = new \EM_Event();
 $event3->event_name   = 'Open Source Book Club Kickoff';
 $event3->post_content = 'First meeting of our monthly book club focused on open source culture, history, and innovation.';
 $event3->__set( 'event_start_date', '2025-09-05' );

@@ -102,6 +102,45 @@ tests_add_filter(
 	}
 );
 
+/**
+ * Cache GatherPress registered meta and post type state at init:20.
+ *
+ * GatherPress registers its post types at init:10 and post meta at
+ * init:11–12. We hook at priority 20 to snapshot the registration
+ * state into a global array that test classes can read without
+ * needing to call do_action( 'init' ) themselves.
+ *
+ * Tests that depend on registered meta (e.g., GatherPressPostMetaTest)
+ * read from $GLOBALS['gpei_test_init20_cache'] instead of querying
+ * the registration API directly (which might return empty if init
+ * hasn't fully completed in certain test runner configurations).
+ */
+tests_add_filter(
+	'init',
+	function () {
+		$cache = array(
+			'post_type_exists_event' => post_type_exists( 'gatherpress_event' ),
+			'post_type_exists_venue' => post_type_exists( 'gatherpress_venue' ),
+			'taxonomy_exists_venue'  => taxonomy_exists( '_gatherpress_venue' ),
+			'event_meta_keys'        => get_registered_meta_keys( 'post', 'gatherpress_event' ),
+			'venue_meta_keys'        => get_registered_meta_keys( 'post', 'gatherpress_venue' ),
+		);
+
+		$GLOBALS['gpei_test_init20_cache'] = $cache;
+
+		if ( ! $cache['post_type_exists_event'] ) {
+			echo 'WARNING: gatherpress_event post type not registered at init:20. '
+				. 'GatherPress may not have fully initialized.' . PHP_EOL;
+		}
+
+		if ( empty( $cache['event_meta_keys'] ) ) {
+			echo 'WARNING: No post meta registered for gatherpress_event at init:20. '
+				. 'GatherPress may register meta at a later priority.' . PHP_EOL;
+		}
+	},
+	20
+);
+
 // Start up the WP testing environment.
 require $wp_tests_dir . '/includes/bootstrap.php';
 

@@ -108,11 +108,11 @@ function gpei_calc_duration( $start, $end ) {
  * `tribe_venues()->set_args()->create()` / `tribe_events()->...`.
  * As a final fallback, we use wp_insert_post() with explicit meta.
  */
-$use_tec_api   = class_exists( 'Tribe__Events__API' )
+$use_tec_api = class_exists( 'Tribe__Events__API' )
 	&& method_exists( 'Tribe__Events__API', 'createVenue' )
 	&& method_exists( 'Tribe__Events__API', 'createEvent' );
 
-$use_tec_orm   = ! $use_tec_api
+$use_tec_orm = ! $use_tec_api
 	&& function_exists( 'tribe_venues' )
 	&& function_exists( 'tribe_events' );
 
@@ -121,10 +121,14 @@ error_log( 'GPEI-TEC: TEC ORM available: ' . ( $use_tec_orm ? 'YES' : 'NO' ) );
 
 // Ensure taxonomies exist for tax_input to work.
 if ( ! taxonomy_exists( 'tribe_events_cat' ) ) {
-	register_taxonomy( 'tribe_events_cat', 'tribe_events', array(
-		'label'  => 'Events Category',
-		'public' => true,
-	) );
+	register_taxonomy(
+		'tribe_events_cat',
+		'tribe_events',
+		array(
+			'label'  => 'Events Category',
+			'public' => true,
+		) 
+	);
 }
 
 // -------------------------------------------------------------------------
@@ -198,18 +202,20 @@ foreach ( $venue_data as $v ) {
 		 * @see Tribe__Events__API::createVenue() in
 		 *      the-events-calendar/src/Tribe/Events/API.php
 		 */
-		$venue_id = Tribe__Events__API::createVenue( array(
-			'Venue'        => $v['title'],
-			'Address'      => $v['address'],
-			'City'         => $v['city'],
-			'State'        => $v['state'],
-			'Zip'          => $v['zip'],
-			'Country'      => $v['country'],
-			'Phone'        => $v['phone'],
-			'URL'          => $v['url'],
-			'ShowMap'      => true,
-			'ShowMapLink'  => true,
-		) );
+		$venue_id = Tribe__Events__API::createVenue(
+			array(
+				'Venue'       => $v['title'],
+				'Address'     => $v['address'],
+				'City'        => $v['city'],
+				'State'       => $v['state'],
+				'Zip'         => $v['zip'],
+				'Country'     => $v['country'],
+				'Phone'       => $v['phone'],
+				'URL'         => $v['url'],
+				'ShowMap'     => true,
+				'ShowMapLink' => true,
+			) 
+		);
 
 		error_log( 'GPEI-TEC: Created venue via API: ' . $v['title'] . ' (ID: ' . $venue_id . ')' );
 
@@ -222,17 +228,19 @@ foreach ( $venue_data as $v ) {
 		 *
 		 * @see Tribe\Events\Models\Post_Types\Venue
 		 */
-		$venue_id = tribe_venues()->set_args( array(
-			'title'   => $v['title'],
-			'status'  => 'publish',
-			'address' => $v['address'],
-			'city'    => $v['city'],
-			'state'   => $v['state'],
-			'zip'     => $v['zip'],
-			'country' => $v['country'],
-			'phone'   => $v['phone'],
-			'url'     => $v['url'],
-		) )->create()->ID;
+		$venue_id = tribe_venues()->set_args(
+			array(
+				'title'   => $v['title'],
+				'status'  => 'publish',
+				'address' => $v['address'],
+				'city'    => $v['city'],
+				'state'   => $v['state'],
+				'zip'     => $v['zip'],
+				'country' => $v['country'],
+				'phone'   => $v['phone'],
+				'url'     => $v['url'],
+			) 
+		)->create()->ID;
 
 		error_log( 'GPEI-TEC: Created venue via ORM: ' . $v['title'] . ' (ID: ' . $venue_id . ')' );
 
@@ -244,22 +252,24 @@ foreach ( $venue_data as $v ) {
 		 * This ensures the venue is visible in TEC's admin UI and
 		 * properly referenced by events, even without TEC's API classes.
 		 */
-		$venue_id = wp_insert_post( array(
-			'post_title'  => $v['title'],
-			'post_type'   => 'tribe_venue',
-			'post_status' => 'publish',
-			'meta_input'  => array(
-				'_VenueAddress'     => $v['address'],
-				'_VenueCity'        => $v['city'],
-				'_VenueState'       => $v['state'],
-				'_VenueZip'         => $v['zip'],
-				'_VenueCountry'     => $v['country'],
-				'_VenuePhone'       => $v['phone'],
-				'_VenueURL'         => $v['url'],
-				'_VenueShowMap'     => '1',
-				'_VenueShowMapLink' => '1',
-			),
-		) );
+		$venue_id = wp_insert_post(
+			array(
+				'post_title'  => $v['title'],
+				'post_type'   => 'tribe_venue',
+				'post_status' => 'publish',
+				'meta_input'  => array(
+					'_VenueAddress'     => $v['address'],
+					'_VenueCity'        => $v['city'],
+					'_VenueState'       => $v['state'],
+					'_VenueZip'         => $v['zip'],
+					'_VenueCountry'     => $v['country'],
+					'_VenuePhone'       => $v['phone'],
+					'_VenueURL'         => $v['url'],
+					'_VenueShowMap'     => '1',
+					'_VenueShowMapLink' => '1',
+				),
+			) 
+		);
 
 		error_log( 'GPEI-TEC: Created venue via wp_insert_post: ' . $v['title'] . ' (ID: ' . $venue_id . ')' );
 	}
@@ -334,9 +344,9 @@ foreach ( $event_data as $e ) {
 		 *      the-events-calendar/src/Tribe/Events/API.php
 		 */
 		$event_args = array(
-			'post_title'   => $e['title'],
-			'post_content' => $e['content'],
-			'post_status'  => 'publish',
+			'post_title'         => $e['title'],
+			'post_content'       => $e['content'],
+			'post_status'        => 'publish',
 			'EventStartDate'     => substr( $e['start'], 0, 10 ),
 			'EventStartHour'     => date( 'h', strtotime( $e['start'] ) ),
 			'EventStartMinute'   => date( 'i', strtotime( $e['start'] ) ),
@@ -364,15 +374,17 @@ foreach ( $event_data as $e ) {
 		 *
 		 * @see Tribe\Events\Models\Post_Types\Event
 		 */
-		$event_post = tribe_events()->set_args( array(
-			'title'      => $e['title'],
-			'content'    => $e['content'],
-			'status'     => 'publish',
-			'start_date' => $e['start'],
-			'end_date'   => $e['end'],
-			'timezone'   => $e['timezone'],
-			'venue'      => $venue_id,
-		) )->create();
+		$event_post = tribe_events()->set_args(
+			array(
+				'title'      => $e['title'],
+				'content'    => $e['content'],
+				'status'     => 'publish',
+				'start_date' => $e['start'],
+				'end_date'   => $e['end'],
+				'timezone'   => $e['timezone'],
+				'venue'      => $venue_id,
+			) 
+		)->create();
 
 		if ( $event_post ) {
 			$event_id = $event_post->ID;
@@ -405,32 +417,34 @@ foreach ( $event_data as $e ) {
 		$duration      = gpei_calc_duration( $e['start'], $e['end'] );
 		$timezone_abbr = gpei_get_timezone_abbr( $e['timezone'], $e['start'] );
 
-		$event_id = wp_insert_post( array(
-			'post_title'   => $e['title'],
-			'post_content' => $e['content'],
-			'post_type'    => 'tribe_events',
-			'post_status'  => 'publish',
-			'meta_input'   => array(
-				'_EventStartDate'       => $e['start'],
-				'_EventEndDate'         => $e['end'],
-				'_EventStartDateUTC'    => $start_utc,
-				'_EventEndDateUTC'      => $end_utc,
-				'_EventDuration'        => $duration,
-				'_EventTimezone'        => $e['timezone'],
-				'_EventTimezoneAbbr'    => $timezone_abbr,
-				'_EventVenueID'         => $venue_id,
-				'_EventCost'            => '',
-				'_EventCurrencySymbol'  => '$',
-				'_EventCurrencyCode'    => 'USD',
-				'_EventCurrencyPosition' => 'prefix',
-				'_EventOrganizerID'     => '',
-				'_EventShowMap'         => '1',
-				'_EventShowMapLink'     => '1',
-				'_EventURL'             => '',
-				'_EventAllDay'          => '',
-				'_EventHideFromUpcoming' => '',
-			),
-		) );
+		$event_id = wp_insert_post(
+			array(
+				'post_title'   => $e['title'],
+				'post_content' => $e['content'],
+				'post_type'    => 'tribe_events',
+				'post_status'  => 'publish',
+				'meta_input'   => array(
+					'_EventStartDate'        => $e['start'],
+					'_EventEndDate'          => $e['end'],
+					'_EventStartDateUTC'     => $start_utc,
+					'_EventEndDateUTC'       => $end_utc,
+					'_EventDuration'         => $duration,
+					'_EventTimezone'         => $e['timezone'],
+					'_EventTimezoneAbbr'     => $timezone_abbr,
+					'_EventVenueID'          => $venue_id,
+					'_EventCost'             => '',
+					'_EventCurrencySymbol'   => '$',
+					'_EventCurrencyCode'     => 'USD',
+					'_EventCurrencyPosition' => 'prefix',
+					'_EventOrganizerID'      => '',
+					'_EventShowMap'          => '1',
+					'_EventShowMapLink'      => '1',
+					'_EventURL'              => '',
+					'_EventAllDay'           => '',
+					'_EventHideFromUpcoming' => '',
+				),
+			) 
+		);
 
 		if ( $event_id && ! is_wp_error( $event_id ) ) {
 			wp_set_object_terms( $event_id, $e['categories'], 'tribe_events_cat' );
