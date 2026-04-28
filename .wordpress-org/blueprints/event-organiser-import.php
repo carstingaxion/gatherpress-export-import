@@ -129,30 +129,63 @@ foreach ( $tags as $name => $slug ) {
  * -------------------------------------------------------------------------
  *
  * Event Organiser stores venues as terms of the `event-venue` taxonomy.
- * Venue address details are stored as term meta, which is NOT included
- * in standard WordPress WXR exports. Only the term name and slug will
- * survive an export/import cycle.
+ * Venue address details are stored as taxonomy term meta, which is NOT
+ * included in standard WordPress WXR exports. Only the term name, slug,
+ * and description survive an export/import cycle.
  *
- * The description field IS included in WXR exports, so we set it to
- * the venue address for reference.
+ * When Event Organiser is active, we use `eo_insert_venue()` which:
+ * - Calls `wp_insert_term()` to create the taxonomy term.
+ * - Stores venue meta data (address, city, state, postcode, country,
+ *   latitude, longitude) via EO's internal term meta handling.
+ * - Fires the `eventorganiser_save_venue` action for extensions.
  *
- * @see https://developer.developer.developer.developer/function/eo_insert_venue/
+ * When EO is not active, we fall back to `wp_insert_term()` and set
+ * the description to the venue address for reference.
+ *
+ * @see eo_insert_venue()  in event-organiser/includes/event-organiser-venue-functions.php (since 1.4.0)
+ * @see eo_update_venue()  for updating existing venues
+ * @see eo_get_venue_meta() for reading venue meta back
  */
+$use_eo_venue_api = function_exists( 'eo_insert_venue' );
+
+error_log( 'GPEI-EO: eo_insert_venue() available: ' . ( $use_eo_venue_api ? 'YES' : 'NO' ) );
+
 $venues = array(
 	array(
 		'name'        => 'University Lecture Theatre',
 		'slug'        => 'university-lecture-theatre',
 		'description' => 'University of London, Malet Street, London WC1E 7HU',
+		'address'     => 'Malet Street',
+		'city'        => 'London',
+		'state'       => '',
+		'postcode'    => 'WC1E 7HU',
+		'country'     => 'GB',
+		'latitude'    => '51.5226',
+		'longitude'   => '-0.1308',
 	),
 	array(
 		'name'        => 'The Jazz Cellar',
 		'slug'        => 'the-jazz-cellar',
 		'description' => '42 Dean Street, Soho, London W1D 4PZ',
+		'address'     => '42 Dean Street, Soho',
+		'city'        => 'London',
+		'state'       => '',
+		'postcode'    => 'W1D 4PZ',
+		'country'     => 'GB',
+		'latitude'    => '51.5138',
+		'longitude'   => '-0.1318',
 	),
 	array(
 		'name'        => 'Community Hackerspace',
 		'slug'        => 'community-hackerspace',
 		'description' => '18 Brick Lane, London E1 6RF',
+		'address'     => '18 Brick Lane',
+		'city'        => 'London',
+		'state'       => '',
+		'postcode'    => 'E1 6RF',
+		'country'     => 'GB',
+		'latitude'    => '51.5203',
+		'longitude'   => '-0.0716',
 	),
 );
 
@@ -163,18 +196,73 @@ foreach ( $venues as $venue ) {
 	if ( $existing ) {
 		$venue_term_ids[ $venue['slug'] ] = is_array( $existing ) ? intval( $existing['term_id'] ) : intval( $existing );
 		error_log( 'GPEI-EO: Venue "' . $venue['name'] . '" already exists (term ID: ' . $venue_term_ids[ $venue['slug'] ] . ')' );
+		continue;
+	}
+
+	if ( $use_eo_venue_api ) {
+		/*
+		 * Use Event Organiser's own API to create venues.
+		 *
+		 * `eo_insert_venue( $name, $args )` accepts the venue name as the
+		 * first parameter and an $args array that extends `wp_insert_term()`
+		 * arguments with the following EO-specific 'core' meta keys:
+		 *
+		 * - description (string) — Term description (included in WXR exports).
+		 * - address     (string) — Street address.
+		 * - city        (string) — City name.
+		 * - state       (string) — State or province.
+		 * - postcode    (string) — Postal/ZIP code.
+		 * - country     (string) — Country code (2-letter ISO 3166-1 alpha-2).
+		 * - latitude    (float)  — Latitude coordinate.
+		 * - longitude   (float)  — Longitude coordinate.
+		 *
+		 * Returns an array with 'term_id' and 'term_taxonomy_id' on success,
+		 * or a WP_Error on failure — same as wp_insert_term().
+		 *
+		 * @see eo_insert_venue() in event-organiser/includes/event-organiser-venue-functions.php
+		 * @since Event Organiser 1.4.0
+		 */
+		$result = eo_insert_venue( $venue['name'], array(
+			'slug'        => $venue['slug'],
+			'description' => $venue['description'],
+			'address'     => $venue['address'],
+			'city'        => $venue['city'],
+			'state'       => $venue['state'],
+			'postcode'    => $venue['postcode'],
+			'country'     => $venue['country'],
+			'latitude'    => $venue['latitude'],
+			'longitude'   => $venue['longitude'],
+		) );
+
+		if ( is_wp_error( $result ) ) {
+			error_log( 'GPEI-EO: Failed to create venue via eo_insert_venue "' . $venue['name'] . '": ' . $result->get_error_message() );
+			$venue_term_ids[ $venue['slug'] ] = 0;
+		} else {
+			$venue_term_ids[ $venue['slug'] ] = intval( $result['term_id'] );
+			error_log( 'GPEI-EO: Created venue via eo_insert_venue: "' . $venue['name'] . '" (term ID: ' . $result['term_id'] . ')' );
+		}
+
 	} else {
+		/*
+		 * Fallback: Create venue via wp_insert_term() without address meta.
+		 *
+		 * When Event Organiser's API is not available, we can only create the
+		 * taxonomy term. Venue address details stored as term meta will not be
+		 * available, but the venue name and slug will be correct for export.
+		 *
+		 * The description is set to the full address string for reference.
+		 */
 		$result = wp_insert_term( $venue['name'], 'event-venue', array(
 			'slug'        => $venue['slug'],
 			'description' => $venue['description'],
 		) );
 
 		if ( is_wp_error( $result ) ) {
-			error_log( 'GPEI-EO: Failed to create venue "' . $venue['name'] . '": ' . $result->get_error_message() );
+			error_log( 'GPEI-EO: Failed to create venue via wp_insert_term "' . $venue['name'] . '": ' . $result->get_error_message() );
 			$venue_term_ids[ $venue['slug'] ] = 0;
 		} else {
 			$venue_term_ids[ $venue['slug'] ] = intval( $result['term_id'] );
-			error_log( 'GPEI-EO: Created venue "' . $venue['name'] . '" (term ID: ' . $result['term_id'] . ')' );
+			error_log( 'GPEI-EO: Created venue via wp_insert_term (no address meta): "' . $venue['name'] . '" (term ID: ' . $result['term_id'] . ')' );
 		}
 	}
 }
@@ -242,6 +330,23 @@ foreach ( $events as $event ) {
 	 * wp_insert_post().
 	 *
 	 * @see https://developer.developer.developer.developer/function/eo_insert_event/
+	 */
+	/*
+	 * Prefer eo_insert_event() when Event Organiser is active.
+	 *
+	 * `eo_insert_event()` handles:
+	 * - Creating the `event` CPT post via wp_insert_post().
+	 * - Populating the EO schedule meta keys (_eventorganiser_schedule_*).
+	 * - Populating EO's custom `eo_events` table (if it exists).
+	 * - Firing the `eventorganiser_save_event` action for extensions.
+	 *
+	 * The $event_data array accepts all wp_insert_post() arguments.
+	 * The $event_args array accepts schedule configuration:
+	 * - start    (DateTime) — Event start datetime.
+	 * - end      (DateTime) — Event end datetime.
+	 * - schedule (string)   — 'once', 'daily', 'weekly', 'monthly', 'yearly'.
+	 *
+	 * @see eo_insert_event() in event-organiser/includes/event-organiser-event-functions.php
 	 */
 	if ( function_exists( 'eo_insert_event' ) ) {
 		$event_id = eo_insert_event(
