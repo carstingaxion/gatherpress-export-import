@@ -31,14 +31,15 @@ require_once __DIR__ . '/includes/traits/trait-taxonomy-venue-handler.php';
 require_once __DIR__ . '/includes/traits/trait-venue-detail-handler.php';
 require_once __DIR__ . '/includes/traits/trait-template-block-handler.php';
 
-// Load classes.
-require_once __DIR__ . '/includes/classes/class-tec-adapter.php';
-require_once __DIR__ . '/includes/classes/class-events-manager-adapter.php';
-require_once __DIR__ . '/includes/classes/class-mec-adapter.php';
-require_once __DIR__ . '/includes/classes/class-eventon-adapter.php';
-require_once __DIR__ . '/includes/classes/class-aioec-adapter.php';
-require_once __DIR__ . '/includes/classes/class-event-organiser-adapter.php';
+// Load adapter classes.
+require_once __DIR__ . '/includes/classes/adapters/class-tec-adapter.php';
+require_once __DIR__ . '/includes/classes/adapters/class-events-manager-adapter.php';
+require_once __DIR__ . '/includes/classes/adapters/class-mec-adapter.php';
+require_once __DIR__ . '/includes/classes/adapters/class-eventon-adapter.php';
+require_once __DIR__ . '/includes/classes/adapters/class-aioec-adapter.php';
+require_once __DIR__ . '/includes/classes/adapters/class-event-organiser-adapter.php';
 
+// Load classes.
 require_once __DIR__ . '/includes/classes/class-adapter-registry.php';
 require_once __DIR__ . '/includes/classes/class-post-type-rewriter.php';
 require_once __DIR__ . '/includes/classes/class-taxonomy-rewriter.php';

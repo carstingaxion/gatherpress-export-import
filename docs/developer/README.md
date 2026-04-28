@@ -209,17 +209,18 @@ The `WXRImportHelper` trait (`tests/php/traits/WXRImportHelper.php`) provides re
 │   │   ├── trait-venue-detail-handler.php
 │   │   └── trait-template-block-handler.php
 │   └── classes/
+│       ├── adapters/
+│       │   ├── class-tec-adapter.php
+│       │   ├── class-events-manager-adapter.php
+│       │   ├── class-mec-adapter.php
+│       │   ├── class-eventon-adapter.php
+│       │   ├── class-aioec-adapter.php
+│       │   └── class-event-organiser-adapter.php
 │       ├── class-adapter-registry.php     # Adapter registration + merged maps
 │       ├── class-post-type-rewriter.php   # Post type rewriting on import
 │       ├── class-taxonomy-rewriter.php    # Taxonomy rewriting on import
 │       ├── class-meta-stasher.php         # Meta interception + transient stashing
 │       ├── class-stash-processor.php      # Stash processing at import_end
-│       ├── class-tec-adapter.php
-│       ├── class-events-manager-adapter.php
-│       ├── class-mec-adapter.php
-│       ├── class-eventon-adapter.php
-│       ├── class-aioec-adapter.php
-│       ├── class-event-organiser-adapter.php
 │       ├── class-migration.php            # Thin orchestrator (singleton)
 │       └── class-importer.php
 ├── assets/css/importer.css
