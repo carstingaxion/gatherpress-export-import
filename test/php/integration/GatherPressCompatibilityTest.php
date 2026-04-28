@@ -7,6 +7,10 @@
  * if a future GatherPress release removes or renames a method, the
  * test suite will fail before any runtime error can occur.
  *
+ * These tests rely on the bootstrap's `init:20` hook, which caches
+ * the GatherPress registration state into `$GLOBALS['gpei_test_init20_cache']`.
+ * This avoids calling `do_action( 'init' )` inside test classes.
+ *
  * @package GatherPressExportImport\Tests\Integration
  * @since   0.2.0
  */
@@ -98,6 +102,8 @@ class GatherPressCompatibilityTest extends TestCase {
 	 * The migration plugin relies on this taxonomy to link events to
 	 * venues. GatherPress auto-registers it when the plugin is active.
 	 *
+	 * Uses the init:20 cache from the bootstrap when available.
+	 *
 	 * @since 0.2.0
 	 *
 	 * @return void
@@ -107,10 +113,19 @@ class GatherPressCompatibilityTest extends TestCase {
 			$this->markTestSkipped( 'GatherPress is not active.' );
 		}
 
-		$this->assertTrue(
-			taxonomy_exists( '_gatherpress_venue' ),
-			'The _gatherpress_venue shadow taxonomy must be registered by GatherPress.'
-		);
+		$cache = isset( $GLOBALS['gpei_test_init20_cache'] ) ? $GLOBALS['gpei_test_init20_cache'] : null;
+
+		if ( is_array( $cache ) ) {
+			$this->assertTrue(
+				$cache['taxonomy_exists_venue'],
+				'The _gatherpress_venue shadow taxonomy must be registered by GatherPress (checked at init:20).'
+			);
+		} else {
+			$this->assertTrue(
+				taxonomy_exists( '_gatherpress_venue' ),
+				'The _gatherpress_venue shadow taxonomy must be registered by GatherPress.'
+			);
+		}
 	}
 
 	/**
@@ -129,10 +144,19 @@ class GatherPressCompatibilityTest extends TestCase {
 			$this->markTestSkipped( 'GatherPress is not active.' );
 		}
 
-		$this->assertTrue(
-			post_type_exists( 'gatherpress_venue' ),
-			'The gatherpress_venue post type must be registered by GatherPress.'
-		);
+		$cache = isset( $GLOBALS['gpei_test_init20_cache'] ) ? $GLOBALS['gpei_test_init20_cache'] : null;
+
+		if ( is_array( $cache ) ) {
+			$this->assertTrue(
+				$cache['post_type_exists_venue'],
+				'The gatherpress_venue post type must be registered by GatherPress (checked at init:20).'
+			);
+		} else {
+			$this->assertTrue(
+				post_type_exists( 'gatherpress_venue' ),
+				'The gatherpress_venue post type must be registered by GatherPress.'
+			);
+		}
 	}
 
 	/**
@@ -151,10 +175,19 @@ class GatherPressCompatibilityTest extends TestCase {
 			$this->markTestSkipped( 'GatherPress is not active.' );
 		}
 
-		$this->assertTrue(
-			post_type_exists( 'gatherpress_event' ),
-			'The gatherpress_event post type must be registered by GatherPress.'
-		);
+		$cache = isset( $GLOBALS['gpei_test_init20_cache'] ) ? $GLOBALS['gpei_test_init20_cache'] : null;
+
+		if ( is_array( $cache ) ) {
+			$this->assertTrue(
+				$cache['post_type_exists_event'],
+				'The gatherpress_event post type must be registered by GatherPress (checked at init:20).'
+			);
+		} else {
+			$this->assertTrue(
+				post_type_exists( 'gatherpress_event' ),
+				'The gatherpress_event post type must be registered by GatherPress.'
+			);
+		}
 	}
 
 	/**
