@@ -526,6 +526,67 @@ class ICSImporterIntegrationTest extends TestCase {
 	// -----------------------------------------------------------------
 
 	/**
+	 * Tests that plain-text DESCRIPTION newlines are doubled in post content.
+	 *
+	 * When an ICS DESCRIPTION has single newlines (from escaped \n sequences),
+	 * the importer should double them so that converting the classic block
+	 * to actual blocks produces multiple paragraphs.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return void
+	 */
+	public function test_plain_text_description_newlines_are_doubled(): void {
+		if ( ! $this->is_gatherpress_active() ) {
+			$this->markTestSkipped( 'GatherPress is not active.' );
+		}
+
+		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Paragraph Test\nDESCRIPTION:First paragraph\\nSecond paragraph\\nThird paragraph\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+
+		$events  = $this->invoke_private( 'parse_ics', array( $ics ) );
+		$created = $this->invoke_private( 'create_events', array( $events ) );
+
+		$this->assertCount( 1, $created );
+
+		$post    = get_post( $created[0] );
+		$content = $post->post_content;
+
+		// The content should contain double line breaks (via <br> tags)
+		// so that block conversion produces separate paragraphs.
+		// nl2br converts \n\n to <br />\n<br />\n which creates paragraph breaks.
+		$br_count = substr_count( $content, '<br' );
+		$this->assertGreaterThanOrEqual( 4, $br_count,
+			'Doubled newlines should produce at least 4 <br> tags for 3 paragraphs.' );
+	}
+
+	/**
+	 * Tests that HTML description (X-ALT-DESC) is NOT affected by newline doubling.
+	 *
+	 * When X-ALT-DESC is present, the importer should use the HTML description
+	 * as-is without doubling any newlines.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return void
+	 */
+	public function test_html_description_not_affected_by_newline_doubling(): void {
+		if ( ! $this->is_gatherpress_active() ) {
+			$this->markTestSkipped( 'GatherPress is not active.' );
+		}
+
+		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:HTML Desc Test\nDESCRIPTION:Plain text version\nX-ALT-DESC;FMTTYPE=text/html:<p>HTML paragraph one</p><p>HTML paragraph two</p>\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+
+		$events  = $this->invoke_private( 'parse_ics', array( $ics ) );
+		$created = $this->invoke_private( 'create_events', array( $events ) );
+
+		$this->assertCount( 1, $created );
+
+		$post = get_post( $created[0] );
+		$this->assertStringContainsString( '<p>HTML paragraph one</p>', $post->post_content );
+		$this->assertStringContainsString( '<p>HTML paragraph two</p>', $post->post_content );
+	}
+
+	/**
 	 * Tests that importing an empty events array creates no posts.
 	 *
 	 * @since 0.3.0

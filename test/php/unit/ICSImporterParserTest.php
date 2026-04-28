@@ -331,6 +331,25 @@ class ICSImporterParserTest extends \WP_UnitTestCase {
 		$this->assertStringContainsString( "Line one\nLine two;end", $events[0]['description'] );
 	}
 
+	/**
+	 * Tests that plain-text DESCRIPTION with escaped newlines is parsed
+	 * with single newline characters that will be doubled during event creation.
+	 *
+	 * This verifies the raw parsing level — the actual doubling of line
+	 * breaks happens in create_events(), not in parse_ics().
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return void
+	 */
+	public function test_parse_ics_preserves_newlines_in_description(): void {
+		$ics = "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Multiline Event\nDESCRIPTION:Paragraph one\\nParagraph two\\nParagraph three\nDTSTART:20250915T090000Z\nEND:VEVENT\nEND:VCALENDAR";
+		$events = $this->invoke_private( 'parse_ics', array( $ics ) );
+		$this->assertCount( 1, $events );
+		// Raw parsed description should have single newlines.
+		$this->assertSame( "Paragraph one\nParagraph two\nParagraph three", $events[0]['description'] );
+	}
+
 	// -----------------------------------------------------------------
 	// parse_ics_datetime() tests
 	// -----------------------------------------------------------------

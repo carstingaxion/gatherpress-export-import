@@ -422,11 +422,21 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 
 			foreach ( $events as $event_data ) {
 				// Prefer HTML description if available, otherwise plain text.
+				// For plain-text DESCRIPTION, double the line breaks so that
+				// converting the resulting classic block to actual blocks
+				// produces multiple paragraphs instead of a single one.
 				$description = '';
 				if ( ! empty( $event_data['html_desc'] ) ) {
 					$description = wp_kses_post( $event_data['html_desc'] );
 				} elseif ( ! empty( $event_data['description'] ) ) {
-					$description = wp_kses_post( nl2br( $event_data['description'] ) );
+					$text = $event_data['description'];
+					// Double single newlines to create paragraph breaks.
+					// First collapse any existing double+ newlines to a marker,
+					// then double remaining single newlines, then restore markers.
+					$text = preg_replace( '/\n{2,}/', '{{GPEI_PARA}}', $text );
+					$text = str_replace( "\n", "\n\n", $text );
+					$text = str_replace( '{{GPEI_PARA}}', "\n\n", $text );
+					$description = wp_kses_post( nl2br( $text ) );
 				}
 
 				$post_id = wp_insert_post(
