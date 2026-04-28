@@ -308,7 +308,7 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 		$this->assertSame( $data, $result );
 
 		// Verify non-matching type is ignored.
-		$other = array(
+		$other   = array(
 			'post_type'  => 'some_other_type',
 			'post_title' => 'Other Post',
 		);

@@ -260,6 +260,5 @@ if ( ! class_exists( __NAMESPACE__ . '\Events_Manager_Adapter' ) ) {
 		public function setup_import_hooks(): void {
 			$this->setup_venue_detail_hooks();
 		}
-
 	}
 }

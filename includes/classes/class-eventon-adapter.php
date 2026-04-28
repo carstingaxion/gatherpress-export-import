@@ -212,6 +212,5 @@ if ( ! class_exists( __NAMESPACE__ . '\EventON_Adapter' ) ) {
 		public function setup_import_hooks(): void {
 			$this->setup_taxonomy_venue_hooks();
 		}
-
 	}
 }
