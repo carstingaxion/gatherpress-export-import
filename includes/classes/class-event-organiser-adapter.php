@@ -114,22 +114,43 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 		/**
 		 * Gets the meta keys that should be stashed during import.
 		 *
+		 * Real Event Organiser WXR exports use these meta keys:
+		 * - `_eventorganiser_schedule_start_start`  — Start datetime (primary)
+		 * - `_eventorganiser_schedule_start_finish`  — End datetime (primary)
+		 * - `_eventorganiser_schedule_until`          — Recurrence until date
+		 * - `_eventorganiser_schedule_last_start`     — Last occurrence start
+		 * - `_eventorganiser_schedule_last_finish`    — Last occurrence end
+		 * - `_eventorganiser_event_schedule`           — Serialized schedule config
+		 *
+		 * Legacy keys (`_eventorganiser_schedule_start_datetime` and
+		 * `_eventorganiser_schedule_end_datetime`) are also included for
+		 * backward compatibility with older EO versions and manually
+		 * crafted WXR files.
+		 *
 		 * @since 0.1.0
 		 *
 		 * @return string[] Event Organiser schedule meta keys.
 		 */
 		public function get_stash_meta_keys(): array {
 			return array(
-				'_eventorganiser_schedule_start_datetime',
-				'_eventorganiser_schedule_end_datetime',
+				// Real WXR export keys (EO 3.x+).
+				'_eventorganiser_schedule_start_start',
 				'_eventorganiser_schedule_start_finish',
+				'_eventorganiser_schedule_until',
 				'_eventorganiser_schedule_last_start',
 				'_eventorganiser_schedule_last_finish',
+				'_eventorganiser_event_schedule',
+				// Legacy keys for backward compatibility.
+				'_eventorganiser_schedule_start_datetime',
+				'_eventorganiser_schedule_end_datetime',
 			);
 		}
 
 		/**
 		 * Gets pseudopostmeta definitions for Event Organiser meta keys.
+		 *
+		 * Includes both real WXR export keys (EO 3.x+) and legacy keys
+		 * for backward compatibility.
 		 *
 		 * @since 0.1.0
 		 *
@@ -139,15 +160,16 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 			$callback = array( $this, 'noop_callback' );
 
 			return array(
-				'_eventorganiser_schedule_start_datetime' => array(
-					'post_type'       => 'gatherpress_event',
-					'import_callback' => $callback,
-				),
-				'_eventorganiser_schedule_end_datetime'   => array(
+				// Real WXR export keys (EO 3.x+).
+				'_eventorganiser_schedule_start_start'    => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
 				'_eventorganiser_schedule_start_finish'   => array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				),
+				'_eventorganiser_schedule_until'          => array(
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
@@ -159,15 +181,29 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 					'post_type'       => 'gatherpress_event',
 					'import_callback' => $callback,
 				),
+				'_eventorganiser_event_schedule'          => array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				),
+				// Legacy keys for backward compatibility.
+				'_eventorganiser_schedule_start_datetime' => array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				),
+				'_eventorganiser_schedule_end_datetime'   => array(
+					'post_type'       => 'gatherpress_event',
+					'import_callback' => $callback,
+				),
 			);
 		}
 
 		/**
 		 * Determines if the given stash data belongs to this adapter.
 		 *
-		 * Checks for the presence of the `_eventorganiser_schedule_start_datetime`
-		 * meta key to distinguish from Events Manager, which also uses the
-		 * `event` post type.
+		 * Checks for the presence of Event Organiser-specific meta keys
+		 * to distinguish from Events Manager, which also uses the `event`
+		 * post type. Checks both the real WXR key (`_eventorganiser_schedule_start_start`)
+		 * and the legacy key (`_eventorganiser_schedule_start_datetime`).
 		 *
 		 * @since 0.1.0
 		 *
@@ -175,17 +211,27 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 		 * @return bool True if Event Organiser meta keys are present.
 		 */
 		public function can_handle( array $stash ): bool {
-			return isset( $stash['_eventorganiser_schedule_start_datetime'] );
+			return isset( $stash['_eventorganiser_schedule_start_start'] )
+				|| isset( $stash['_eventorganiser_schedule_start_datetime'] );
 		}
 
 		/**
 		 * Converts the stashed Event Organiser meta data into GatherPress datetimes.
 		 *
-		 * Reads `_eventorganiser_schedule_start_datetime` and
-		 * `_eventorganiser_schedule_end_datetime` from the stash. Falls back to
-		 * the `_eventorganiser_schedule_start_finish` key if the end datetime
-		 * is not available. Uses the site's default timezone since Event Organiser
-		 * stores datetimes in local time.
+		 * Supports both real WXR export keys (EO 3.x+) and legacy keys:
+		 *
+		 * **Real WXR keys (preferred):**
+		 * - `_eventorganiser_schedule_start_start` — Start datetime
+		 * - `_eventorganiser_schedule_start_finish` — End datetime
+		 *
+		 * **Legacy keys (fallback):**
+		 * - `_eventorganiser_schedule_start_datetime` — Start datetime
+		 * - `_eventorganiser_schedule_end_datetime` — End datetime
+		 *
+		 * Falls back to `_eventorganiser_schedule_last_start` /
+		 * `_eventorganiser_schedule_last_finish` if primary keys are empty.
+		 * Uses the site's default timezone since Event Organiser stores
+		 * datetimes in local time.
 		 *
 		 * @since 0.1.0
 		 *
@@ -194,16 +240,24 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 		 * @return void
 		 */
 		public function convert_datetimes( int $post_id, array $stash ): void {
-			$start = isset( $stash['_eventorganiser_schedule_start_datetime'] )
-				? $stash['_eventorganiser_schedule_start_datetime']
-				: '';
+			// Try real WXR key first, then legacy key, then last_start fallback.
+			$start = '';
+			if ( ! empty( $stash['_eventorganiser_schedule_start_start'] ) ) {
+				$start = $stash['_eventorganiser_schedule_start_start'];
+			} elseif ( ! empty( $stash['_eventorganiser_schedule_start_datetime'] ) ) {
+				$start = $stash['_eventorganiser_schedule_start_datetime'];
+			} elseif ( ! empty( $stash['_eventorganiser_schedule_last_start'] ) ) {
+				$start = $stash['_eventorganiser_schedule_last_start'];
+			}
 
-			$end = isset( $stash['_eventorganiser_schedule_end_datetime'] )
-				? $stash['_eventorganiser_schedule_end_datetime']
-				: '';
-
-			if ( empty( $end ) && isset( $stash['_eventorganiser_schedule_start_finish'] ) ) {
+			// Try start_finish first, then legacy end_datetime, then last_finish.
+			$end = '';
+			if ( ! empty( $stash['_eventorganiser_schedule_start_finish'] ) ) {
 				$end = $stash['_eventorganiser_schedule_start_finish'];
+			} elseif ( ! empty( $stash['_eventorganiser_schedule_end_datetime'] ) ) {
+				$end = $stash['_eventorganiser_schedule_end_datetime'];
+			} elseif ( ! empty( $stash['_eventorganiser_schedule_last_finish'] ) ) {
+				$end = $stash['_eventorganiser_schedule_last_finish'];
 			}
 
 			if ( empty( $start ) ) {
@@ -272,5 +326,6 @@ if ( ! class_exists( __NAMESPACE__ . '\Event_Organiser_Adapter' ) ) {
 		public function setup_import_hooks(): void {
 			$this->setup_taxonomy_venue_hooks();
 		}
+
 	}
 }

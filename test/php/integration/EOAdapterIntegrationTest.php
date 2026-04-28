@@ -93,7 +93,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that the meta stasher intercepts EO schedule meta keys.
+	 * Tests that the meta stasher intercepts real EO schedule meta keys.
 	 *
 	 * @since 0.1.0
 	 *
@@ -104,11 +104,11 @@ class EOAdapterIntegrationTest extends TestCase {
 
 		$stasher = $this->get_migration_instance()->get_meta_stasher();
 
-		// The stash_meta_on_import() filter returns true to block the meta from saving.
+		// Test with the real WXR key (EO 3.x+).
 		$result = $stasher->stash_meta_on_import(
 			null,
 			$event_id,
-			'_eventorganiser_schedule_start_datetime',
+			'_eventorganiser_schedule_start_start',
 			'2025-08-28 18:30:00',
 			false
 		);
@@ -118,8 +118,8 @@ class EOAdapterIntegrationTest extends TestCase {
 		// Verify the transient was set.
 		$stash = get_transient( 'gpei_meta_stash_' . $event_id );
 		$this->assertIsArray( $stash );
-		$this->assertArrayHasKey( '_eventorganiser_schedule_start_datetime', $stash );
-		$this->assertSame( '2025-08-28 18:30:00', $stash['_eventorganiser_schedule_start_datetime'] );
+		$this->assertArrayHasKey( '_eventorganiser_schedule_start_start', $stash );
+		$this->assertSame( '2025-08-28 18:30:00', $stash['_eventorganiser_schedule_start_start'] );
 
 		// Clean up.
 		delete_transient( 'gpei_meta_stash_' . $event_id );
@@ -172,7 +172,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that EO adapter correctly converts datetimes.
+	 * Tests that EO adapter correctly converts datetimes with real WXR keys.
 	 *
 	 * @since 0.1.0
 	 *
@@ -186,9 +186,10 @@ class EOAdapterIntegrationTest extends TestCase {
 		$event_id = $this->create_event( 'Datetime Conversion Test' );
 		$adapter  = $this->get_eo_adapter();
 
+		// Real WXR keys from EO 3.x+.
 		$stash = array(
-			'_eventorganiser_schedule_start_datetime' => '2025-08-28 18:30:00',
-			'_eventorganiser_schedule_end_datetime'   => '2025-08-28 20:30:00',
+			'_eventorganiser_schedule_start_start'  => '2025-08-28 18:30:00',
+			'_eventorganiser_schedule_start_finish'  => '2025-08-28 20:30:00',
 		);
 
 		$adapter->convert_datetimes( $event_id, $stash );
@@ -203,24 +204,24 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that EO convert_datetimes() falls back to start_finish key.
+	 * Tests that EO convert_datetimes() works with legacy keys.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @return void
 	 */
-	public function test_eo_convert_datetimes_fallback_to_start_finish(): void {
+	public function test_eo_convert_datetimes_legacy_keys(): void {
 		if ( ! $this->is_gatherpress_active() ) {
 			$this->markTestSkipped( 'GatherPress is not active.' );
 		}
 
-		$event_id = $this->create_event( 'Fallback Datetime Test' );
+		$event_id = $this->create_event( 'Legacy Datetime Test' );
 		$adapter  = $this->get_eo_adapter();
 
+		// Legacy keys.
 		$stash = array(
 			'_eventorganiser_schedule_start_datetime' => '2025-09-05 20:00:00',
 			'_eventorganiser_schedule_start_finish'   => '2025-09-05 23:00:00',
-			// Intentionally omitting _eventorganiser_schedule_end_datetime.
 		);
 
 		$adapter->convert_datetimes( $event_id, $stash );
@@ -229,6 +230,7 @@ class EOAdapterIntegrationTest extends TestCase {
 		$datetime = $event->get_datetime();
 
 		$this->assertNotEmpty( $datetime );
+		$this->assertStringContains( '2025-09-05', $datetime['datetime_start'] );
 	}
 
 	/**
@@ -348,7 +350,7 @@ class EOAdapterIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Tests that the stash processor correctly identifies the EO adapter.
+	 * Tests that the stash processor correctly identifies the EO adapter with real keys.
 	 *
 	 * @since 0.1.0
 	 *
@@ -361,12 +363,12 @@ class EOAdapterIntegrationTest extends TestCase {
 
 		$event_id = $this->create_event( 'Process Stash Test' );
 
-		// Set up the stash transient with EO data.
+		// Set up the stash transient with real WXR EO data.
 		set_transient(
 			'gpei_meta_stash_' . $event_id,
 			array(
-				'_eventorganiser_schedule_start_datetime' => '2025-08-28 18:30:00',
-				'_eventorganiser_schedule_end_datetime'   => '2025-08-28 20:30:00',
+				'_eventorganiser_schedule_start_start'  => '2025-08-28 18:30:00',
+				'_eventorganiser_schedule_start_finish'  => '2025-08-28 20:30:00',
 			),
 			HOUR_IN_SECONDS
 		);

@@ -87,6 +87,8 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	/**
 	 * Tests that the adapter returns the correct stash meta keys.
 	 *
+	 * Includes both real WXR export keys (EO 3.x+) and legacy keys.
+	 *
 	 * @since 0.1.0
 	 *
 	 * @covers ::get_stash_meta_keys
@@ -94,12 +96,20 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	 */
 	public function test_get_stash_meta_keys(): void {
 		$keys = $this->adapter->get_stash_meta_keys();
-		$this->assertContains( '_eventorganiser_schedule_start_datetime', $keys );
-		$this->assertContains( '_eventorganiser_schedule_end_datetime', $keys );
+
+		// Real WXR export keys.
+		$this->assertContains( '_eventorganiser_schedule_start_start', $keys );
 		$this->assertContains( '_eventorganiser_schedule_start_finish', $keys );
+		$this->assertContains( '_eventorganiser_schedule_until', $keys );
 		$this->assertContains( '_eventorganiser_schedule_last_start', $keys );
 		$this->assertContains( '_eventorganiser_schedule_last_finish', $keys );
-		$this->assertCount( 5, $keys );
+		$this->assertContains( '_eventorganiser_event_schedule', $keys );
+
+		// Legacy keys.
+		$this->assertContains( '_eventorganiser_schedule_start_datetime', $keys );
+		$this->assertContains( '_eventorganiser_schedule_end_datetime', $keys );
+
+		$this->assertCount( 8, $keys );
 	}
 
 	/**
@@ -112,11 +122,20 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	 */
 	public function test_get_pseudopostmetas(): void {
 		$pseudometas = $this->adapter->get_pseudopostmetas();
-		$this->assertArrayHasKey( '_eventorganiser_schedule_start_datetime', $pseudometas );
-		$this->assertArrayHasKey( '_eventorganiser_schedule_end_datetime', $pseudometas );
+
+		// Real WXR export keys.
+		$this->assertArrayHasKey( '_eventorganiser_schedule_start_start', $pseudometas );
 		$this->assertArrayHasKey( '_eventorganiser_schedule_start_finish', $pseudometas );
+		$this->assertArrayHasKey( '_eventorganiser_schedule_until', $pseudometas );
 		$this->assertArrayHasKey( '_eventorganiser_schedule_last_start', $pseudometas );
 		$this->assertArrayHasKey( '_eventorganiser_schedule_last_finish', $pseudometas );
+		$this->assertArrayHasKey( '_eventorganiser_event_schedule', $pseudometas );
+
+		// Legacy keys.
+		$this->assertArrayHasKey( '_eventorganiser_schedule_start_datetime', $pseudometas );
+		$this->assertArrayHasKey( '_eventorganiser_schedule_end_datetime', $pseudometas );
+
+		$this->assertCount( 8, $pseudometas );
 
 		foreach ( $pseudometas as $config ) {
 			$this->assertSame( 'gatherpress_event', $config['post_type'] );
@@ -125,14 +144,31 @@ class EOAdapterTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that can_handle() returns true for EO stash data.
+	 * Tests that can_handle() returns true for real WXR EO stash data.
 	 *
 	 * @since 0.1.0
 	 *
 	 * @covers ::can_handle
 	 * @return void
 	 */
-	public function test_can_handle_with_eo_meta(): void {
+	public function test_can_handle_with_real_eo_meta(): void {
+		$stash = array(
+			'_eventorganiser_schedule_start_start'  => '2025-08-28 18:30:00',
+			'_eventorganiser_schedule_start_finish'  => '2025-08-28 20:30:00',
+		);
+
+		$this->assertTrue( $this->adapter->can_handle( $stash ) );
+	}
+
+	/**
+	 * Tests that can_handle() returns true for legacy EO stash data.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @covers ::can_handle
+	 * @return void
+	 */
+	public function test_can_handle_with_legacy_eo_meta(): void {
 		$stash = array(
 			'_eventorganiser_schedule_start_datetime' => '2025-08-28 18:30:00',
 			'_eventorganiser_schedule_end_datetime'   => '2025-08-28 20:30:00',
