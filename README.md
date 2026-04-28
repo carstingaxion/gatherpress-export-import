@@ -3,7 +3,7 @@
 **Contributors:** carstenbach & WordPress Telex  
 **Tags:** data-liberation, import, migration, events  
 **Tested up to:** 6.9  
-**Stable tag:** 0.2.2  
+**Stable tag:** 0.2.0  
 **Requires Plugins:**  gatherpress  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
@@ -31,13 +31,13 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 | Source Plugin | Import | Manually Tested | PHPUnit Tested |
 |---|:---:|:---:|:---:|
 | [**The Events Calendar**](docs/source-tec.md) (StellarWP) | ✅ | ✅ | ✅ |
-| [**Events Manager**](docs/source-events-manager.md) | ⚠️ | ⚠️ | ⚠️ |
+| [**Events Manager**](docs/source-events-manager.md) | ✅ | ✅ | ✅ |
 | [**Modern Events Calendar**](docs/source-mec.md) (Webnus) | ⚠️ | ❌ | ❌ |
 | [**All-in-One Event Calendar**](docs/source-aioec.md) | ⚠️ | ❌ | ❌ |
 | [**EventON**](docs/source-eventon.md) | ⚠️ | ❌ | ❌ |
-| [**Event Organiser**](docs/source-event-organiser.md) (Stephen Harris) | ⚠️ | ⚠️ | ⚠️ |
+| [**Event Organiser**](docs/source-event-organiser.md) (Stephen Harris) | ⚠️ | ✅ | ✅ |
 
-**Legend:** ✅ Fully supported/tested — ⚠️ Partial (some data unavailable via WXR) — ❌ Not yet
+**Legend:** ✅ Fully supported/tested — ⚠️ Partial (some data unavailable via WXR) — 🚫 Not supported by GatherPress — ❌ Not yet
 
 ---
 
@@ -141,6 +141,8 @@ Add support for additional event plugins by creating a class that implements the
 $migration = \GatherPressExportImport\Migration::get_instance();
 $migration->register_adapter( new My_Custom_Adapter() );
 ```
+
+For a complete walkthrough of building and testing a new adapter, see the [Add a New Adapter Guide](docs/add-adapter-guide.md).
 
 All available filters are documented, see the [Hooks documentation](docs/developer/hooks/Hooks.md) for usage details.
 

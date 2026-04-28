@@ -2,6 +2,18 @@
 
 Adapter class: `TEC_Adapter`
 
+### Adapter Completeness
+
+| Step | Description | Status |
+|:---:|---|:---:|
+| 1 | Source documentation (`source-tec.md`) | ✅ |
+| 2 | Blueprint import script (`tec-import.php`) | ✅ |
+| 3 | WXR fixture from real export (`tec.xml`) | ✅ |
+| 4 | Adapter unit tests (`TECAdapterTest.php`) | ✅ |
+| 5 | WXR import integration tests (`WXRImportTECTest.php`) | ✅ |
+
+**Progress: 5/5** — Fully implemented and tested.
+
 ---
 
 ## Post Type Mapping

@@ -2,6 +2,18 @@
 
 Adapter class: `Events_Manager_Adapter`
 
+### Adapter Completeness
+
+| Step | Description | Status |
+|:---:|---|:---:|
+| 1 | Source documentation (`source-events-manager.md`) | ✅ |
+| 2 | Blueprint import script (`events-manager-import.php`) | ✅ |
+| 3 | WXR fixture from real export (`events-manager.xml`) | ⚠️ Empty placeholder |
+| 4 | Adapter unit tests (`EventsManagerAdapterTest.php`) | ✅ |
+| 5 | WXR import integration tests (`WXRImportEMTest.php`) | ✅ |
+
+**Progress: 4/5** — Fixture needs real export data.
+
 ---
 
 ## Post Type Mapping
@@ -45,8 +57,8 @@ Events reference their venue via `_location_id` post meta, which contains the or
 | Event categories | ✅ | |
 | Event tags | ✅ | |
 | Organizer | ⚠️ | Partially available but not mapped |
-| Recurrence rules | ❌ | Not available via WXR |
-| RSVP / Tickets | ❌ | Not convertible via WXR |
+| Recurrence rules | 🚫 | Not available via WXR |
+| RSVP / Tickets | 🚫 | Not convertible via WXR |
 
 ## Import Sequence
 
