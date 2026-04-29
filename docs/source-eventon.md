@@ -7,10 +7,10 @@ Adapter class: `EventON_Adapter`
 | Step | Description | Status |
 |:---:|---|:---:|
 | 1 | Source documentation (`source-eventon.md`) | ✅ |
-| 2 | Blueprint import script (`eventon-import.php`) | ✅ |
-| 3 | WXR fixture from real export (`eventon.xml`) | ❌ Empty placeholder |
-| 4 | Adapter unit tests | ❌ Not yet |
-| 5 | WXR import integration tests | ❌ Not yet |
+| 2 | Blueprint import script (`eventon-import.php`) | ❌ |
+| 3 | WXR fixture from real export (`eventon.xml`) | ❌ |
+| 4 | Adapter unit tests | ❌ |
+| 5 | WXR import integration tests | ❌ |
 
 **Progress: 2/5** — Adapter class and docs exist; needs fixture, unit tests, and import tests.
 

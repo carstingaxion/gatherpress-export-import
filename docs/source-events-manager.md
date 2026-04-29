@@ -7,10 +7,10 @@ Adapter class: `Events_Manager_Adapter`
 | Step | Description | Status |
 |:---:|---|:---:|
 | 1 | Source documentation (`source-events-manager.md`) | ✅ |
-| 2 | Blueprint import script (`events-manager-import.php`) | ✅ |
-| 3 | WXR fixture from real export (`events-manager.xml`) | ⚠️ Empty placeholder |
-| 4 | Adapter unit tests (`EventsManagerAdapterTest.php`) | ✅ |
-| 5 | WXR import integration tests (`WXRImportEMTest.php`) | ✅ |
+| 2 | Blueprint import script (`events-manager-import.php`) | ⚠️ |
+| 3 | WXR fixture from real export (`events-manager.xml`) | ❌ |
+| 4 | Adapter unit tests (`EventsManagerAdapterTest.php`) | ❌ |
+| 5 | WXR import integration tests (`WXRImportEMTest.php`) | ❌ |
 
 **Progress: 4/5** — Fixture needs real export data.
 

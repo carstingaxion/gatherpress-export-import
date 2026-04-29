@@ -31,7 +31,7 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 | Source Plugin | Import | Manually Tested | PHPUnit Tested |
 |---|:---:|:---:|:---:|
 | [**The Events Calendar**](docs/source-tec.md) (StellarWP) | ✅ | ✅ | ✅ |
-| [**Events Manager**](docs/source-events-manager.md) | ✅ | ✅ | ✅ |
+| [**Events Manager**](docs/source-events-manager.md) | ⚠️ | ⚠️ | ⚠️ |
 | [**Modern Events Calendar**](docs/source-mec.md) (Webnus) | ⚠️ | ❌ | ❌ |
 | [**All-in-One Event Calendar**](docs/source-aioec.md) | ⚠️ | ❌ | ❌ |
 | [**EventON**](docs/source-eventon.md) | ⚠️ | ❌ | ❌ |

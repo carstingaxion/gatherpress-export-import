@@ -8,9 +8,9 @@ Adapter class: `AIOEC_Adapter`
 |:---:|---|:---:|
 | 1 | Source documentation (`source-aioec.md`) | ✅ |
 | 2 | Blueprint import script (`aioec-import.php`) | ✅ |
-| 3 | WXR fixture from real export (`aioec.xml`) | ❌ Empty placeholder |
-| 4 | Adapter unit tests | ❌ Not yet |
-| 5 | WXR import integration tests | ❌ Not yet |
+| 3 | WXR fixture from real export (`aioec.xml`) | ❌ |
+| 4 | Adapter unit tests | ❌ |
+| 5 | WXR import integration tests | ❌ |
 
 **Progress: 2/5** — Adapter class and docs exist; needs fixture, unit tests, and import tests.
 
