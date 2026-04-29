@@ -308,7 +308,7 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 		$this->assertSame( $data, $result );
 
 		// Verify non-matching type is ignored.
-		$other   = array(
+		$other = array(
 			'post_type'  => 'some_other_type',
 			'post_title' => 'Other Post',
 		);
@@ -330,6 +330,11 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_flag_events_skips_during_venue_pass(): void {
+		// Prime the venue taxonomy presence cache by intercepting a venue term.
+		// This sets tvh_wxr_has_our_taxonomy = true, which is required for
+		// tvh_maybe_flag_events_on_venue_pass() to activate.
+		$this->handler->tvh_intercept_venue_term_creation( 'Some Venue', 'test-venue-tax' );
+
 		$data = array(
 			'post_type'  => 'test_event',
 			'post_title' => 'Test Event Title',
@@ -613,6 +618,11 @@ class TaxonomyVenueHandlerTraitTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_flag_events_preserves_post_title(): void {
+		// Prime the venue taxonomy presence cache by intercepting a venue term.
+		// This sets tvh_wxr_has_our_taxonomy = true, which is required for
+		// tvh_maybe_flag_events_on_venue_pass() to activate.
+		$this->handler->tvh_intercept_venue_term_creation( 'Some Venue', 'test-venue-tax' );
+
 		$data = array(
 			'post_type'  => 'test_event',
 			'post_title' => 'My Special Event',

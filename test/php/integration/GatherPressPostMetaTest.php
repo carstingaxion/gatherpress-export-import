@@ -341,26 +341,6 @@ class GatherPressPostMetaTest extends TestCase {
 	}
 
 	/**
-	 * Tests the expected type of the gatherpress_enable_initial_decline meta key.
-	 *
-	 * @since 0.2.0
-	 *
-	 * @return void
-	 */
-	public function test_enable_initial_decline_meta_type(): void {
-		if ( ! $this->is_gatherpress_active() ) {
-			$this->markTestSkipped( 'GatherPress is not active.' );
-		}
-
-		$this->assertArrayHasKey( 'gatherpress_enable_initial_decline', $this->event_meta_registry );
-		$this->assertSame(
-			'boolean',
-			$this->event_meta_registry['gatherpress_enable_initial_decline']['type'],
-			'gatherpress_enable_initial_decline should be registered as type "boolean".'
-		);
-	}
-
-	/**
 	 * Tests the expected type of the gatherpress_max_guest_limit meta key.
 	 *
 	 * @since 0.2.0

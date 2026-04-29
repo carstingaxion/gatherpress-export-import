@@ -84,4 +84,4 @@ The following data types have no registered target in GatherPress:
 
 ## Changelog
 
-- **0.2.0** — Updated event meta: GatherPress now registers 10 meta keys for `gatherpress_event` (added `gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_start_gmt`, `gatherpress_datetime_end`, `gatherpress_datetime_end_gmt`, `gatherpress_timezone`; removed `gatherpress_enable_initial_decline` from the expected set as it may have been renamed or restructured).
+- **0.2.0** — Updated event meta: GatherPress now registers 10 meta keys for `gatherpress_event` (added `gatherpress_datetime`, `gatherpress_datetime_start`, `gatherpress_datetime_start_gmt`, `gatherpress_datetime_end`, `gatherpress_datetime_end_gmt`, `gatherpress_timezone`.

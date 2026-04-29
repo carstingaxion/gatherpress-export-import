@@ -9,6 +9,7 @@
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 
 	<exclude-pattern>*/wp-content/*</exclude-pattern>
+	<exclude-pattern>.wordpress-org/*</exclude-pattern>
 	<exclude-pattern>test/php/bootstrap.php</exclude-pattern>
 
 	<!-- Rules: figuren.theater Coding Standards -->

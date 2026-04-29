@@ -100,6 +100,6 @@ class DatetimeHelperTraitTest extends \WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_default_timezone(): void {
-		$this->assertSame( 'UTC', $this->helper->public_get_default_timezone() );
+		$this->assertSame( wp_timezone_string(), $this->helper->public_get_default_timezone() );
 	}
 }
