@@ -195,7 +195,7 @@ __webpack_require__.r(__webpack_exports__);
  * so the command is available on all admin screens. The component
  * uses the useCommand hook for registration and useState for modal state.
  *
- * @package GatherPressExportImport
+ * @package
  * @since   0.3.0
  */
 
@@ -206,6 +206,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/* global DataTransfer */
+
 /**
  * ICS Import Modal component.
  *
@@ -214,14 +216,15 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @param {Object}   props
  * @param {Function} props.onClose Callback to close the modal.
- * @returns {JSX.Element}
+ * @return {JSX.Element} The modal UI for ICS file import.
  */
 
 function ICSImportModal({
   onClose
 }) {
   const [file, setFile] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
-  const [includeTemplate, setIncludeTemplate] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
+  const [publishImport, setPublishImport] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
+  const [includeTemplate, setIncludeTemplate] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(true);
   const [templateBefore, setTemplateBefore] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
   const [isSubmitting, setIsSubmitting] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
   const [notice, setNotice] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
@@ -300,6 +303,15 @@ function ICSImportModal({
     submitInput.value = '1';
     form.appendChild(submitInput);
 
+    // Publish flag.
+    if (publishImport) {
+      const publishInput = document.createElement('input');
+      publishInput.type = 'hidden';
+      publishInput.name = 'gpei_ics_publish';
+      publishInput.value = '1';
+      form.appendChild(publishInput);
+    }
+
     // Include template.
     if (includeTemplate) {
       const templateInput = document.createElement('input');
@@ -328,7 +340,7 @@ function ICSImportModal({
     form.appendChild(fileInput);
     document.body.appendChild(form);
     form.submit();
-  }, [file, includeTemplate, templateBefore]);
+  }, [file, publishImport, includeTemplate, templateBefore]);
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.Modal, {
     title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('Import Events from ICS File', 'gatherpress-export-import'),
     onRequestClose: onClose,
@@ -411,6 +423,21 @@ function ICSImportModal({
         color: '#a7aaad'
       },
       children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('Accepted format: .ics (iCalendar). Exports from Google Calendar, Outlook, Apple Calendar, and Event Organiser are supported.', 'gatherpress-export-import')
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("fieldset", {
+      style: {
+        margin: '16px 0',
+        padding: '12px 16px',
+        border: '1px solid #dcdcde',
+        borderRadius: '4px',
+        background: '#f6f7f7'
+      },
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.CheckboxControl, {
+        __nextHasNoMarginBottom: true,
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('Publish events and venues immediately', 'gatherpress-export-import'),
+        checked: publishImport,
+        onChange: setPublishImport,
+        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('When disabled, imported events and venues are created as drafts for review.', 'gatherpress-export-import')
+      })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("fieldset", {
       style: {
         margin: '16px 0',
@@ -467,7 +494,7 @@ function ICSImportModal({
  * Mounted via domReady() + createRoot() so the useCommand hook runs
  * inside a proper React tree with access to WordPress data stores.
  *
- * @returns {JSX.Element|null}
+ * @return {JSX.Element|null} The import modal when open, or null.
  */
 function GpeiIcsCommand() {
   const [isOpen, setIsOpen] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
