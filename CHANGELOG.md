@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.0...HEAD)
+## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.1...HEAD)
+
+## [0.4.1](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.0...0.4.1) - 2026-04-29
+
+- Call importer via command palette ([#46](https://github.com/carstingaxion/gatherpress-export-import/pull/46))
+- Create an eo-export-helper.php mu-plugin that registers Event Organis… ([#45](https://github.com/carstingaxion/gatherpress-export-import/pull/45))
 
 ## [0.4.0](https://github.com/carstingaxion/gatherpress-export-import/compare/0.3.0...0.4.0) - 2026-04-28
 
