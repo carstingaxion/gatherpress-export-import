@@ -25,6 +25,10 @@ if ( ! trait_exists( __NAMESPACE__ . '\Template_Block_Handler' ) ) {
 	 * `template` argument and serializing the block specifications
 	 * into WordPress block comment markup (HTML).
 	 *
+	 * Uses WordPress core's `serialize_blocks()` function for
+	 * correct output of all block types, including dynamic blocks
+	 * that require the container format (open + close comments).
+	 *
 	 * @since 0.3.0
 	 */
 	trait Template_Block_Handler {
@@ -32,10 +36,12 @@ if ( ! trait_exists( __NAMESPACE__ . '\Template_Block_Handler' ) ) {
 		/**
 		 * Gets the serialized block template content for a given post type.
 		 *
-		 * Reads the `template` argument from the registered post type object
-		 * and serializes the blocks into HTML content. Returns an empty string
-		 * if the post type does not exist, has no template, or the template
-		 * is not an array.
+		 * Reads the `template` argument from the registered post type object,
+		 * converts the template block specifications to the format expected
+		 * by `serialize_blocks()`, and returns the serialized HTML content.
+		 *
+		 * Returns an empty string if the post type does not exist, has no
+		 * template, or the template is not an array.
 		 *
 		 * @since 0.3.0
 		 *
@@ -45,63 +51,170 @@ if ( ! trait_exists( __NAMESPACE__ . '\Template_Block_Handler' ) ) {
 		final protected function get_post_type_template_content( string $post_type ): string {
 			$post_type_obj = get_post_type_object( $post_type );
 
+			// @phpstan-ignore-next-line
 			if ( ! $post_type_obj || empty( $post_type_obj->template ) || ! is_array( $post_type_obj->template ) ) {
 				return '';
 			}
 
-			$blocks_content = '';
+			/**
+			 * This should be the shape coming from WP core.
+			 *
+			 * @var array<int, array{0?: string, 1?: array<string, mixed>, 2?: array<int, array<mixed>>}> $raw_template
+			 */
+			$raw_template     = $post_type_obj->template;
+			$formatted_blocks = $this->convert_template_to_blocks( $raw_template );
 
-			foreach ( $post_type_obj->template as $block_spec ) {
-				if ( ! is_array( $block_spec ) || empty( $block_spec[0] ) ) {
-					continue;
-				}
-
-				$block_name   = $block_spec[0];
-				$block_attrs  = isset( $block_spec[1] ) && is_array( $block_spec[1] ) ? $block_spec[1] : array();
-				$inner_blocks = isset( $block_spec[2] ) && is_array( $block_spec[2] ) ? $block_spec[2] : array();
-
-				$blocks_content .= $this->serialize_block_template_entry( $block_name, $block_attrs, $inner_blocks );
+			if ( empty( $formatted_blocks ) ) {
+				return '';
 			}
 
-			return $blocks_content;
+			$template_content = serialize_blocks( $formatted_blocks );
+
+			if ( empty( $template_content ) ) {
+				return '';
+			}
+
+			return $template_content;
 		}
 
 		/**
-		 * Serializes a single block template entry into HTML comment markup.
+		 * Convert post type template to block format.
 		 *
-		 * Recursively handles inner blocks. Produces the standard WordPress
-		 * block comment format:
-		 * - Void blocks: `<!-- wp:name attrs /-->`
-		 * - Container blocks: `<!-- wp:name attrs -->inner<!-- /wp:name -->`
+		 * WordPress post type templates are arrays where each element is:
+		 * [
+		 *   0 => string,                 // Block name (e.g. 'core/paragraph')
+		 *   1 => array<string, mixed>,   // Block attributes (optional)
+		 *   2 => array<int, array>       // Inner blocks in template format (optional, recursive)
+		 * ]
+		 *
+		 * This converts them to the structure expected by serialize_blocks():
+		 * [
+		 *   'blockName'    => string|null,
+		 *   'attrs'        => array<string, mixed>,
+		 *   'innerBlocks'  => array<int, array>,
+		 *   'innerHTML'    => string,
+		 *   'innerContent' => array<int, string>
+		 * ]
 		 *
 		 * @since 0.3.0
 		 *
-		 * @param string $block_name   The block name (e.g., 'core/paragraph').
-		 * @param array  $block_attrs  Block attributes.
-		 * @param array  $inner_blocks Inner block specifications.
-		 * @return string Serialized block HTML.
+		 * @phpstan-param array<int, array{0?: string, 1?: array<string, mixed>, 2?: array<int, array<mixed>>}> $template_blocks
+		 *
+		 * @param array<int, array<mixed>> $template_blocks Post type template blocks (recursive).
+		 *
+		 * @phpstan-return array<int, array{blockName: string, attrs: array<string, mixed>, innerBlocks: array<int, array<mixed>>, innerHTML: string, innerContent: array<int, string>}>
+		 *
+		 * @return array<int, array<string, mixed>> Blocks formatted for serialize_blocks().
 		 */
-		final protected function serialize_block_template_entry( string $block_name, array $block_attrs, array $inner_blocks ): string {
-			$attrs_json = ! empty( $block_attrs ) ? ' ' . wp_json_encode( $block_attrs ) : '';
+		final protected function convert_template_to_blocks( array $template_blocks ): array {
+			$blocks = array();
 
-			if ( empty( $inner_blocks ) ) {
-				// Self-closing or void block.
-				return sprintf( "<!-- wp:%s%s /-->\n", $block_name, $attrs_json );
-			}
-
-			$inner_content = '';
-			foreach ( $inner_blocks as $inner_spec ) {
-				if ( ! is_array( $inner_spec ) || empty( $inner_spec[0] ) ) {
-					continue;
+			foreach ( $template_blocks as $template_block ) {
+				$block = $this->convert_single_template_block( $template_block );
+				if ( null !== $block ) {
+					$blocks[] = $block;
 				}
-				$inner_name  = $inner_spec[0];
-				$inner_attrs = isset( $inner_spec[1] ) && is_array( $inner_spec[1] ) ? $inner_spec[1] : array();
-				$inner_inner = isset( $inner_spec[2] ) && is_array( $inner_spec[2] ) ? $inner_spec[2] : array();
-
-				$inner_content .= $this->serialize_block_template_entry( $inner_name, $inner_attrs, $inner_inner );
 			}
 
-			return sprintf( "<!-- wp:%s%s -->\n%s<!-- /wp:%s -->\n", $block_name, $attrs_json, $inner_content, $block_name );
+			return $blocks;
+		}
+
+		/**
+		 * Convert a single template block entry to block parser format.
+		 *
+		 * Parses one entry from a WordPress post type template array
+		 * and converts it to the format expected by serialize_blocks().
+		 * Recursively converts inner blocks if present.
+		 *
+		 * @since 0.3.0
+		 *
+		 * @param mixed $template_block A single template block entry.
+		 *                              Expected format: array{0: string, 1?: array<string, mixed>, 2?: array<int, array>}.
+		 *
+		 * @phpstan-return array{blockName: string, attrs: array<string, mixed>, innerBlocks: array<int, array<mixed>>, innerHTML: string, innerContent: array<int, string>}|null
+		 *
+		 * @return array<string, mixed>|null Block in parser format, or null if the entry is invalid.
+		 */
+		private function convert_single_template_block( $template_block ): ?array {
+			if ( ! is_array( $template_block ) ) {
+				return null;
+			}
+
+			$block_name = isset( $template_block[0] ) && is_string( $template_block[0] ) ? $template_block[0] : '';
+			if ( empty( $block_name ) ) {
+				return null;
+			}
+
+			/**
+			 * This should be the shape coming from WP core.
+			 *
+			 * @var array<string, mixed> $block_attrs
+			 */
+			$block_attrs = isset( $template_block[1] ) && is_array( $template_block[1] ) ? $template_block[1] : array();
+
+			/**
+			 * This should be the shape coming from WP core.
+			 *
+			 * @var array<int, array{0?: string, 1?: array<string, mixed>, 2?: array<int, array<mixed>>}> $inner_blocks
+			 */
+			$inner_blocks = isset( $template_block[2] ) && is_array( $template_block[2] ) ? $template_block[2] : array();
+
+			return array(
+				'blockName'    => $block_name,
+				'attrs'        => $block_attrs,
+				'innerBlocks'  => ! empty( $inner_blocks ) ? $this->convert_template_to_blocks( $inner_blocks ) : array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			);
+		}
+
+		/**
+		 * Pre-validates serialized block content by round-tripping it
+		 * through WordPress's block parser.
+		 *
+		 * Parses the serialized block markup via `parse_blocks()`, filters
+		 * out any freeform (null blockName) entries that are whitespace-only,
+		 * and re-serializes the result. This produces canonical block markup
+		 * that the block editor recognizes without triggering "attempt block
+		 * recovery" warnings.
+		 *
+		 * @since 0.3.0
+		 *
+		 * @param string $block_content Serialized block markup.
+		 * @return string Validated and re-serialized block markup.
+		 */
+		final protected function validate_block_content( string $block_content ): string {
+			if ( empty( $block_content ) ) {
+				return '';
+			}
+
+			$parsed = parse_blocks( $block_content );
+
+			if ( empty( $parsed ) ) {
+				return '';
+			}
+
+			// Filter out freeform (null blockName) entries that are just whitespace.
+			// These are inter-block gaps that parse_blocks() produces and that
+			// serialize_blocks() would turn into empty lines. Keep only real blocks.
+			$filtered = array_values(
+				array_filter(
+					$parsed,
+					function ( array $block ): bool {
+						if ( null === $block['blockName'] ) {
+							// Keep freeform blocks only if they have non-whitespace content.
+							return ! empty( trim( $block['innerHTML'] ?? '' ) );
+						}
+						return true;
+					}
+				)
+			);
+
+			if ( empty( $filtered ) ) {
+				return '';
+			}
+
+			return serialize_blocks( $filtered );
 		}
 
 		/**
@@ -109,7 +222,9 @@ if ( ! trait_exists( __NAMESPACE__ . '\Template_Block_Handler' ) ) {
 		 *
 		 * Combines the serialized template blocks with the provided content
 		 * string, placing the template either before or after the content
-		 * based on the `$template_before` flag.
+		 * based on the `$template_before` flag. The template content is
+		 * pre-validated by round-tripping through the block parser to
+		 * ensure canonical markup that the editor recognizes.
 		 *
 		 * @since 0.3.0
 		 *
@@ -123,11 +238,19 @@ if ( ! trait_exists( __NAMESPACE__ . '\Template_Block_Handler' ) ) {
 				return $content;
 			}
 
-			if ( $template_before ) {
-				return $template_content . "\n" . $content;
+			// Pre-validate the template blocks through the block parser
+			// to produce canonical markup the editor will accept.
+			$validated = $this->validate_block_content( $template_content );
+
+			if ( empty( $validated ) ) {
+				return $content;
 			}
 
-			return $content . "\n" . $template_content;
+			if ( $template_before ) {
+				return $validated . "\n" . $content;
+			}
+
+			return $content . "\n" . $validated;
 		}
 	}
 }
