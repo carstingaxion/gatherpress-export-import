@@ -80,6 +80,12 @@ if ( ! class_exists( __NAMESPACE__ . '\Stash_Processor' ) ) {
 				return;
 			}
 
+			// Reset the duplicate-processing guard so that events from
+			// a fresh import run are not incorrectly skipped because of
+			// a prior run within the same PHP process (common in tests
+			// and in back-to-back imports).
+			$this->processed_posts = array();
+
 			foreach ( $pending as $post_id ) {
 				$this->process_stashed_meta( (int) $post_id );
 			}

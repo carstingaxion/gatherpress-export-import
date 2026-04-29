@@ -56,6 +56,12 @@ trait WXRImportHelper {
 		$importer                    = new \WP_Import();
 		$importer->fetch_attachments = $fetch_attachments;
 
+		// Set the global so that hooks fired during import (especially
+		// import_end) can access the importer's processed_posts map.
+		// The WordPress Importer plugin does this internally when running
+		// through the admin UI, but not when instantiated programmatically.
+		$GLOBALS['wp_import'] = $importer;
+
 		// Suppress output from the importer.
 		ob_start();
 		$importer->import( $wxr_file );

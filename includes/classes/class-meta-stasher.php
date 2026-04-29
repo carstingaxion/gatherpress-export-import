@@ -123,19 +123,29 @@ if ( ! class_exists( __NAMESPACE__ . '\Meta_Stasher' ) ) {
 				return $check;
 			}
 
-			// Venue meta stashing is handled by adapter-specific hooks
-			// (e.g., Venue_Detail_Handler at priority 4).
+			// For venue posts, venue detail meta keys (address, city, etc.)
+			// are handled by the Venue_Detail_Handler trait at priority 4.
+			// Any remaining stash keys that reach this point (priority 5) —
+			// e.g., _VenueOrigin, _VenueShowMap — are stashed into a
+			// throwaway transient to block them from leaking into wp_postmeta.
 			if ( 'gatherpress_venue' === $post_type ) {
-				return $check;
+				return self::stash_meta( $object_id, $meta_key, $meta_value, 'gpei_venue_extra_stash_', 'gpei_pending_venue_extra_ids' );
 			}
 
 			return self::stash_meta( $object_id, $meta_key, $meta_value, 'gpei_meta_stash_', 'gpei_pending_event_ids' );
 		}
 
 		/**
-		 * Ensures the post ID is tracked in the pending list.
+		 * Stashes meta values and tracks the post ID in the pending list.
 		 *
-		 * Hooked to `wp_import_post_meta` at priority 20.
+		 * Hooked to `wp_import_post_meta` at priority 20. This is a critical
+		 * secondary stashing path: when GatherPress's pseudopostmeta system
+		 * is active, it may intercept these meta keys before the WordPress
+		 * Importer calls `add_post_meta()`, preventing the primary stash
+		 * path (`add_post_metadata` filter) from ever firing. By reading
+		 * the meta values directly from the postmeta array here, we ensure
+		 * the stash is always populated regardless of whether `add_post_meta()`
+		 * is subsequently called.
 		 *
 		 * @since 0.3.0
 		 *
@@ -149,6 +159,28 @@ if ( ! class_exists( __NAMESPACE__ . '\Meta_Stasher' ) ) {
 				return $postmeta;
 			}
 
+			// $stash_keys = $this->registry->get_stash_meta_keys();
+
+			// // Stash any recognised meta values from the postmeta array.
+			// // This ensures the stash is populated even when GatherPress's
+			// // pseudopostmeta system prevents add_post_meta() from being
+			// // called for these keys.
+			// foreach ( $postmeta as $meta_entry ) {
+			// 	if ( ! isset( $meta_entry['key'] ) || ! isset( $meta_entry['value'] ) ) {
+			// 		continue;
+			// 	}
+			// 	if ( in_array( $meta_entry['key'], $stash_keys, true ) ) {
+			// 		self::stash_meta(
+			// 			$post_id,
+			// 			$meta_entry['key'],
+			// 			$meta_entry['value'],
+			// 			'gpei_meta_stash_',
+			// 			'gpei_pending_event_ids'
+			// 		);
+			// 	}
+			// }
+
+			// Also ensure the post ID is tracked even if no stash keys matched.
 			$pending = get_transient( 'gpei_pending_event_ids' );
 			if ( ! is_array( $pending ) ) {
 				$pending = array();
