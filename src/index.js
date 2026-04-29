@@ -36,6 +36,7 @@ import {
  */
 function ICSImportModal( { onClose } ) {
 	const [ file, setFile ] = useState( null );
+	const [ publishImport, setPublishImport ] = useState( false );
 	const [ includeTemplate, setIncludeTemplate ] = useState( false );
 	const [ templateBefore, setTemplateBefore ] = useState( false );
 	const [ isSubmitting, setIsSubmitting ] = useState( false );
@@ -129,6 +130,15 @@ function ICSImportModal( { onClose } ) {
 		submitInput.value = '1';
 		form.appendChild( submitInput );
 
+		// Publish flag.
+		if ( publishImport ) {
+			const publishInput = document.createElement( 'input' );
+			publishInput.type = 'hidden';
+			publishInput.name = 'gpei_ics_publish';
+			publishInput.value = '1';
+			form.appendChild( publishInput );
+		}
+
 		// Include template.
 		if ( includeTemplate ) {
 			const templateInput = document.createElement( 'input' );
@@ -158,7 +168,7 @@ function ICSImportModal( { onClose } ) {
 
 		document.body.appendChild( form );
 		form.submit();
-	}, [ file, includeTemplate, templateBefore ] );
+	}, [ file, publishImport, includeTemplate, templateBefore ] );
 
 	return (
 		<Modal
@@ -264,6 +274,30 @@ function ICSImportModal( { onClose } ) {
 					'gatherpress-export-import'
 				) }
 			</p>
+
+			<fieldset
+				style={ {
+					margin: '16px 0',
+					padding: '12px 16px',
+					border: '1px solid #dcdcde',
+					borderRadius: '4px',
+					background: '#f6f7f7',
+				} }
+			>
+				<CheckboxControl
+					__nextHasNoMarginBottom
+					label={ __(
+						'Publish events and venues immediately',
+						'gatherpress-export-import'
+					) }
+					checked={ publishImport }
+					onChange={ setPublishImport }
+					help={ __(
+						'When disabled, imported events and venues are created as drafts for review.',
+						'gatherpress-export-import'
+					) }
+				/>
+			</fieldset>
 
 			<fieldset
 				style={ {

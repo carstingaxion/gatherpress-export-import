@@ -132,6 +132,15 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					</p>
 					<fieldset style="margin: 16px 0; padding: 12px 16px; border: 1px solid #dcdcde; border-radius: 4px; background: #f6f7f7;">
 						<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+							<input type="checkbox" name="gpei_ics_publish" id="gpei-ics-publish" value="1" />
+							<span><?php esc_html_e( 'Publish events and venues immediately', 'gatherpress-export-import' ); ?></span>
+						</label>
+						<p class="description" style="margin: 4px 0 0 28px; font-size: 12px; color: #a7aaad;">
+							<?php esc_html_e( 'When disabled, imported events and venues are created as drafts for review.', 'gatherpress-export-import' ); ?>
+						</p>
+					</fieldset>
+					<fieldset style="margin: 16px 0; padding: 12px 16px; border: 1px solid #dcdcde; border-radius: 4px; background: #f6f7f7;">
+						<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
 							<input type="checkbox" name="gpei_ics_include_template" id="gpei-ics-include-template" value="1" />
 							<span><?php esc_html_e( 'Include registered template blocks for events and venues', 'gatherpress-export-import' ); ?></span>
 						</label>
@@ -280,8 +289,9 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 
 			$include_template = ! empty( $_POST['gpei_ics_include_template'] );
 			$template_before  = ! empty( $_POST['gpei_ics_template_before'] );
+			$post_status      = ! empty( $_POST['gpei_ics_publish'] ) ? 'publish' : 'draft';
 
-			$created_ids = $this->create_events( $events, $include_template, $template_before );
+			$created_ids = $this->create_events( $events, $include_template, $template_before, $post_status );
 
 			if ( empty( $created_ids ) ) {
 				add_action(
@@ -304,7 +314,7 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				add_query_arg(
 					array(
 						'post_type'     => 'gatherpress_event',
-						'post_status'   => 'draft',
+						'post_status'   => $post_status,
 						'gpei_imported' => count( $created_ids ),
 					),
 					admin_url( 'edit.php' )
@@ -447,9 +457,10 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 		 * @param array<int, array<string, string>> $events           Parsed events.
 		 * @param bool                              $include_template Whether to include registered template blocks.
 		 * @param bool                              $template_before  Whether template blocks go before imported content.
+		 * @param string                            $post_status      Post status for created events ('draft' or 'publish').
 		 * @return int[] Array of created post IDs.
 		 */
-		private function create_events( array $events, bool $include_template = false, bool $template_before = false ): array {
+		private function create_events( array $events, bool $include_template = false, bool $template_before = false, string $post_status = 'draft' ): array {
 			$created_ids    = array();
 			$venue_cache    = array();
 			$event_template = '';
@@ -490,7 +501,7 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 						'post_title'   => sanitize_text_field( $event_data['summary'] ),
 						'post_content' => $final_content,
 						'post_type'    => 'gatherpress_event',
-						'post_status'  => 'draft',
+						'post_status'  => $post_status,
 					),
 					true
 				);
@@ -560,7 +571,8 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 							$event_data['geo'],
 							$include_template,
 							$template_before,
-							$venue_template
+							$venue_template,
+							$post_status
 						);
 						$venue_cache[ $cache_key ] = $venue_post_id;
 					}
@@ -590,9 +602,10 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 		 * @param bool   $include_template Whether to include registered template blocks.
 		 * @param bool   $template_before  Whether template blocks go before content.
 		 * @param string $venue_template   Serialized venue template block content.
+		 * @param string $venue_status     Post status for created venues ('draft' or 'publish').
 		 * @return int The venue post ID, or 0 on failure.
 		 */
-		private function find_or_create_venue( string $location_name, string $geo, bool $include_template = false, bool $template_before = false, string $venue_template = '' ): int {
+		private function find_or_create_venue( string $location_name, string $geo, bool $include_template = false, bool $template_before = false, string $venue_template = '', string $venue_status = 'publish' ): int {
 			if ( empty( $location_name ) ) {
 				return 0;
 			}
@@ -624,7 +637,7 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					'post_title'   => $location_name,
 					'post_content' => $venue_content,
 					'post_type'    => 'gatherpress_venue',
-					'post_status'  => 'publish',
+					'post_status'  => $venue_status,
 				),
 				true
 			);
