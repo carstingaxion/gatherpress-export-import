@@ -5,7 +5,7 @@
  * so the command is available on all admin screens. The component
  * uses the useCommand hook for registration and useState for modal state.
  *
- * @package GatherPressExportImport
+ * @package
  * @since   0.3.0
  */
 
@@ -22,6 +22,8 @@ import {
 	Notice,
 } from '@wordpress/components';
 
+/* global DataTransfer */
+
 /**
  * ICS Import Modal component.
  *
@@ -30,7 +32,7 @@ import {
  *
  * @param {Object}   props
  * @param {Function} props.onClose Callback to close the modal.
- * @returns {JSX.Element}
+ * @return {JSX.Element} The modal UI for ICS file import.
  */
 function ICSImportModal( { onClose } ) {
 	const [ file, setFile ] = useState( null );
@@ -46,13 +48,20 @@ function ICSImportModal( { onClose } ) {
 	 * @param {File} selectedFile The selected file.
 	 */
 	const handleFile = useCallback( ( selectedFile ) => {
-		if ( selectedFile && ( selectedFile.name.endsWith( '.ics' ) || selectedFile.type === 'text/calendar' ) ) {
+		if (
+			selectedFile &&
+			( selectedFile.name.endsWith( '.ics' ) ||
+				selectedFile.type === 'text/calendar' )
+		) {
 			setFile( selectedFile );
 			setNotice( null );
 		} else {
 			setNotice( {
 				status: 'error',
-				message: __( 'Please select a valid .ics file.', 'gatherpress-export-import' ),
+				message: __(
+					'Please select a valid .ics file.',
+					'gatherpress-export-import'
+				),
 			} );
 		}
 	}, [] );
@@ -62,22 +71,28 @@ function ICSImportModal( { onClose } ) {
 	 *
 	 * @param {File[]} files Dropped files.
 	 */
-	const handleDrop = useCallback( ( files ) => {
-		if ( files && files.length > 0 ) {
-			handleFile( files[ 0 ] );
-		}
-	}, [ handleFile ] );
+	const handleDrop = useCallback(
+		( files ) => {
+			if ( files && files.length > 0 ) {
+				handleFile( files[ 0 ] );
+			}
+		},
+		[ handleFile ]
+	);
 
 	/**
 	 * Handles the file input change event.
 	 *
 	 * @param {Event} event The input change event.
 	 */
-	const handleInputChange = useCallback( ( event ) => {
-		if ( event.target.files && event.target.files.length > 0 ) {
-			handleFile( event.target.files[ 0 ] );
-		}
-	}, [ handleFile ] );
+	const handleInputChange = useCallback(
+		( event ) => {
+			if ( event.target.files && event.target.files.length > 0 ) {
+				handleFile( event.target.files[ 0 ] );
+			}
+		},
+		[ handleFile ]
+	);
 
 	/**
 	 * Submits the ICS file to the server via a hidden form POST.
@@ -147,7 +162,10 @@ function ICSImportModal( { onClose } ) {
 
 	return (
 		<Modal
-			title={ __( 'Import Events from ICS File', 'gatherpress-export-import' ) }
+			title={ __(
+				'Import Events from ICS File',
+				'gatherpress-export-import'
+			) }
 			onRequestClose={ onClose }
 			size="medium"
 		>
@@ -162,7 +180,10 @@ function ICSImportModal( { onClose } ) {
 			) }
 
 			<p style={ { color: '#757575', fontSize: '13px', marginTop: 0 } }>
-				{ __( 'Upload an ICS calendar file to import events into GatherPress. All imported events will be created as drafts for review.', 'gatherpress-export-import' ) }
+				{ __(
+					'Upload an ICS calendar file to import events into GatherPress. All imported events will be created as drafts for review.',
+					'gatherpress-export-import'
+				) }
 			</p>
 
 			<div
@@ -180,7 +201,8 @@ function ICSImportModal( { onClose } ) {
 					padding: '32px 24px',
 					textAlign: 'center',
 					cursor: 'pointer',
-					transition: 'border-color 0.2s ease, background-color 0.2s ease',
+					transition:
+						'border-color 0.2s ease, background-color 0.2s ease',
 					background: file ? '#f0f6fc' : '#f6f7f7',
 					margin: '16px 0',
 					position: 'relative',
@@ -190,17 +212,41 @@ function ICSImportModal( { onClose } ) {
 				<div style={ { marginBottom: '8px' } }>
 					<span
 						className="dashicons dashicons-calendar-alt"
-						style={ { fontSize: '36px', width: '36px', height: '36px', color: '#8c8f94' } }
+						style={ {
+							fontSize: '36px',
+							width: '36px',
+							height: '36px',
+							color: '#8c8f94',
+						} }
 					/>
 				</div>
-				<p style={ { margin: '0 0 4px', fontSize: '14px', fontWeight: 500, color: '#1d2327' } }>
+				<p
+					style={ {
+						margin: '0 0 4px',
+						fontSize: '14px',
+						fontWeight: 500,
+						color: '#1d2327',
+					} }
+				>
 					{ file
 						? file.name
-						: __( 'Drag & drop your .ics file here', 'gatherpress-export-import' ) }
+						: __(
+								'Drag & drop your .ics file here',
+								'gatherpress-export-import'
+						  ) }
 				</p>
 				{ ! file && (
-					<p style={ { margin: 0, color: '#8c8f94', fontSize: '13px' } }>
-						{ __( 'or click to browse', 'gatherpress-export-import' ) }
+					<p
+						style={ {
+							margin: 0,
+							color: '#8c8f94',
+							fontSize: '13px',
+						} }
+					>
+						{ __(
+							'or click to browse',
+							'gatherpress-export-import'
+						) }
 					</p>
 				) }
 				<input
@@ -213,37 +259,61 @@ function ICSImportModal( { onClose } ) {
 			</div>
 
 			<p style={ { marginTop: 0, fontSize: '12px', color: '#a7aaad' } }>
-				{ __( 'Accepted format: .ics (iCalendar). Exports from Google Calendar, Outlook, Apple Calendar, and Event Organiser are supported.', 'gatherpress-export-import' ) }
+				{ __(
+					'Accepted format: .ics (iCalendar). Exports from Google Calendar, Outlook, Apple Calendar, and Event Organiser are supported.',
+					'gatherpress-export-import'
+				) }
 			</p>
 
-			<fieldset style={ {
-				margin: '16px 0',
-				padding: '12px 16px',
-				border: '1px solid #dcdcde',
-				borderRadius: '4px',
-				background: '#f6f7f7',
-			} }>
+			<fieldset
+				style={ {
+					margin: '16px 0',
+					padding: '12px 16px',
+					border: '1px solid #dcdcde',
+					borderRadius: '4px',
+					background: '#f6f7f7',
+				} }
+			>
 				<CheckboxControl
 					__nextHasNoMarginBottom
-					label={ __( 'Include registered template blocks for events and venues', 'gatherpress-export-import' ) }
+					label={ __(
+						'Include registered template blocks for events and venues',
+						'gatherpress-export-import'
+					) }
 					checked={ includeTemplate }
 					onChange={ setIncludeTemplate }
-					help={ __( 'Inserts the default block template registered for gatherpress_event and gatherpress_venue post types into the created posts.', 'gatherpress-export-import' ) }
+					help={ __(
+						'Inserts the default block template registered for gatherpress_event and gatherpress_venue post types into the created posts.',
+						'gatherpress-export-import'
+					) }
 				/>
 				{ includeTemplate && (
 					<div style={ { marginTop: '12px', marginLeft: '28px' } }>
 						<CheckboxControl
 							__nextHasNoMarginBottom
-							label={ __( 'Insert template blocks before imported content', 'gatherpress-export-import' ) }
+							label={ __(
+								'Insert template blocks before imported content',
+								'gatherpress-export-import'
+							) }
 							checked={ templateBefore }
 							onChange={ setTemplateBefore }
-							help={ __( 'When enabled, template blocks appear before the imported description. When disabled, they appear after.', 'gatherpress-export-import' ) }
+							help={ __(
+								'When enabled, template blocks appear before the imported description. When disabled, they appear after.',
+								'gatherpress-export-import'
+							) }
 						/>
 					</div>
 				) }
 			</fieldset>
 
-			<div style={ { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' } }>
+			<div
+				style={ {
+					display: 'flex',
+					justifyContent: 'flex-end',
+					gap: '8px',
+					marginTop: '16px',
+				} }
+			>
 				<Button variant="tertiary" onClick={ onClose }>
 					{ __( 'Cancel', 'gatherpress-export-import' ) }
 				</Button>
@@ -269,7 +339,7 @@ function ICSImportModal( { onClose } ) {
  * Mounted via domReady() + createRoot() so the useCommand hook runs
  * inside a proper React tree with access to WordPress data stores.
  *
- * @returns {JSX.Element|null}
+ * @return {JSX.Element|null} The import modal when open, or null.
  */
 function GpeiIcsCommand() {
 	const [ isOpen, setIsOpen ] = useState( false );
