@@ -132,7 +132,7 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					</p>
 					<fieldset style="margin: 16px 0; padding: 12px 16px; border: 1px solid #dcdcde; border-radius: 4px; background: #f6f7f7;">
 						<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-							<input type="checkbox" name="gpei_ics_publish" id="gpei-ics-publish" value="1" />
+							<input type="checkbox" name="gpei_ics_publish" id="gpei-ics-publish" value="1" checked />
 							<span><?php esc_html_e( 'Publish events and venues immediately', 'gatherpress-export-import' ); ?></span>
 						</label>
 						<p class="description" style="margin: 4px 0 0 28px; font-size: 12px; color: #a7aaad;">
@@ -141,13 +141,13 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 					</fieldset>
 					<fieldset style="margin: 16px 0; padding: 12px 16px; border: 1px solid #dcdcde; border-radius: 4px; background: #f6f7f7;">
 						<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-							<input type="checkbox" name="gpei_ics_include_template" id="gpei-ics-include-template" value="1" />
+							<input type="checkbox" name="gpei_ics_include_template" id="gpei-ics-include-template" value="1" checked />
 							<span><?php esc_html_e( 'Include registered template blocks for events and venues', 'gatherpress-export-import' ); ?></span>
 						</label>
 						<p class="description" style="margin: 4px 0 0 28px; font-size: 12px; color: #a7aaad;">
 							<?php esc_html_e( 'Inserts the default block template registered for gatherpress_event and gatherpress_venue post types into the created posts.', 'gatherpress-export-import' ); ?>
 						</p>
-						<div id="gpei-ics-template-position" style="margin: 12px 0 0 28px; display: none;">
+						<div id="gpei-ics-template-position" style="margin: 12px 0 0 28px;">
 							<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
 								<input type="checkbox" name="gpei_ics_template_before" id="gpei-ics-template-before" value="1" />
 								<span><?php esc_html_e( 'Insert template blocks before imported content', 'gatherpress-export-import' ); ?></span>
@@ -176,6 +176,7 @@ if ( ! class_exists( __NAMESPACE__ . '\ICS_Importer' ) ) {
 				}
 
 				if ( includeTemplateCheckbox && templatePositionDiv ) {
+					templatePositionDiv.style.display = includeTemplateCheckbox.checked ? 'block' : 'none';
 					includeTemplateCheckbox.addEventListener( 'change', function() {
 						templatePositionDiv.style.display = includeTemplateCheckbox.checked ? 'block' : 'none';
 					} );

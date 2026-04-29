@@ -36,8 +36,8 @@ import {
  */
 function ICSImportModal( { onClose } ) {
 	const [ file, setFile ] = useState( null );
-	const [ publishImport, setPublishImport ] = useState( false );
-	const [ includeTemplate, setIncludeTemplate ] = useState( false );
+	const [ publishImport, setPublishImport ] = useState( true );
+	const [ includeTemplate, setIncludeTemplate ] = useState( true );
 	const [ templateBefore, setTemplateBefore ] = useState( false );
 	const [ isSubmitting, setIsSubmitting ] = useState( false );
 	const [ notice, setNotice ] = useState( null );
