@@ -29,6 +29,18 @@
 		},
 		{
 			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/eo-export-helper.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/carstingaxion/gatherpress-export-import/main/.wordpress-org/blueprints/eo-export-helper.php"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '../wordpress/wp-load.php'; flush_rewrite_rules();"
+		},
+		{
+			"step": "writeFile",
 			"path": "/tmp/event-organiser-import.php",
 			"data": {
 				"resource": "url",
