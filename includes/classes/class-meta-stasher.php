@@ -166,18 +166,18 @@ if ( ! class_exists( __NAMESPACE__ . '\Meta_Stasher' ) ) {
 			// // pseudopostmeta system prevents add_post_meta() from being
 			// // called for these keys.
 			// foreach ( $postmeta as $meta_entry ) {
-			// 	if ( ! isset( $meta_entry['key'] ) || ! isset( $meta_entry['value'] ) ) {
-			// 		continue;
-			// 	}
-			// 	if ( in_array( $meta_entry['key'], $stash_keys, true ) ) {
-			// 		self::stash_meta(
-			// 			$post_id,
-			// 			$meta_entry['key'],
-			// 			$meta_entry['value'],
-			// 			'gpei_meta_stash_',
-			// 			'gpei_pending_event_ids'
-			// 		);
-			// 	}
+			// if ( ! isset( $meta_entry['key'] ) || ! isset( $meta_entry['value'] ) ) {
+			// continue;
+			// }
+			// if ( in_array( $meta_entry['key'], $stash_keys, true ) ) {
+			// self::stash_meta(
+			// $post_id,
+			// $meta_entry['key'],
+			// $meta_entry['value'],
+			// 'gpei_meta_stash_',
+			// 'gpei_pending_event_ids'
+			// );
+			// }
 			// }
 
 			// Also ensure the post ID is tracked even if no stash keys matched.

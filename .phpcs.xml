@@ -59,6 +59,9 @@
 	<rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_key">
 		<exclude-pattern>test/*</exclude-pattern>
 	</rule>
+	<rule ref="WordPressVIPMinimum.Performance.FetchingRemoteData.FileGetContentsUnknown">
+		<exclude-pattern>test/*</exclude-pattern>
+	</rule>
 
 
 </ruleset>
