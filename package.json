@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress-export-import",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "Intercepts WordPress XML imports from third-party event plugins and transforms them into GatherPress data automatically.",
 	"author": "Carsten Bach & WordPress Telex",
 	"license": "GPL-2.0-or-later",
