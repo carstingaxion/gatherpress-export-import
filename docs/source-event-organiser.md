@@ -57,8 +57,8 @@ Import the same WXR file twice.
 | Start/end datetimes | ✅ | |
 | Timezone | 🚫 | Stored in site-local time; site timezone used during conversion |
 | Venue name | ✅ | From taxonomy term names via two-pass import |
-| Venue address/details | 🚫 | Stored as taxonomy term meta; not included in WXR exports |
-| Venue coordinates | 🚫 | Stored as taxonomy term meta |
+| Venue address/details | 🚫 | Stored in custom db table; not in WXR exports |
+| Venue coordinates | 🚫 | Stored in custom db table; not in WXR exports |
 | Venue–event link | ✅ | Via two-pass taxonomy import |
 | Event categories | ✅ | |
 | Event tags | ✅ | |

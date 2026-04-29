@@ -7,7 +7,7 @@ Adapter class: `AIOEC_Adapter`
 | Step | Description | Status |
 |:---:|---|:---:|
 | 1 | Source documentation (`source-aioec.md`) | ✅ |
-| 2 | Blueprint import script (`aioec-import.php`) | ✅ |
+| 2 | Blueprint import script (`aioec-import.php`) | ❌ |
 | 3 | WXR fixture from real export (`aioec.xml`) | ❌ |
 | 4 | Adapter unit tests | ❌ |
 | 5 | WXR import integration tests | ❌ |

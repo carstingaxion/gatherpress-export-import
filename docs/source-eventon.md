@@ -52,8 +52,8 @@ Import the same WXR file twice.
 | Start/end datetimes | ✅ | Via Unix timestamps in `evcal_srow` / `evcal_erow` |
 | Timezone | 🚫 | Not stored per-event; site timezone used as fallback |
 | Venue name | ✅ | From taxonomy term names via two-pass import |
-| Venue address/details | 🚫 | Stored as taxonomy term meta; not included in WXR exports |
-| Venue coordinates | 🚫 | Stored as taxonomy term meta |
+| Venue address/details | 🚫 | Stored in custom db table; not in WXR exports |
+| Venue coordinates | 🚫 | Stored in custom db table; not in WXR exports |
 | Venue–event link | ✅ | Via two-pass taxonomy import |
 | Event categories | ✅ | Via `event_type` taxonomy |
 | Event tags | 🚫 | EventON does not use a tag taxonomy |
