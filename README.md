@@ -33,8 +33,8 @@ This plugin hooks into the standard WordPress Importer to transparently convert 
 | [**The Events Calendar**](docs/source-tec.md) (StellarWP) | ✅ | ✅ | ✅ |
 | [**Events Manager**](docs/source-events-manager.md) | ⚠️ | ⚠️ | ⚠️ |
 | [**Modern Events Calendar**](docs/source-mec.md) (Webnus) | ⚠️ | ❌ | ❌ |
-| [**All-in-One Event Calendar**](docs/source-aioec.md) | ⚠️ | ❌ | ❌ |
-| [**EventON**](docs/source-eventon.md) | ⚠️ | ❌ | ❌ |
+| [**All-in-One Event Calendar**](docs/source-aioec.md) | ❌ | ❌ | ❌ |
+| [**EventON**](docs/source-eventon.md) | ❌ | ❌ | ❌ |
 | [**Event Organiser**](docs/source-event-organiser.md) (Stephen Harris) | ⚠️ | ✅ | ✅ |
 
 **Legend:** ✅ Fully supported/tested — ⚠️ Partial (some data unavailable via WXR) — 🚫 Not supported by GatherPress — ❌ Not yet
