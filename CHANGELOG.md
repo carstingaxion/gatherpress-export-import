@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.1...HEAD)
+## [Unreleased](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.2...HEAD)
+
+## [0.4.2](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.1...0.4.2) - 2026-06-30
+
+- Update project status
+- Add screenshot
+- Try to avoid broken blocks (contacted @mauteri on slack, because of this)
+- Fix status
+- Merge pull request #47 from carstingaxion/feature/toggle-draft-creation
+- Set defaults for event & venue creation
+- Let user choose whether imported events and venues are created as drafts or published
 
 ## [0.4.1](https://github.com/carstingaxion/gatherpress-export-import/compare/0.4.0...0.4.1) - 2026-04-29
 
